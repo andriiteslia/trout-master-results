@@ -287,7 +287,6 @@
     el.board.innerHTML = '<table>' + thead + '<tbody>' + body + '</tbody></table>';
 
     var table = el.board.firstChild;
-    if (cols.length <= 8) el.board.classList.add('is-compact');
     if (table.scrollWidth > el.board.clientWidth + 1) {
       el.board.classList.add('is-wide');
       el.board.scrollLeft = scrollX;
@@ -302,7 +301,8 @@
   function renderStatus(pulse) {
     var p = state.payload;
     var s, text;
-    if (DEMO) { s = 'demo'; text = 'Демо-дані'; }
+    el.status.hidden = DEMO;
+    if (DEMO) { s = 'demo'; text = ''; }
     else if (state.error) { s = p ? 'stale' : 'error'; text = 'Немає зв’язку'; }
     else if (!p || state.fromCache) { s = 'load'; text = 'Завантаження…'; }
     else { s = 'live'; text = 'Оновлено о ' + fmtTime(p.changedAt || p.generatedAt); }
@@ -316,7 +316,7 @@
 
     var notice = '';
     if (DEMO) {
-      notice = 'Показано демо-дані. Щоб сторінка показувала живі результати, вставте адресу Apps Script у файл <code>config.js</code>.';
+      notice = '';
     } else if (state.error && p) {
       notice = 'Не вдається отримати свіжі дані (' + esc(state.error) + '). Показано результати станом на ' +
         esc(fmtTime(p.changedAt || p.generatedAt)) + '. Сторінка повторить спробу автоматично.';
