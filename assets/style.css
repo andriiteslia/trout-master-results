@@ -52,9 +52,26 @@
 
 /* ---------- Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+html {
+  -webkit-text-size-adjust: 100%;
+  /* Темний колір під статус-баром і при «відтягуванні» сторінки вгорі */
+  background: var(--nav);
+}
+/* Смуга кольору навбару під статус-баром (iPhone з вирізом, PWA, повноекранний режим) */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background: var(--nav);
+  z-index: 50;
+  pointer-events: none;
+}
 body {
   margin: 0;
+  min-height: 100vh;
   background: var(--page);
   color: var(--text);
   font-family: var(--font);
@@ -188,7 +205,7 @@ button { font: inherit; color: inherit; }
 }
 .bh {
   position: sticky;
-  top: 0;
+  top: env(safe-area-inset-top, 0px);
   z-index: 5;
   overflow: hidden;
 }
