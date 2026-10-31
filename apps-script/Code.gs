@@ -2,18 +2,22 @@
  * Trout Master — API результатів для сайту.
  *
  * Скрипт читає Google Таблицю турніру і віддає її вміст у JSON.
- * Налаштування (Налаштування проєкту → Властивості скрипту):
- *   SPREADSHEET_ID  — посилання на таблицю раунду (або лише її ID)
- *   EVENT_TITLE     — заголовок на сайті, напр. «Round 1»
- *   EVENT_SUBTITLE  — підзаголовок, напр. «21 листопада • Плугів • Krychevychi Area Fishing»
- * Після зміни властивостей нічого перепубліковувати не треба:
- * сайт підхопить зміни за кілька секунд.
+ * Налаштування раунду — у блоці SETTINGS нижче.
+ * Їх також можна перевизначити без перепублікації:
+ * Налаштування проєкту → Властивості скрипту
+ * (SPREADSHEET_ID, EVENT_TITLE, EVENT_SUBTITLE).
  *
- * Які таблиці показувати на сайті, задано нижче у VIEWS:
+ * Які таблиці показувати на сайті, задано у VIEWS:
  * назва вкладки, аркуш і діапазон колонок. Перші два рядки
  * діапазону — заголовки. Номер останнього рядка можна не вказувати:
  * скрипт сам візьме всі заповнені рядки.
  */
+
+var SETTINGS = {
+  SPREADSHEET_ID: 'https://docs.google.com/spreadsheets/d/13wvgmiuQeCl6ap4QmScSdf1dR0_wUuljV9-1-GggLdk/edit',
+  EVENT_TITLE: 'Round 1',
+  EVENT_SUBTITLE: '21 листопада • Плугів • Krychevychi Area Fishing'
+};
 
 var VIEWS = [
   { name: 'Результат', sheet: 'Results', range: 'AM1:AQ' },
@@ -48,10 +52,16 @@ function testConnection() {
   Logger.log('Усе гаразд. Тепер опублікуйте скрипт як веб-застосунок.');
 }
 
+/** Властивість скрипту, якщо задана, інакше значення з SETTINGS. */
+function setting_(name) {
+  var v = PropertiesService.getScriptProperties().getProperty(name);
+  return String(v != null && v.trim() !== '' ? v : (SETTINGS[name] || '')).trim();
+}
+
 function getSpreadsheetId_() {
-  var raw = (PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID') || '').trim();
+  var raw = setting_('SPREADSHEET_ID');
   if (!raw) {
-    throw new Error('Не задано SPREADSHEET_ID у властивостях скрипту.');
+    throw new Error('Не задано SPREADSHEET_ID у SETTINGS або у властивостях скрипту.');
   }
   var m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
   return m ? m[1] : raw;
@@ -92,8 +102,8 @@ function buildPayload_(id) {
 
   var props = PropertiesService.getScriptProperties();
   var event = {
-    title: (props.getProperty('EVENT_TITLE') || '').trim(),
-    subtitle: (props.getProperty('EVENT_SUBTITLE') || '').trim()
+    title: setting_('EVENT_TITLE'),
+    subtitle: setting_('EVENT_SUBTITLE')
   };
 
   // Хеш вмісту: сайт за ним розуміє, чи змінилися дані,
