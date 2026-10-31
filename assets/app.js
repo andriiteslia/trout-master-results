@@ -236,7 +236,8 @@
 
   function renderBoard() {
     var m = currentModel();
-    var scrollX = el.board.scrollLeft, scrollY = el.board.scrollTop;
+    var prevScroller = el.board.querySelector('.bs');
+    var scrollX = prevScroller ? prevScroller.scrollLeft : 0;
     el.board.classList.remove('is-wide', 'is-compact');
 
     if (!m) {
@@ -284,18 +285,30 @@
         cols.map(function (k) { return cellHtml(k, row, opts); }).join('') + '</tr>';
     }).join('');
 
-    el.board.innerHTML = '<table>' + thead + '<tbody>' + body + '</tbody></table>';
+    // Шапка й тіло — окремі таблиці: шапка прилипає до верху екрана,
+    // тіло гортається вбік, ширини колонок однакові.
+    el.board.innerHTML =
+      '<div class="bh"><table class="t-head"></table></div>' +
+      '<div class="bs"><table class="t-body">' + thead + '<tbody>' + body + '</tbody></table></div>';
+    var headBox = el.board.querySelector('.bh');
+    var scroller = el.board.querySelector('.bs');
+    var tHead = headBox.firstChild;
+    var tBody = scroller.firstChild;
 
-    var table = el.board.firstChild;
-    if (table.scrollWidth > el.board.clientWidth + 1) {
-      el.board.classList.add('is-wide');
-      el.board.scrollLeft = scrollX;
-      el.board.scrollTop = scrollY;
-    }
-    var placeTh = el.board.querySelector('th.c-place');
-    if (placeTh) el.board.style.setProperty('--pw', placeTh.getBoundingClientRect().width + 'px');
-    var firstRow = el.board.querySelector('thead tr.h1 th:not([rowspan])') || el.board.querySelector('thead tr.h1 th');
-    if (firstRow) el.board.style.setProperty('--h1', firstRow.getBoundingClientRect().height + 'px');
+    var cells = tBody.tBodies[0].rows[0].cells;
+    var widths = Array.prototype.map.call(cells, function (c) { return c.getBoundingClientRect().width; });
+    var total = widths.reduce(function (a, w) { return a + w; }, 0);
+    var colgroup = '<colgroup>' + widths.map(function (w) { return '<col style="width:' + w + 'px">'; }).join('') + '</colgroup>';
+    var theadEl = tBody.tHead;
+    tBody.insertAdjacentHTML('afterbegin', colgroup);
+    tHead.innerHTML = colgroup;
+    tHead.appendChild(theadEl);
+    [tHead, tBody].forEach(function (t) { t.style.tableLayout = 'fixed'; t.style.width = total + 'px'; });
+
+    el.board.classList.toggle('is-wide', total > scroller.clientWidth + 1);
+    el.board.style.setProperty('--pw', widths[0] + 'px');
+    scroller.scrollLeft = scrollX;
+    headBox.scrollLeft = scroller.scrollLeft;
   }
 
   function renderStatus(pulse) {
@@ -409,8 +422,8 @@
     if (!b) return;
     state.tab = b.getAttribute('data-tab');
     store.set(LS.tab, state.tab);
-    el.board.scrollLeft = 0;
-    el.board.scrollTop = 0;
+    var sc = el.board.querySelector('.bs');
+    if (sc) sc.scrollLeft = 0;
     renderTabs();
     renderBoard();
     var cur = el.tabs.querySelector('[aria-selected="true"]');
@@ -437,6 +450,15 @@
     var btn = tr.querySelector('.nm');
     if (btn) btn.setAttribute('aria-pressed', String(on));
   });
+
+  // Синхронна горизонтальна прокрутка шапки й тіла таблиці
+  el.board.addEventListener('scroll', function (e) {
+    var t = e.target;
+    if (!t.classList) return;
+    var other = t.classList.contains('bs') ? el.board.querySelector('.bh')
+      : t.classList.contains('bh') ? el.board.querySelector('.bs') : null;
+    if (other && other.scrollLeft !== t.scrollLeft) other.scrollLeft = t.scrollLeft;
+  }, true);
 
   var resizeTimer = null;
   window.addEventListener('resize', function () {
