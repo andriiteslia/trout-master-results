@@ -12,6 +12,10 @@
  *   впишіть посилання на таблицю в SETTINGS і запустіть функцію setupSync.
  *   Вона створить аркуш «Сайт», підключить список і опублікує дані.
  *
+ * Реєстрація: у B8 на аркуші «Сайт» виберіть «Відкрита», і на сайті з'явиться кнопка
+ *   «Зареєструватися». Заявки дописуються в аркуш «Учасники»: A — номер, B — прізвище та ім'я,
+ *   E — телефон (на сайт не потрапляє), F — час реєстрації.
+ *
  * Що показувати, вибирається у B5 на аркуші «Сайт» (MODES нижче):
  * «Список учасників» або «Результати». Для кожного режиму задано вкладки:
  * назва вкладки,
@@ -47,6 +51,16 @@ var CELL_STATUS = 'B4';
 var CELL_MODE = 'B5';
 var CELL_TITLE = 'B6';
 var CELL_SUBTITLE = 'B7';
+var CELL_REG = 'B8';
+var REG_OPEN = 'Відкрита';
+var REG_CLOSED = 'Закрита';
+
+/** Куди пишуться заявки з форми реєстрації (номери колонок: A=1, B=2, ...). */
+var REG_SHEET = 'Учасники';
+var REG_COL_NUM = 1;     // A — порядковий номер
+var REG_COL_NAME = 2;    // B — прізвище та ім'я
+var REG_COL_PHONE = 5;   // E — телефон (лише для організатора)
+var REG_COL_TIME = 6;    // F — час реєстрації
 
 /**
  * Діапазони, які можна змінювати прямо на аркуші «Сайт» (B12:B14).
@@ -109,11 +123,12 @@ function setupSync() {
     sh.getRange(CELL_SUBTITLE).setValue(SETTINGS.EVENT_SUBTITLE);
   }
   sh.getRange('A1').setValue('Публікація результатів на сайт').setFontWeight('bold').setFontSize(13);
-  sh.getRange('A3:A7').setValues([['Дія'], ['Остання публікація'], ['Що показувати'], ['Заголовок'], ['Підзаголовок']]);
-  sh.getRange('A3:A7').setFontWeight('bold');
+  sh.getRange('A3:A8').setValues([['Дія'], ['Остання публікація'], ['Що показувати'], ['Заголовок'], ['Підзаголовок'], ['Реєстрація']]);
+  sh.getRange('A3:A8').setFontWeight('bold');
   sh.getRange('A9').setValue('B5 — що бачать глядачі: «' + MODE_REG + '» (аркуш «Учасники») або «' + MODE_RES +
     '» (вкладки «Результат» і «Тури»). Зміна режиму одразу публікує дані. Щоб оновити дані на сайті, у B3 виберіть «' +
-    ACTION_PUBLISH + '». Заголовок і підзаголовок теж оновлюються при публікації.');
+    ACTION_PUBLISH + '». Заголовок і підзаголовок теж оновлюються при публікації. B8 — «' + REG_OPEN +
+    '» показує на сайті кнопку «Зареєструватися» (заявки йдуть в аркуш «' + REG_SHEET + '», телефон у колонку E).');
   sh.getRange('A9').setFontColor('#475467');
   sh.setColumnWidth(1, 180);
   sh.setColumnWidth(2, 420);
@@ -137,6 +152,26 @@ function setupSync() {
     .build());
   if (!MODES[currentMode]) modeCell.setValue(MODE_REG);
   modeCell.setFontWeight('bold').setBackground('#e3f0fa');
+
+  // Перемикач реєстрації
+  var regCell = sh.getRange(CELL_REG);
+  var currentReg = String(regCell.getDisplayValue()).trim();
+  regCell.clearDataValidations();
+  regCell.setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInList([REG_OPEN, REG_CLOSED], true)
+    .setAllowInvalid(false)
+    .build());
+  if (currentReg !== REG_OPEN && currentReg !== REG_CLOSED) regCell.setValue(REG_CLOSED);
+  regCell.setFontWeight('bold').setBackground('#fdf3e1');
+
+  // Заголовки колонок для заявок на аркуші «Учасники» (лише якщо порожні)
+  var reg = ss.getSheetByName(REG_SHEET);
+  if (reg) {
+    [[REG_COL_PHONE, 'Телефон'], [REG_COL_TIME, 'Зареєстровано']].forEach(function (x) {
+      var c = reg.getRange(1, x[0]);
+      if (!String(c.getDisplayValue()).trim()) c.setValue(x[1]).setFontWeight('bold');
+    });
+  }
 
   // Блок діапазонів: заповнюємо лише порожні клітинки, щоб не затерти ваші значення
   sh.getRange('A11').setValue('Діапазони (звідки брати дані)').setFontWeight('bold');
@@ -172,10 +207,11 @@ function handleSiteSync(e) {
   var v = String(e.value == null ? '' : e.value).trim();
   var isPublish = a1 === CELL_PUBLISH && (v === ACTION_PUBLISH || v.toUpperCase() === 'TRUE');
   var isMode = a1 === CELL_MODE && !!MODES[v];
+  var isReg = a1 === CELL_REG && (v === REG_OPEN || v === REG_CLOSED);
   var row = e.range.getRow();
   var isRange = e.range.getColumn() === 2 && e.range.getNumRows() === 1 &&
     row >= RANGE_ROW_FIRST && row < RANGE_ROW_FIRST + RANGE_KEYS.length;
-  if (!isPublish && !isMode && !isRange) return;
+  if (!isPublish && !isMode && !isReg && !isRange) return;
 
   sh.getRange(CELL_STATUS).setValue('⏳ Публікуємо…');
   SpreadsheetApp.flush();
@@ -199,6 +235,10 @@ function publishNow() {
   var sh = ss.getSheetByName(SYNC_SHEET);
   if (sh) writeStatus_(sh, p);
   Logger.log('Опубліковано: ' + summary_(p));
+}
+
+function isRegOpen_(sh) {
+  return !!sh && String(sh.getRange(CELL_REG).getDisplayValue()).trim() === REG_OPEN;
 }
 
 function currentMode_(sh) {
@@ -243,8 +283,9 @@ function publish_(ss) {
     title: (sh && String(sh.getRange(CELL_TITLE).getDisplayValue()).trim()) || SETTINGS.EVENT_TITLE,
     subtitle: (sh && String(sh.getRange(CELL_SUBTITLE).getDisplayValue()).trim()) || SETTINGS.EVENT_SUBTITLE
   };
+  var registration = isRegOpen_(sh);
   var now = new Date().toISOString();
-  var body = JSON.stringify([event, sheets]);
+  var body = JSON.stringify([event, sheets, registration]);
   var hash = Utilities.base64EncodeWebSafe(
     Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, body, Utilities.Charset.UTF_8));
 
@@ -253,6 +294,7 @@ function publish_(ss) {
     mode: mode,
     title: ss.getName(),
     event: event,
+    registration: registration,
     hash: hash,
     changedAt: now,
     generatedAt: now,
@@ -283,6 +325,128 @@ function summary_(p) {
   return p.sheets.map(function (s) {
     return s.name + ': ' + Math.max(0, s.values.length - (s.headerRows || 2));
   }).join(', ');
+}
+
+// ---------------------------------------------------------------------------
+// Реєстрація з сайту
+// ---------------------------------------------------------------------------
+
+/**
+ * Сайт надсилає сюди заявку: { action: 'register', name: 'Прізвище Ім'я', phone: '+380671234567' }.
+ * Відповідь: { ok: true, number: 29, name: '...' } або { ok: false, code: '...', error: '...' }.
+ */
+function doPost(e) {
+  var out;
+  try {
+    var data = {};
+    var raw = e && e.postData && e.postData.contents;
+    if (raw) { try { data = JSON.parse(raw); } catch (x) { data = {}; } }
+    if (e && e.parameter) Object.keys(e.parameter).forEach(function (k) { if (data[k] == null) data[k] = e.parameter[k]; });
+    if (data.action !== 'register') out = fail_('bad_request', 'Невідомий запит.');
+    else out = register_(data);
+  } catch (err) {
+    out = fail_('server', 'Не вдалося зберегти заявку. Спробуйте ще раз за хвилину.');
+    console.error(err);
+  }
+  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function fail_(code, error) { return { ok: false, code: code, error: error }; }
+
+function register_(data) {
+  // Пастка для ботів: приховане поле, яке людина не бачить і не заповнює
+  if (String(data.website || '').trim()) return { ok: true, number: 0, name: '' };
+
+  var name = normalizeName_(data.name);
+  if (!isValidName_(name)) return fail_('name', 'Вкажіть прізвище та ім’я, наприклад: Шевченко Тарас.');
+  var phone = normalizePhone_(data.phone);
+  if (!phone) return fail_('phone', 'Вкажіть номер у форматі +380 XX XXX XX XX.');
+
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(20000)) return fail_('busy', 'Зараз багато заявок. Спробуйте ще раз за хвилину.');
+  try {
+    var ss = SpreadsheetApp.openById(getSpreadsheetId_());
+    var site = ss.getSheetByName(SYNC_SHEET);
+    if (!isRegOpen_(site)) return fail_('closed', 'Реєстрацію закрито.');
+    var sh = ss.getSheetByName(REG_SHEET);
+    if (!sh) return fail_('server', 'У таблиці немає аркуша «' + REG_SHEET + '».');
+
+    var last = Math.max(sh.getLastRow(), 1);
+    var width = Math.max(REG_COL_NUM, REG_COL_NAME, REG_COL_PHONE);
+    var rows = last > 1 ? sh.getRange(2, 1, last - 1, width).getDisplayValues() : [];
+
+    var key = nameKey_(name);
+    var lastFilled = 1;   // номер рядка (1 — заголовок)
+    var maxNum = 0;
+    for (var i = 0; i < rows.length; i++) {
+      var rName = String(rows[i][REG_COL_NAME - 1]).trim();
+      if (!rName) continue;
+      lastFilled = i + 2;
+      var n = parseInt(rows[i][REG_COL_NUM - 1], 10);
+      if (n > maxNum) maxNum = n;
+      if (normalizePhone_(rows[i][REG_COL_PHONE - 1]) === phone) {
+        return fail_('duplicate', 'Цей номер уже зареєстровано: ' + rName + '.');
+      }
+      if (nameKey_(rName) === key) {
+        return fail_('duplicate', 'Учасник «' + rName + '» уже є у списку. Якщо це інша людина, напишіть організатору.');
+      }
+    }
+
+    var row = lastFilled + 1;
+    if (row > sh.getMaxRows()) sh.insertRowsAfter(sh.getMaxRows(), row - sh.getMaxRows());
+    var numCell = sh.getRange(row, REG_COL_NUM);
+    var existingNum = parseInt(numCell.getDisplayValue(), 10);
+    var number = existingNum > 0 ? existingNum : maxNum + 1;
+    if (!(existingNum > 0)) numCell.setValue(number);
+    sh.getRange(row, REG_COL_NAME).setValue(name);
+    sh.getRange(row, REG_COL_PHONE).setNumberFormat('@').setValue(formatPhone_(phone));
+    sh.getRange(row, REG_COL_TIME).setValue(new Date()).setNumberFormat('dd.MM.yyyy HH:mm');
+    SpreadsheetApp.flush();
+
+    // Одразу показуємо нового учасника на сайті (якщо зараз режим «Список учасників»)
+    if (currentMode_(site) === MODE_REG) {
+      try { writeStatus_(site, publish_(ss)); } catch (err) { console.error(err); }
+    }
+    return { ok: true, number: number, name: name };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** «  шевченко   тарас » → «Шевченко Тарас». Змішаний регістр не чіпаємо. */
+function normalizeName_(v) {
+  var s = String(v == null ? '' : v).replace(/[‘’ʼ`]/g, '’').replace(/\s+/g, ' ').trim();
+  return s.split(' ').map(function (w) {
+    if (w !== w.toLowerCase() && w !== w.toUpperCase()) return w;
+    return w.toLowerCase().replace(/(^|[-’'])(\S)/g, function (m, a, b) { return a + b.toUpperCase(); });
+  }).join(' ');
+}
+
+function isValidName_(s) {
+  if (s.length < 4 || s.length > 60) return false;
+  var words = s.split(' ');
+  if (words.length < 2 || words.length > 4) return false;
+  return words.every(function (w) { return /^[A-Za-zЀ-ӿ]+(?:[-’'][A-Za-zЀ-ӿ]+)*$/.test(w) && w.length >= 2; });
+}
+
+/** Ключ для пошуку дублікатів: без регістру й порядку слів. */
+function nameKey_(s) {
+  return String(s).toLowerCase().replace(/ё/g, 'е').replace(/[’']/g, '').split(/\s+/).filter(String).sort().join(' ');
+}
+
+/** Будь-який запис номера → «+380XXXXXXXXX» або '' якщо номер неправильний. */
+function normalizePhone_(v) {
+  var d = String(v == null ? '' : v).replace(/\D/g, '');
+  if (d.length === 12 && d.indexOf('380') === 0) d = d.slice(3);
+  else if (d.length === 10 && d.charAt(0) === '0') d = d.slice(1);
+  else if (d.length === 11 && d.indexOf('80') === 0) d = d.slice(2);
+  if (!/^[1-9]\d{8}$/.test(d)) return '';
+  return '+380' + d;
+}
+
+function formatPhone_(p) {
+  var d = p.slice(4);
+  return '+380 ' + d.slice(0, 2) + ' ' + d.slice(2, 5) + ' ' + d.slice(5, 7) + ' ' + d.slice(7);
 }
 
 // ---------------------------------------------------------------------------

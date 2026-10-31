@@ -25,6 +25,7 @@
         if (at('6.1')) { tg.setHeaderColor('#080808'); tg.setBackgroundColor('#f4f6f8'); }
         if (at('7.10')) tg.setBottomBarColor('#f4f6f8');
       } catch (e) { /* */ }
+      try { document.dispatchEvent(new Event('tm-tg-ready')); } catch (e) { /* */ }
     };
     document.head.appendChild(s);
 
@@ -412,6 +413,8 @@
     renderHeader();
     renderTabs();
     renderBoard();
+    renderReg();
+    revealFocusRow();
   }
 
   // ---------- Data ----------
@@ -552,6 +555,319 @@
   });
   window.addEventListener('online', function () { load(); });
 
+  // ---------- Реєстрація ----------
+  // Кнопка «Зареєструватися» видно, коли на аркуші «Сайт» реєстрація «Відкрита».
+  // Форма відкривається на тій самій сторінці (без перезавантаження), кнопка «Назад»
+  // браузера та Telegram повертає до списку.
+  var IN_TG = document.documentElement.classList.contains('tg');
+  var reg = {
+    root: $('reg'), back: $('regBack'), title: $('regTitle'), event: $('regEvent'),
+    form: $('regForm'), name: $('fName'), phone: $('fPhone'), nameErr: $('fNameErr'), phoneErr: $('fPhoneErr'),
+    alert: $('regAlert'), submit: $('regSubmit'), done: $('regDone'), doneText: $('regDoneText'),
+    toList: $('regToList'), closed: $('regClosed'), closedBack: $('regClosedBack'),
+    bar: $('regbar'), open: $('regOpen')
+  };
+  var PREFIX = '+380 ';
+  state.view = 'list';
+  state.regDone = null;      // { name, number } після успішної реєстрації
+  state.regTried = false;    // показувати помилки під час введення лише після першої спроби
+  state.regSending = false;
+  state.regPushed = false;
+  state.focusKey = null;
+
+  function regOpenNow() { return !!(state.payload && state.payload.registration === true); }
+
+  function renderReg() {
+    var isReg = state.view === 'reg';
+    var html = document.documentElement;
+    html.classList.toggle('view-reg', isReg);
+    reg.root.hidden = !isReg;
+    var showBar = !isReg && regOpenNow();
+    reg.bar.hidden = !showBar;
+    html.classList.toggle('has-regbar', showBar);
+    if (!isReg) return;
+
+    var ev = (state.payload && state.payload.event) || {};
+    var line = [ev.title, ev.subtitle].filter(Boolean).join(' · ');
+    reg.event.textContent = line;
+    reg.event.hidden = !line;
+    document.title = 'Реєстрація | Trout Master';
+
+    var closed = !state.regDone && !!state.payload && !regOpenNow();
+    reg.form.hidden = !!state.regDone || closed;
+    reg.done.hidden = !state.regDone;
+    reg.closed.hidden = !closed;
+    if (state.regDone) {
+      reg.doneText.innerHTML = '<strong>' + esc(state.regDone.name) + '</strong>, ви в списку учасників' +
+        (state.regDone.number ? ' під номером ' + esc(state.regDone.number) : '') + '.';
+    }
+  }
+
+  function tgBack(show) {
+    var tg = window.Telegram && window.Telegram.WebApp;
+    if (!tg || !tg.BackButton) return;
+    try {
+      if (!tg.isVersionAtLeast('6.1')) return;
+      tg.BackButton.offClick(goList);
+      if (show) { tg.BackButton.onClick(goList); tg.BackButton.show(); } else tg.BackButton.hide();
+    } catch (e) { /* */ }
+  }
+
+  function setView(v) {
+    if (state.view === v) return;
+    state.view = v;
+    renderReg();
+    tgBack(v === 'reg');
+    window.scrollTo(0, 0);
+    if (v === 'reg') {
+      try { reg.title.focus({ preventScroll: true }); } catch (e) { reg.title.focus(); }
+      if (!DEMO && state.payload) load();   // перевірити, чи реєстрація досі відкрита
+    } else {
+      renderHeader();
+      renderBoard();
+      revealFocusRow();
+    }
+  }
+
+  function goReg() {
+    if (state.view === 'reg') return;
+    state.regDone = null;
+    state.regPushed = true;
+    try { history.pushState({ tmView: 'reg' }, '', IN_TG ? location.href : '#register'); } catch (e) { state.regPushed = false; }
+    setView('reg');
+  }
+
+  function goList() {
+    if (state.view !== 'reg') return;
+    if (state.regPushed && history.state && history.state.tmView === 'reg') { history.back(); return; }
+    try { history.replaceState({ tmView: 'list' }, '', IN_TG ? location.href : location.pathname + location.search); } catch (e) { /* */ }
+    setView('list');
+  }
+
+  window.addEventListener('hashchange', function () {
+    if (location.hash !== '#register' || state.view === 'reg') return;
+    state.regDone = null;
+    state.regPushed = false;
+    try { history.replaceState({ tmView: 'reg' }, '', location.href); } catch (e) { /* */ }
+    setView('reg');
+  });
+  document.addEventListener('tm-tg-ready', function () { if (state.view === 'reg') tgBack(true); });
+
+  window.addEventListener('popstate', function (e) {
+    var v = e.state && e.state.tmView === 'reg' ? 'reg' : 'list';
+    if (v === 'list') state.regPushed = false;
+    setView(v);
+  });
+
+  // Після реєстрації: прокрутити до свого рядка у списку
+  function revealFocusRow() {
+    if (!state.focusKey || state.view !== 'list') return;
+    var rows = el.board.querySelectorAll('tbody tr[data-key]');
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].getAttribute('data-key') === state.focusKey) {
+        rows[i].scrollIntoView({ block: 'center' });
+        state.focusKey = null;
+        return;
+      }
+    }
+  }
+
+  // ----- Маска номера: «+380 » уже стоїть, вводяться лише 9 цифр -----
+  function localDigits(raw) {
+    var v = String(raw || '');
+    var d = v.replace(/\D/g, '');
+    if (/^\s*\+/.test(v)) {
+      if (d.indexOf('380') === 0) d = d.slice(3);
+      else d = d.replace(/^3?8?0?/, '');   // частину префікса стерли
+    } else if (d.indexOf('380') === 0 && d.length >= 12) d = d.slice(3);
+    else if (d.indexOf('80') === 0 && d.length >= 11) d = d.slice(2);
+    else if (d.charAt(0) === '0' && d.length >= 10) d = d.slice(1);
+    return d.slice(0, 9);
+  }
+  function formatLocal(d) {
+    var parts = [d.slice(0, 2), d.slice(2, 5), d.slice(5, 7), d.slice(7, 9)].filter(Boolean);
+    return PREFIX + parts.join(' ');
+  }
+  // Позиція курсора після k-ї цифри локальної частини
+  function caretAfter(formatted, k) {
+    if (k <= 0) return PREFIX.length;
+    var seen = 0;
+    for (var i = PREFIX.length; i < formatted.length; i++) {
+      if (/\d/.test(formatted.charAt(i)) && ++seen === k) return i + 1;
+    }
+    return formatted.length;
+  }
+  function applyMask(keepCaret) {
+    var inp = reg.phone;
+    var raw = inp.value;
+    var atEnd = inp.selectionStart == null || inp.selectionStart >= raw.length;
+    var d = localDigits(raw);
+    var before = 0;
+    if (keepCaret && !atEnd) {
+      // скільки цифр локальної частини стоїть до курсора
+      var all = raw.replace(/\D/g, '').length;
+      var head = raw.slice(0, inp.selectionStart).replace(/\D/g, '').length;
+      before = Math.max(0, Math.min(d.length, head - (all - d.length)));
+    }
+    var out = formatLocal(d);
+    if (inp.value !== out) inp.value = out;
+    var pos = keepCaret && !atEnd ? caretAfter(out, before) : out.length;
+    try { if (document.activeElement === inp) inp.setSelectionRange(pos, pos); } catch (e) { /* */ }
+  }
+  reg.phone.addEventListener('focus', function () {
+    var empty = !localDigits(reg.phone.value);
+    if (empty) reg.phone.value = PREFIX;
+    // курсор після «+380 », щоб одразу вводити номер
+    setTimeout(function () {
+      var inp = reg.phone;
+      if (document.activeElement !== inp) return;
+      try {
+        if (empty) inp.setSelectionRange(inp.value.length, inp.value.length);
+        else if (inp.selectionStart < PREFIX.length && inp.selectionEnd <= PREFIX.length) inp.setSelectionRange(PREFIX.length, PREFIX.length);
+      } catch (e) { /* */ }
+    }, 0);
+  });
+  reg.phone.addEventListener('blur', function () {
+    if (!localDigits(reg.phone.value)) reg.phone.value = '';
+    if (state.regTried) validate(false);
+  });
+  reg.phone.addEventListener('keydown', function (e) {
+    // не даємо стерти «+380 »
+    var a = reg.phone.selectionStart, b = reg.phone.selectionEnd;
+    if (e.key === 'Backspace' && a === b && a <= PREFIX.length) { e.preventDefault(); return; }
+    // Backspace одразу після пробілу стирає цифру перед ним
+    if (e.key === 'Backspace' && a === b && reg.phone.value.charAt(a - 1) === ' ') {
+      try { reg.phone.setSelectionRange(a - 1, a - 1); } catch (x) { /* */ }
+    }
+    if (e.key === 'Delete' && b <= PREFIX.length - 1) e.preventDefault();
+  });
+  reg.phone.addEventListener('input', function () {
+    applyMask(true);
+    if (state.regTried) validate(false);
+  });
+  reg.name.addEventListener('input', function () { if (state.regTried) validate(false); });
+  reg.name.addEventListener('blur', function () {
+    reg.name.value = reg.name.value.replace(/\s+/g, ' ').trim();
+    if (state.regTried) validate(false);
+  });
+
+  // ----- Перевірка полів (ті самі правила, що й у скрипті таблиці) -----
+  var WORD_RE = /^[A-Za-zЀ-ӿ]+(?:[-'’ʼ][A-Za-zЀ-ӿ]+)*$/;
+  function nameError(v) {
+    var s = String(v).replace(/\s+/g, ' ').trim();
+    if (!s) return 'Вкажіть прізвище та ім’я.';
+    var words = s.split(' ');
+    if (!words.every(function (w) { return WORD_RE.test(w); })) return 'Використовуйте лише літери, дефіс та апостроф.';
+    if (words.length < 2 || words.some(function (w) { return w.length < 2; })) return 'Вкажіть і прізвище, і ім’я, наприклад: Шевченко Тарас.';
+    if (words.length > 4 || s.length > 60) return 'Задовге ім’я. Вкажіть лише прізвище та ім’я.';
+    return '';
+  }
+  function phoneError(v) {
+    var d = localDigits(v);
+    if (!d) return 'Вкажіть номер телефону.';
+    if (d.charAt(0) === '0') return 'Перевірте номер: після +380 не може йти 0.';
+    if (d.length < 9) return 'Номер неповний: після +380 потрібно ввести 9 цифр.';
+    return '';
+  }
+  // «  шевченко   тарас » → «Шевченко Тарас» (так само робить скрипт таблиці)
+  function normalizeName(v) {
+    return String(v || '').replace(/[\u2018\u2019\u02BC`]/g, '\u2019').replace(/\s+/g, ' ').trim().split(' ').map(function (w) {
+      if (w !== w.toLowerCase() && w !== w.toUpperCase()) return w;
+      return w.toLowerCase().replace(/(^|[-\u2019'])(\S)/g, function (m, x, y) { return x + y.toUpperCase(); });
+    }).join(' ');
+  }
+  function setFieldError(inp, box, msg) {
+    box.textContent = msg;
+    box.hidden = !msg;
+    if (msg) inp.setAttribute('aria-invalid', 'true'); else inp.removeAttribute('aria-invalid');
+  }
+  function validate(focus) {
+    var ne = nameError(reg.name.value);
+    var pe = phoneError(reg.phone.value);
+    setFieldError(reg.name, reg.nameErr, ne);
+    setFieldError(reg.phone, reg.phoneErr, pe);
+    if (focus) { if (ne) reg.name.focus(); else if (pe) reg.phone.focus(); }
+    return !ne && !pe;
+  }
+  function showAlert(msg) {
+    reg.alert.textContent = msg || '';
+    reg.alert.hidden = !msg;
+  }
+  function setSending(on) {
+    state.regSending = on;
+    reg.submit.disabled = on;
+    reg.submit.classList.toggle('is-loading', on);
+    reg.submit.querySelector('.btn__text').textContent = on ? 'Надсилаємо…' : 'Підтвердити реєстрацію';
+  }
+
+  function sendRegistration(body) {
+    if (DEMO) {
+      return new Promise(function (res) { setTimeout(function () { res({ ok: true, number: 0, name: body.name }); }, 600); });
+    }
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 30000) : null;
+    // text/plain — щоб браузер не робив попередній CORS-запит, який Apps Script не підтримує
+    return fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body),
+      signal: ctrl ? ctrl.signal : undefined
+    }).then(function (r) {
+      if (!r.ok) throw new Error('status ' + r.status);
+      return r.json();
+    }).finally(function () { if (timer) clearTimeout(timer); });
+  }
+
+  reg.form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (state.regSending) return;
+    state.regTried = true;
+    showAlert('');
+    reg.name.value = reg.name.value.replace(/\s+/g, ' ').trim();
+    if (!validate(true)) return;
+    var body = {
+      action: 'register',
+      name: normalizeName(reg.name.value),
+      phone: '+380' + localDigits(reg.phone.value),
+      website: reg.form.elements.website.value
+    };
+    setSending(true);
+    sendRegistration(body)
+      .then(function (res) {
+        if (!res || res.ok !== true) {
+          var msg = (res && res.error) || 'Не вдалося зареєструватися. Спробуйте ще раз.';
+          if (res && res.code === 'name') setFieldError(reg.name, reg.nameErr, msg);
+          else if (res && res.code === 'phone') setFieldError(reg.phone, reg.phoneErr, msg);
+          else showAlert(msg);
+          if (res && res.code === 'closed' && state.payload) { state.payload.registration = false; renderReg(); }
+          return;
+        }
+        var name = res.name || body.name;
+        state.regDone = { name: name, number: res.number };
+        // Виділяємо себе у списку
+        state.selected.add(name);
+        store.set(LS.sel, Array.from(state.selected));
+        state.focusKey = name;
+        reg.form.reset();
+        state.regTried = false;
+        renderReg();
+        try { reg.done.focus({ preventScroll: true }); } catch (x) { reg.done.focus(); }
+        load();   // підтягнути оновлений список
+      })
+      .catch(function () {
+        showAlert('Не вдалося надіслати заявку. Перевірте інтернет і спробуйте ще раз.');
+      })
+      .finally(function () { setSending(false); });
+  });
+
+  reg.open.addEventListener('click', goReg);
+  reg.back.addEventListener('click', goList);
+  reg.toList.addEventListener('click', goList);
+  reg.closedBack.addEventListener('click', goList);
+
+  // Пряме посилання на форму: сайт#register або t.me/бот?startapp=register
+  var wantReg = /^#register$/.test(location.hash) || /tgWebAppStartParam=register(&|$)/.test(location.hash + location.search);
+
   // ---------- Start ----------
   var cached = store.get(LS.data, null);
   if (cached && cached.sheets) {
@@ -563,4 +879,8 @@
   }
   renderStatus(false);
   load();
+  if (wantReg) {
+    try { history.replaceState({ tmView: 'list' }, '', IN_TG ? location.href : location.pathname + location.search); } catch (e) { /* */ }
+    goReg();
+  }
 })();

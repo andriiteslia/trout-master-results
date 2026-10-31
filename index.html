@@ -52,7 +52,58 @@
     </p>
 
     <section class="board" id="board" role="tabpanel" aria-label="Таблиця результатів"></section>
+
+    <!-- Реєстрація: показується замість таблиці -->
+    <section class="reg" id="reg" aria-labelledby="regTitle" hidden>
+      <button type="button" class="back" id="regBack">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg>
+        До списку
+      </button>
+      <h1 class="title" id="regTitle" tabindex="-1">Реєстрація</h1>
+      <p class="subtitle" id="regEvent" hidden></p>
+
+      <form class="card form" id="regForm" novalidate>
+        <div class="field">
+          <label for="fName">Прізвище та ім’я</label>
+          <input id="fName" name="name" type="text" autocomplete="name" autocapitalize="words" spellcheck="false"
+                 maxlength="60" placeholder="Шевченко Тарас" aria-describedby="fNameErr" required>
+          <p class="err" id="fNameErr" hidden></p>
+        </div>
+        <div class="field">
+          <label for="fPhone">Номер телефону</label>
+          <input id="fPhone" name="phone" type="tel" inputmode="numeric" autocomplete="tel"
+                 placeholder="+380 XX XXX XX XX" aria-describedby="fPhoneHint fPhoneErr" required>
+          <p class="hint" id="fPhoneHint">Номер бачить лише організатор. На сайті буде тільки прізвище та ім’я.</p>
+          <p class="err" id="fPhoneErr" hidden></p>
+        </div>
+        <div class="hp" aria-hidden="true">
+          <label>Сайт <input name="website" type="text" tabindex="-1" autocomplete="off"></label>
+        </div>
+        <div class="form-alert" id="regAlert" role="alert" hidden></div>
+        <button type="submit" class="btn btn-primary" id="regSubmit">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="btn__text">Підтвердити реєстрацію</span>
+        </button>
+      </form>
+
+      <div class="card done" id="regDone" tabindex="-1" hidden>
+        <svg class="done__icon" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22"/><path d="m15 24.5 6 6 12-13"/></svg>
+        <h2 class="done__title">Реєстрацію підтверджено</h2>
+        <p class="done__text" id="regDoneText"></p>
+        <button type="button" class="btn btn-primary" id="regToList">Переглянути список</button>
+      </div>
+
+      <div class="card done" id="regClosed" hidden>
+        <h2 class="done__title">Реєстрацію закрито</h2>
+        <p class="done__text">Зараз нові заявки не приймаються. Якщо маєте питання, напишіть організатору.</p>
+        <button type="button" class="btn btn-secondary" id="regClosedBack">До списку</button>
+      </div>
+    </section>
   </main>
+
+  <div class="regbar" id="regbar" hidden>
+    <button type="button" class="btn btn-primary" id="regOpen">Зареєструватися</button>
+  </div>
 
 </body>
 </html>
