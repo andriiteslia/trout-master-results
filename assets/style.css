@@ -328,9 +328,9 @@ td.flash { animation: flash 3s ease-out 1; }
   th, td { padding: 0 6px; }
   thead th { white-space: normal; }
   th.c-place, td.c-place { padding-left: 12px; padding-right: 4px; }
-  tbody td { height: 35px; }
+  tbody td { height: 37px; }
   td.c-name { min-width: 0; }
-  .nm { min-height: 35px; padding: 0 6px; white-space: nowrap; }
+  .nm { min-height: 37px; padding: 0 6px; white-space: nowrap; }
 }
 
 @media (prefers-reduced-motion: reduce) {
