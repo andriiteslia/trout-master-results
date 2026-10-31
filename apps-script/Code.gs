@@ -2,14 +2,15 @@
  * Trout Master — API результатів для сайту.
  *
  * Як це працює:
- * 1. У таблиці раунду є аркуш «Сайт» з галочкою «Опублікувати зараз».
- * 2. Ставите галочку → скрипт знімає поточні результати і зберігає їх.
+ * 1. У таблиці раунду є аркуш «Сайт» зі списком «Дія» (клітинка B3).
+ * 2. Вибираєте «Опублікувати на сайт» → скрипт знімає поточні результати
+ *    і зберігає їх, а список повертається у «—».
  * 3. Сайт кожні кілька секунд питає скрипт, чи є нова публікація.
  *    Саму таблицю він не читає, тож глядачі бачать лише опубліковане.
  *
  * Перший запуск і кожен новий раунд:
  *   впишіть посилання на таблицю в SETTINGS і запустіть функцію setupSync.
- *   Вона створить аркуш «Сайт», підключить галочку й опублікує дані.
+ *   Вона створить аркуш «Сайт», підключить список і опублікує дані.
  *
  * Які частини таблиці показувати, задано у VIEWS: назва вкладки,
  * аркуш і діапазон колонок. Перші два рядки діапазону — заголовки.
@@ -29,6 +30,8 @@ var VIEWS = [
 
 /** Аркуш з кнопкою публікації та його клітинки. */
 var SYNC_SHEET = 'Сайт';
+var ACTION_IDLE = '—';
+var ACTION_PUBLISH = 'Опублікувати на сайт';
 var CELL_PUBLISH = 'B3';
 var CELL_STATUS = 'B4';
 var CELL_TITLE = 'B6';
@@ -46,7 +49,7 @@ function doGet() {
   var out;
   try {
     out = getSnapshot_();
-    if (!out) out = { ok: false, error: 'Результати ще не опубліковано. Поставте галочку на аркуші «' + SYNC_SHEET + '».' };
+    if (!out) out = { ok: false, error: 'Результати ще не опубліковано. Виберіть «' + ACTION_PUBLISH + '» на аркуші «' + SYNC_SHEET + '».' };
   } catch (err) {
     out = { ok: false, error: String((err && err.message) || err) };
   }
@@ -76,26 +79,35 @@ function getSnapshot_() {
 
 /**
  * Запустіть один раз для кожної нової таблиці раунду (кнопка «Виконати»).
- * Створює аркуш «Сайт» з галочкою, підключає її і публікує дані.
+ * Створює або оновлює аркуш «Сайт» зі списком дій, підключає його і публікує дані.
  */
 function setupSync() {
   var ss = SpreadsheetApp.openById(getSpreadsheetId_());
   var sh = ss.getSheetByName(SYNC_SHEET);
   if (!sh) {
     sh = ss.insertSheet(SYNC_SHEET);
-    sh.getRange('A1').setValue('Публікація результатів на сайт').setFontWeight('bold').setFontSize(13);
-    sh.getRange('A3:A7').setValues([['Опублікувати зараз'], ['Остання публікація'], [''], ['Заголовок'], ['Підзаголовок']]);
-    sh.getRange('A3:A7').setFontWeight('bold');
     sh.getRange(CELL_TITLE).setValue(SETTINGS.EVENT_TITLE);
     sh.getRange(CELL_SUBTITLE).setValue(SETTINGS.EVENT_SUBTITLE);
-    sh.getRange('A9').setValue('Поставте галочку в B3, щоб відправити поточні результати на сайт. Заголовок і підзаголовок теж оновлюються при публікації.');
-    sh.getRange('A9').setFontColor('#475467');
-    sh.setColumnWidth(1, 180);
-    sh.setColumnWidth(2, 420);
   }
-  sh.getRange(CELL_PUBLISH).insertCheckboxes().setValue(false);
+  sh.getRange('A1').setValue('Публікація результатів на сайт').setFontWeight('bold').setFontSize(13);
+  sh.getRange('A3:A7').setValues([['Дія'], ['Остання публікація'], [''], ['Заголовок'], ['Підзаголовок']]);
+  sh.getRange('A3:A7').setFontWeight('bold');
+  sh.getRange('A9').setValue('Щоб відправити поточні результати на сайт, у клітинці B3 виберіть «' + ACTION_PUBLISH +
+    '». Після публікації список сам повернеться у «' + ACTION_IDLE + '». Заголовок і підзаголовок теж оновлюються при публікації.');
+  sh.getRange('A9').setFontColor('#475467');
+  sh.setColumnWidth(1, 180);
+  sh.setColumnWidth(2, 420);
 
-  // Одна галочка на одну активну таблицю: старі тригери прибираємо
+  // Випадаючий список замість галочки
+  var cell = sh.getRange(CELL_PUBLISH);
+  cell.clearDataValidations();
+  cell.setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInList([ACTION_IDLE, ACTION_PUBLISH], true)
+    .setAllowInvalid(false)
+    .build());
+  cell.setValue(ACTION_IDLE).setFontWeight('bold').setBackground('#e8f3d6');
+
+  // Одна активна таблиця: старі тригери прибираємо
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === 'handleSiteSync') ScriptApp.deleteTrigger(t);
   });
@@ -103,15 +115,16 @@ function setupSync() {
 
   var p = publish_(ss);
   writeStatus_(sh, p);
-  Logger.log('Готово. Галочка підключена, дані опубліковано: ' + summary_(p));
+  Logger.log('Готово. Список у B3 підключено, дані опубліковано: ' + summary_(p));
 }
 
-/** Тригер: реагує на галочку «Опублікувати зараз». */
+/** Тригер: реагує на вибір «Опублікувати на сайт» у B3. */
 function handleSiteSync(e) {
   if (!e || !e.range) return;
   var sh = e.range.getSheet();
   if (sh.getName() !== SYNC_SHEET || e.range.getA1Notation() !== CELL_PUBLISH) return;
-  if (String(e.value).toUpperCase() !== 'TRUE') return;
+  var v = String(e.value == null ? '' : e.value).trim();
+  if (v !== ACTION_PUBLISH && v.toUpperCase() !== 'TRUE') return;
 
   sh.getRange(CELL_STATUS).setValue('⏳ Публікуємо…');
   SpreadsheetApp.flush();
@@ -120,7 +133,7 @@ function handleSiteSync(e) {
   } catch (err) {
     sh.getRange(CELL_STATUS).setValue('❌ Помилка: ' + ((err && err.message) || err));
   } finally {
-    e.range.setValue(false);
+    e.range.setValue(ACTION_IDLE);
   }
 }
 
