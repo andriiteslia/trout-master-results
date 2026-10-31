@@ -190,10 +190,8 @@ button { font: inherit; color: inherit; }
   position: sticky;
   top: 0;
   z-index: 5;
-  overflow-x: auto;
-  scrollbar-width: none;
+  overflow: hidden;
 }
-.bh::-webkit-scrollbar { display: none; }
 .bs {
   overflow-x: auto;
   overscroll-behavior-x: contain;

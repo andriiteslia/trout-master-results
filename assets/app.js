@@ -451,14 +451,24 @@
     if (btn) btn.setAttribute('aria-pressed', String(on));
   });
 
-  // Синхронна горизонтальна прокрутка шапки й тіла таблиці
+  // Шапка лише повторює горизонтальну прокрутку тіла таблиці (в один бік,
+  // щоб не збивати інерцію свайпу на телефоні).
+  var syncFrame = 0;
   el.board.addEventListener('scroll', function (e) {
-    var t = e.target;
-    if (!t.classList) return;
-    var other = t.classList.contains('bs') ? el.board.querySelector('.bh')
-      : t.classList.contains('bh') ? el.board.querySelector('.bs') : null;
-    if (other && other.scrollLeft !== t.scrollLeft) other.scrollLeft = t.scrollLeft;
-  }, true);
+    if (!e.target.classList || !e.target.classList.contains('bs')) return;
+    if (syncFrame) return;
+    syncFrame = requestAnimationFrame(function () {
+      syncFrame = 0;
+      var bs = el.board.querySelector('.bs'), bh = el.board.querySelector('.bh');
+      if (bs && bh) bh.scrollLeft = bs.scrollLeft;
+    });
+  }, { capture: true, passive: true });
+  // Горизонтальний свайп тачпадом над шапкою гортає таблицю
+  el.board.addEventListener('wheel', function (e) {
+    if (!e.target.closest || !e.target.closest('.bh') || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+    var bs = el.board.querySelector('.bs');
+    if (bs) { bs.scrollLeft += e.deltaX; e.preventDefault(); }
+  }, { passive: false });
 
   var resizeTimer = null;
   window.addEventListener('resize', function () {
