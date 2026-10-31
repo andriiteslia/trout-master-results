@@ -318,6 +318,25 @@ td.c-name { padding: 0; min-width: 180px; }
 }
 tr.is-sel .nm { font-weight: 650; }
 
+/* Призери на вкладці «Результат»: смужка зліва й кружечок з номером медального кольору */
+:root { --gold: #d4a017; --silver: #98a2b3; --bronze: #c27c3e; }
+tr.medal-1 { --medal: var(--gold); --medal-bg: #fbefc6; --medal-ink: #6b4d00; }
+tr.medal-2 { --medal: var(--silver); --medal-bg: #e9edf2; --medal-ink: #344054; }
+tr.medal-3 { --medal: var(--bronze); --medal-bg: #f6e3d2; --medal-ink: #7a3f12; }
+tbody tr.medal:not(.is-sel) td:first-child { box-shadow: inset 4px 0 0 var(--medal); }
+.board.is-wide tbody tr.medal:not(.is-sel) td.c-place { box-shadow: inset 4px 0 0 var(--medal), 1px 0 0 var(--border); }
+tr.medal .pn {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 12px;
+  background: var(--medal-bg);
+  color: var(--medal-ink);
+  font-weight: 750;
+}
+
 /* Зміна місця після оновлення */
 .mv { margin-left: 6px; font-size: 11.5px; font-weight: 600; }
 .mv.up { color: var(--win); }

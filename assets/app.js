@@ -271,7 +271,7 @@
         var txt = (opts.move > 0 ? 'піднявся на ' : 'опустився на ') + n + ' ' + plural(n, 'місце', 'місця', 'місць');
         mvHtml = '<span class="mv ' + dir + '" title="' + txt + '"><span aria-hidden="true">' + (opts.move > 0 ? '▲' : '▼') + n + '</span><span class="visually-hidden">, ' + txt + '</span></span>';
       }
-      return '<td class="' + cls.join(' ') + '">' + esc(v) + mvHtml + '</td>';
+      return '<td class="' + cls.join(' ') + '"><span class="pn">' + esc(v) + '</span>' + mvHtml + '</td>';
     }
     if (k.role === 'name') {
       cls.push('c-name');
@@ -324,13 +324,22 @@
     }
     var thead = '<thead><tr class="h1">' + h1 + '</tr>' + (hasGroups ? '<tr class="h2">' + h2 + '</tr>' : '') + '</thead>';
 
+    // Призери (1–3 місце) — лише на вкладці «Результат» і коли вже є ненульові результати
+    var medals = /^результат$/i.test(m.name.trim()) && m.placeCol && m.rows.some(function (row) {
+      return cols.some(function (k) {
+        return k.numeric && k.role !== 'place' && parseFloat(String(row.cells[k.c]).replace(',', '.')) > 0;
+      });
+    });
     var flashOn = Date.now() - state.changeTime < 3500;
     var moves = state.moves[m.name] || {};
     var changed = state.changed[m.name] || {};
     var body = m.rows.map(function (row) {
       var sel = state.selected.has(row.key);
       var opts = { sel: sel, move: moves[row.key] || 0, flash: flashOn ? changed[row.key] : null };
-      return '<tr data-key="' + esc(row.key) + '"' + (sel ? ' class="is-sel"' : '') + '>' +
+      var rc = [];
+      if (sel) rc.push('is-sel');
+      if (medals && row.place >= 1 && row.place <= 3) rc.push('medal medal-' + row.place);
+      return '<tr data-key="' + esc(row.key) + '"' + (rc.length ? ' class="' + rc.join(' ') + '"' : '') + '>' +
         cols.map(function (k) { return cellHtml(k, row, opts); }).join('') + '</tr>';
     }).join('');
 
@@ -450,7 +459,10 @@
     state.loading = true;
     state.lastTry = Date.now();
     clearTimeout(state.timer);
-    fetchJson(SOURCE)
+    var early = window.__tmEarly;
+    window.__tmEarly = null;
+    var req = early ? early.catch(function () { return fetchJson(SOURCE); }) : fetchJson(SOURCE);
+    req
       .then(function (p) {
         if (!p || p.ok === false) throw new Error((p && p.error) || 'порожня відповідь');
         var changed = applyPayload(p);
