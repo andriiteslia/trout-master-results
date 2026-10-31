@@ -576,7 +576,7 @@
     form: $('regForm'), name: $('fName'), phone: $('fPhone'), nameErr: $('fNameErr'), phoneErr: $('fPhoneErr'),
     alert: $('regAlert'), submit: $('regSubmit'), done: $('regDone'), doneText: $('regDoneText'),
     toList: $('regToList'), closed: $('regClosed'), closedBack: $('regClosedBack'),
-    bar: $('regbar'), open: $('regOpen')
+    bar: $('regbar'), open: $('regOpen'), live: $('regLive')
   };
   var PREFIX = '+380 ';
   state.view = 'list';
@@ -595,6 +595,7 @@
     reg.root.hidden = !isReg;
     var showBar = !isReg && regOpenNow();
     reg.bar.hidden = !showBar;
+    reg.live.hidden = !showBar;   // плашка «Триває реєстрація» над таблицею
     html.classList.toggle('has-regbar', showBar);
     if (!isReg) return;
 

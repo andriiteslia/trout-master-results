@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
   <link rel="preload" href="assets/fonts/manrope-cyrillic-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fish.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="assets/style.css?v=20261101c">
-  <script src="config.js?v=20261101c"></script>
+  <link rel="stylesheet" href="assets/style.css?v=20261101d">
+  <script src="config.js?v=20261101d"></script>
   <script>
     // Запитуємо результати одразу, паралельно з завантаженням решти сторінки
     (function () {
@@ -24,7 +24,7 @@
       } catch (e) { window.__tmEarly = null; }
     })();
   </script>
-  <script src="assets/app.js?v=20261101c" defer></script>
+  <script src="assets/app.js?v=20261101d" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -47,7 +47,12 @@
 
     <div class="tabs" id="tabs" role="tablist" aria-label="Таблиці"></div>
 
-    <p class="info" id="info">
+    <p class="reg-live" id="regLive" hidden>
+      <span class="reg-live__dot" aria-hidden="true"></span>
+      Триває реєстрація
+    </p>
+
+    <p class="info" id="info" hidden>
       <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.25"/><path d="M10 9v5"/><circle cx="10" cy="6.25" r="0.6" class="dot"/></svg>
       <span>Торкніться рядка, щоб виділити учасника. Результати оновлюються автоматично.</span>
     </p>
