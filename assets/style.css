@@ -403,3 +403,12 @@ td.flash { animation: flash 3s ease-out 1; }
 @media (prefers-reduced-motion: reduce) {
   td.flash, .status.is-pulse .status__dot { animation: none; }
 }
+
+/* Супереліпс (squircle) для всіх заокруглень. Підтримують браузери на Chromium
+   (Chrome, Edge, Android); в інших лишаються звичайні заокруглення. */
+@supports (corner-shape: squircle) {
+  .status, .notice, .notice code, .tabs, .tab, .board, .bh, .bs, .info, .code,
+  :focus-visible, .tg .main, .tg.tg-stuck body::after {
+    corner-shape: superellipse(1.5);
+  }
+}
