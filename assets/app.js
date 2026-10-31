@@ -589,7 +589,7 @@
     if (!isReg) return;
 
     var ev = (state.payload && state.payload.event) || {};
-    var line = [ev.title, ev.subtitle].filter(Boolean).join(' · ');
+    var line = [ev.title, ev.subtitle].filter(Boolean).join(' • ');
     reg.event.textContent = line;
     reg.event.hidden = !line;
     document.title = 'Реєстрація | Trout Master';
