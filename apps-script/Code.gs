@@ -16,8 +16,8 @@
  */
 
 var VIEWS = [
-  { name: 'Результат', sheet: 'Results', range: 'AK1:AO' },
-  { name: 'Тури',      sheet: 'Results', range: 'A1:AI' }
+  { name: 'Результат', sheet: 'Results', range: 'AM1:AQ' },
+  { name: 'Тури',      sheet: 'Results', range: 'A1:AK' }
 ];
 
 /** Скільки секунд тримати готову відповідь у кеші. */
