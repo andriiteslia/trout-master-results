@@ -35,6 +35,7 @@ var MODE_REG = 'Список учасників';
 var MODE_RES = 'Результати';
 var MODES = {};
 MODES[MODE_REG] = [{ name: 'Учасники', sheet: 'Учасники', range: 'A1:B', headerRows: 1 }];
+// MODES[MODE_RES] = VIEWS (див. вище)
 MODES[MODE_RES] = VIEWS;
 
 /** Аркуш з кнопкою публікації та його клітинки. */
@@ -46,6 +47,14 @@ var CELL_STATUS = 'B4';
 var CELL_MODE = 'B5';
 var CELL_TITLE = 'B6';
 var CELL_SUBTITLE = 'B7';
+
+/**
+ * Діапазони, які можна змінювати прямо на аркуші «Сайт» (B12:B14).
+ * Формат: A1:B50, A1:AK (без номера рядка — до останнього заповненого)
+ * або з назвою аркуша: Results!A1:AK. Порожня клітинка — діапазон із коду.
+ */
+var RANGE_ROW_FIRST = 12;
+var RANGE_KEYS = ['Учасники', 'Результат', 'Тури'];
 
 var CACHE_KEY = 'snapshot';
 var CACHE_TTL = 21600;   // 6 годин, максимум для CacheService
@@ -129,6 +138,20 @@ function setupSync() {
   if (!MODES[currentMode]) modeCell.setValue(MODE_REG);
   modeCell.setFontWeight('bold').setBackground('#e3f0fa');
 
+  // Блок діапазонів: заповнюємо лише порожні клітинки, щоб не затерти ваші значення
+  sh.getRange('A11').setValue('Діапазони (звідки брати дані)').setFontWeight('bold');
+  var defaults = defaultRanges_();
+  var rangeCells = sh.getRange(RANGE_ROW_FIRST, 1, RANGE_KEYS.length, 2);
+  var current = rangeCells.getDisplayValues();
+  rangeCells.setValues(RANGE_KEYS.map(function (k, i) {
+    return [k, String(current[i][1]).trim() || defaults[k]];
+  }));
+  sh.getRange(RANGE_ROW_FIRST, 1, RANGE_KEYS.length, 1).setFontWeight('bold');
+  sh.getRange(RANGE_ROW_FIRST, 2, RANGE_KEYS.length, 1).setBackground('#f2f4f7');
+  sh.getRange(RANGE_ROW_FIRST + RANGE_KEYS.length, 1).setValue(
+    'Можна вказати з назвою аркуша, напр. Results!A1:AK. Без номера останнього рядка (A1:AK) береться все заповнене. Зміна діапазону одразу публікує дані.')
+    .setFontColor('#475467');
+
   // Одна активна таблиця: старі тригери прибираємо
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === 'handleSiteSync') ScriptApp.deleteTrigger(t);
@@ -149,7 +172,10 @@ function handleSiteSync(e) {
   var v = String(e.value == null ? '' : e.value).trim();
   var isPublish = a1 === CELL_PUBLISH && (v === ACTION_PUBLISH || v.toUpperCase() === 'TRUE');
   var isMode = a1 === CELL_MODE && !!MODES[v];
-  if (!isPublish && !isMode) return;
+  var row = e.range.getRow();
+  var isRange = e.range.getColumn() === 2 && e.range.getNumRows() === 1 &&
+    row >= RANGE_ROW_FIRST && row < RANGE_ROW_FIRST + RANGE_KEYS.length;
+  if (!isPublish && !isMode && !isRange) return;
 
   sh.getRange(CELL_STATUS).setValue('⏳ Публікуємо…');
   SpreadsheetApp.flush();
@@ -180,10 +206,39 @@ function currentMode_(sh) {
   return MODES[m] ? m : MODE_RES;
 }
 
+/** Діапазони за замовчуванням (з коду) за назвою вкладки. */
+function defaultRanges_() {
+  var out = {};
+  [MODES[MODE_REG], MODES[MODE_RES]].forEach(function (views) {
+    views.forEach(function (v) { out[v.name] = v.range; });
+  });
+  return out;
+}
+
+/** Підставляє діапазони з аркуша «Сайт» (B12:B14), якщо вони заповнені. */
+function viewsWithRanges_(sh, views) {
+  if (!sh) return views;
+  var vals = sh.getRange(RANGE_ROW_FIRST, 1, RANGE_KEYS.length, 2).getDisplayValues();
+  var byName = {};
+  vals.forEach(function (r) { byName[String(r[0]).trim()] = String(r[1]).trim(); });
+  return views.map(function (v) {
+    var raw = byName[v.name];
+    if (!raw) return v;
+    var sheet = v.sheet;
+    var range = raw;
+    var i = raw.lastIndexOf('!');
+    if (i >= 0) {
+      sheet = raw.slice(0, i).trim().replace(/^'(.*)'$/, '$1');
+      range = raw.slice(i + 1).trim();
+    }
+    return { name: v.name, sheet: sheet, range: range, headerRows: v.headerRows };
+  });
+}
+
 function publish_(ss) {
   var sh = ss.getSheetByName(SYNC_SHEET);
   var mode = currentMode_(sh);
-  var sheets = MODES[mode].map(function (view) { return readView_(ss, view); });
+  var sheets = viewsWithRanges_(sh, MODES[mode]).map(function (view) { return readView_(ss, view); });
   var event = {
     title: (sh && String(sh.getRange(CELL_TITLE).getDisplayValue()).trim()) || SETTINGS.EVENT_TITLE,
     subtitle: (sh && String(sh.getRange(CELL_SUBTITLE).getDisplayValue()).trim()) || SETTINGS.EVENT_SUBTITLE
