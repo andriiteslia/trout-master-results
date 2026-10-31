@@ -475,7 +475,7 @@ td.flash { animation: flash 3s ease-out 1; }
   right: 0;
   bottom: 0;
   z-index: 20;
-  padding: 24px max(16px, env(safe-area-inset-right)) calc(12px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px))) max(16px, env(safe-area-inset-left));
+  padding: 24px max(16px, env(safe-area-inset-right)) calc(24px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px))) max(16px, env(safe-area-inset-left));
   background: linear-gradient(to top, var(--page) 55%, rgba(244, 246, 248, 0));
   pointer-events: none;
 }
@@ -486,7 +486,7 @@ td.flash { animation: flash 3s ease-out 1; }
   pointer-events: auto;
   box-shadow: 0 8px 20px rgba(23, 100, 168, 0.28), 0 2px 4px rgba(16, 24, 40, 0.08);
 }
-.has-regbar .main { padding-bottom: calc(100px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px))); }
+.has-regbar .main { padding-bottom: calc(112px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px))); }
 
 /* Сторінка форми: замість таблиці */
 .view-reg .intro, .view-reg .notice, .view-reg .tabs, .view-reg .info, .view-reg .board { display: none !important; }
