@@ -140,6 +140,10 @@
       if (k.group && (!prev || prev.group !== k.group)) k.gstart = true;
       prev = k;
     });
+    // Додаткові розділювачі всередині групи: перед «Бали» та «Місце» (напр. у «Підсумку»)
+    cols.forEach(function (k) {
+      if (k.group && !k.gstart && /^(бали|місце)/i.test(k.label)) k.sep = true;
+    });
 
     // Рядки даних: беремо лише ті, де є ім'я учасника
     var seen = {};
@@ -210,7 +214,7 @@
   function cellHtml(k, row, opts) {
     var v = row.cells[k.c] || '';
     var cls = [];
-    if (k.gstart) cls.push('gstart');
+    if (k.gstart || k.sep) cls.push('gstart');
     if (opts.flash && opts.flash.indexOf(k.c) !== -1) cls.push('flash');
 
     if (k.role === 'place') {
@@ -269,7 +273,7 @@
       while (j < cols.length && cols[j].group === k.group && (j === i || !cols[j].gstart)) j++;
       h1 += '<th scope="colgroup" colspan="' + (j - i) + '" class="grp gstart">' + esc(k.group) + '</th>';
       for (var x = i; x < j; x++) {
-        h2 += '<th scope="col"' + (x === i ? ' class="gstart"' : '') + '>' + esc(cols[x].label) + '</th>';
+        h2 += '<th scope="col"' + (x === i || cols[x].sep ? ' class="gstart"' : '') + '>' + esc(cols[x].label) + '</th>';
       }
       i = j;
     }
