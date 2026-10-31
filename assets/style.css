@@ -24,6 +24,7 @@
   --head: #e9edf2;
   --head-top: #bddcef;
   --head-top-ink: #0b1d2b;
+  --head-line: #7fb3d4;
   --hover: #e9edf2;
   --border: #dde2e8;
   --border-strong: #c3cad4;
@@ -209,6 +210,18 @@ button { font: inherit; color: inherit; }
   z-index: 5;
   overflow: hidden;
 }
+/* Рамка навколо шапки — блакитна, як лінії всередині; навколо тіла — сіра */
+.board:has(.bh) { border: 0; }
+.bh {
+  border: 1px solid var(--head-line);
+  border-bottom: 0;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.bs {
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
 .bs {
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -232,10 +245,10 @@ thead th {
   line-height: 1.3;
 }
 thead tr.h1 th { background: var(--head-top); color: var(--head-top-ink); font-size: 13px; font-weight: 650; }
-thead tr.h2 th { background: var(--head-top); color: var(--head-top-ink); border-bottom-color: #7fb3d4; }
-thead tr.h1 th { border-bottom-color: #7fb3d4; }
+thead tr.h2 th { background: var(--head-top); color: var(--head-top-ink); border-bottom-color: var(--head-line); }
+thead tr.h1 th { border-bottom-color: var(--head-line); }
 td.gstart { border-left: 1px solid var(--border-strong); }
-th.gstart { border-left: 1px solid #7fb3d4; }
+th.gstart { border-left: 1px solid var(--head-line); }
 th.c-name, td.c-name { text-align: left; }
 th.c-place, td.c-place { width: 1%; padding-left: 16px; padding-right: 8px; }
 
@@ -298,14 +311,14 @@ td.flash { animation: flash 3s ease-out 1; }
 /* Широка таблиця: номер (і на вебі ім'я) закріплені зліва */
 .board.is-wide td.c-place, .board.is-wide th.c-place { position: sticky; left: 0; z-index: 1; }
 .board.is-wide td.c-place { box-shadow: 1px 0 0 var(--border); }
-.board.is-wide th.c-place { box-shadow: 1px 0 0 #7fb3d4; }
+.board.is-wide th.c-place { box-shadow: 1px 0 0 var(--head-line); }
 .board.is-wide tbody tr.is-sel td.c-place { box-shadow: inset 3px 0 0 var(--brand-ink), 1px 0 0 var(--border); }
 @media (min-width: 641px) {
   .board.is-wide td.c-place, .board.is-wide th.c-place { box-shadow: none; }
   .board.is-wide tbody tr.is-sel td.c-place { box-shadow: inset 3px 0 0 var(--brand-ink); }
   .board.is-wide td.c-name, .board.is-wide th.c-name { position: sticky; left: var(--pw, 48px); z-index: 1; }
   .board.is-wide td.c-name { box-shadow: 1px 0 0 var(--border); }
-  .board.is-wide th.c-name { box-shadow: 1px 0 0 #7fb3d4; }
+  .board.is-wide th.c-name { box-shadow: 1px 0 0 var(--head-line); }
 }
 
 .empty { padding: 40px 20px; text-align: center; color: var(--text-3); white-space: normal; }
