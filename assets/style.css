@@ -294,8 +294,26 @@ td.flash { animation: flash 3s ease-out 1; }
 .empty { padding: 40px 20px; text-align: center; color: var(--text-3); white-space: normal; }
 .empty strong { display: block; color: var(--text); font-size: 15px; margin-bottom: 4px; }
 
-.foot { padding-bottom: max(32px, env(safe-area-inset-bottom)); font-size: 13px; color: var(--text-4); }
-.foot p { margin: 0; }
+.main { padding-bottom: max(32px, env(safe-area-inset-bottom)); }
+
+/* Інфо-бейдж над таблицею */
+.info {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 1px solid #c5def0;
+  border-radius: 4px;
+  background: #eef6fc;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.info svg { flex: none; width: 16px; height: 16px; margin-top: 1px; fill: none; stroke: #2e6f9e; stroke-width: 1.6; stroke-linecap: round; }
+.info svg .dot { fill: #2e6f9e; stroke: none; }
 
 /* ---------- Mobile ---------- */
 @media (max-width: 640px) {
