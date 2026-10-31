@@ -433,6 +433,33 @@ td.flash { animation: flash 3s ease-out 1; }
   100% { transform: scale(2.6); opacity: 0; }
 }
 .view-reg .reg-live { display: none !important; }
+.reg-live { flex-wrap: wrap; row-gap: 2px; }
+.reg-live__timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.reg-live__timer::before { content: ""; width: 1px; height: 14px; background: #abefc6; }
+
+/* Роздільник «Резерв» у списку учасників */
+tbody tr.reserve-sep { cursor: default; }
+tbody tr.reserve-sep th {
+  height: 30px;
+  padding: 0 16px;
+  border-top: 1px solid #fedf89;
+  border-bottom: 1px solid #fedf89;
+  background: #fffaeb;
+  color: #93370d;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+}
+@media (hover: hover) { tbody tr.reserve-sep:hover th { background: #fffaeb; } }
 
 /* Інфо-бейдж над таблицею */
 .info {

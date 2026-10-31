@@ -340,13 +340,20 @@
     // Стрілки ▲▼ вмикаються/вимикаються на аркуші «Сайт» (B9)
     var moves = (state.payload && state.payload.showMoves === false) ? {} : (state.moves[m.name] || {});
     var changed = state.changed[m.name] || {};
-    var body = m.rows.map(function (row) {
+    // Список учасників: після N місць (B10 на аркуші «Сайт») — роздільник «Резерв»
+    var pl = state.payload || {};
+    var seats = parseInt(pl.seats, 10);
+    var isList = pl.mode === 'Список учасників' || /учасник/i.test(m.name);
+    var reserveAt = isList && seats > 0 && m.rows.length > seats ? seats : -1;
+    var body = m.rows.map(function (row, idx) {
       var sel = state.selected.has(row.key);
       var opts = { sel: sel, move: moves[row.key] || 0, flash: flashOn ? changed[row.key] : null };
       var rc = [];
       if (sel) rc.push('is-sel');
       if (medals && row.place >= 1 && row.place <= 3) rc.push('medal medal-' + row.place);
-      return '<tr data-key="' + esc(row.key) + '"' + (rc.length ? ' class="' + rc.join(' ') + '"' : '') + '>' +
+      var sep = idx === reserveAt
+        ? '<tr class="reserve-sep"><th scope="rowgroup" colspan="' + cols.length + '"><span>Резерв</span></th></tr>' : '';
+      return sep + '<tr data-key="' + esc(row.key) + '"' + (rc.length ? ' class="' + rc.join(' ') + '"' : '') + '>' +
         cols.map(function (k) { return cellHtml(k, row, opts); }).join('') + '</tr>';
     }).join('');
 
@@ -576,7 +583,8 @@
     form: $('regForm'), name: $('fName'), phone: $('fPhone'), nameErr: $('fNameErr'), phoneErr: $('fPhoneErr'),
     alert: $('regAlert'), submit: $('regSubmit'), done: $('regDone'), doneText: $('regDoneText'),
     toList: $('regToList'), closed: $('regClosed'), closedBack: $('regClosedBack'),
-    bar: $('regbar'), open: $('regOpen'), live: $('regLive')
+    bar: $('regbar'), open: $('regOpen'), live: $('regLive'),
+    timer: $('regTimer'), timerTxt: $('regTimerTxt'), timerSr: $('regTimerSr')
   };
   var PREFIX = '+380 ';
   state.view = 'list';
@@ -586,7 +594,42 @@
   state.regPushed = false;
   state.focusKey = null;
 
-  function regOpenNow() { return !!(state.payload && state.payload.registration === true); }
+  function regDeadline() {
+    var d = state.payload && state.payload.regDeadline ? new Date(state.payload.regDeadline) : null;
+    return d && !isNaN(d) ? d : null;
+  }
+  function regOpenNow() {
+    if (!(state.payload && state.payload.registration === true)) return false;
+    var d = regDeadline();
+    return !d || Date.now() < d.getTime();
+  }
+
+  // ----- Зворотний відлік до завершення реєстрації -----
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function fmtLeft(ms) {
+    var t = Math.max(0, Math.floor(ms / 1000));
+    var d = Math.floor(t / 86400), h = Math.floor(t % 86400 / 3600), m = Math.floor(t % 3600 / 60), sec = t % 60;
+    return (d ? d + ' д ' : '') + pad2(h) + ':' + pad2(m) + ':' + pad2(sec);
+  }
+  var timerId = null;
+  function renderTimer() {
+    var d = regDeadline();
+    var on = !!d && !reg.live.hidden;
+    reg.timer.hidden = !on;
+    if (!on) { clearInterval(timerId); timerId = null; return; }
+    var left = d.getTime() - Date.now();
+    if (left <= 0) { clearInterval(timerId); timerId = null; renderReg(); return; }   // час вийшов: ховаємо кнопку
+    reg.timerTxt.textContent = 'до кінця ' + fmtLeft(left);
+    var sr = 'Реєстрація триває до ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' +
+      d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+    if (reg.timerSr.textContent !== sr) reg.timerSr.textContent = sr;
+    if (!timerId) timerId = setInterval(renderTimer, 1000);
+  }
+  // Форма відкрита, а час вийшов — показати «Реєстрацію закрито»
+  setInterval(function () {
+    var d = regDeadline();
+    if (state.view === 'reg' && d && Date.now() >= d.getTime() && !reg.form.hidden && !state.regSending) renderReg();
+  }, 1000);
 
   function renderReg() {
     var isReg = state.view === 'reg';
@@ -596,6 +639,7 @@
     var showBar = !isReg && regOpenNow();
     reg.bar.hidden = !showBar;
     reg.live.hidden = !showBar;   // плашка «Триває реєстрація» над таблицею
+    renderTimer();
     html.classList.toggle('has-regbar', showBar);
     if (!isReg) return;
 

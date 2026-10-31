@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
   <link rel="preload" href="assets/fonts/manrope-cyrillic-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fish.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="assets/style.css?v=20261101d">
-  <script src="config.js?v=20261101d"></script>
+  <link rel="stylesheet" href="assets/style.css?v=20261101e">
+  <script src="config.js?v=20261101e"></script>
   <script>
     // Запитуємо результати одразу, паралельно з завантаженням решти сторінки
     (function () {
@@ -24,7 +24,7 @@
       } catch (e) { window.__tmEarly = null; }
     })();
   </script>
-  <script src="assets/app.js?v=20261101d" defer></script>
+  <script src="assets/app.js?v=20261101e" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -49,7 +49,11 @@
 
     <p class="reg-live" id="regLive" hidden>
       <span class="reg-live__dot" aria-hidden="true"></span>
-      Триває реєстрація
+      <span>Триває реєстрація</span>
+      <span class="reg-live__timer" id="regTimer" hidden>
+        <span class="visually-hidden" id="regTimerSr"></span>
+        <span aria-hidden="true" id="regTimerTxt"></span>
+      </span>
     </p>
 
     <p class="info" id="info" hidden>

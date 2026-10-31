@@ -60,6 +60,8 @@ var REG_CLOSED = 'Закрита';
 var CELL_MOVES = 'B9';          // стрілки ▲▼ зміни місць у таблиці
 var MOVES_ON = 'Показувати';
 var MOVES_OFF = 'Приховати';
+var CELL_SEATS = 'B10';         // кількість місць; хто зареєструвався після — у резерві
+var CELL_DEADLINE = 'B11';      // дата й час завершення реєстрації (порожньо — без обмеження)
 
 /** Куди пишуться заявки з форми реєстрації (номери колонок: A=1, B=2, ...). */
 var REG_SHEET = 'Учасники';
@@ -71,11 +73,11 @@ var REG_COL_TG_ID = 7;   // G — Telegram ID (якщо реєструвалис
 var REG_COL_TG_USER = 8; // H — @username у Telegram
 
 /**
- * Діапазони, які можна змінювати прямо на аркуші «Сайт» (B12:B14).
+ * Діапазони, які можна змінювати прямо на аркуші «Сайт» (B14:B16).
  * Формат: A1:B50, A1:AK (без номера рядка — до останнього заповненого)
  * або з назвою аркуша: Results!A1:AK. Порожня клітинка — діапазон із коду.
  */
-var RANGE_ROW_FIRST = 12;
+var RANGE_ROW_FIRST = 14;
 var RANGE_KEYS = ['Учасники', 'Результат', 'Тури'];
 
 var CACHE_KEY = 'snapshot';
@@ -131,15 +133,23 @@ function setupSync() {
     sh.getRange(CELL_SUBTITLE).setValue(SETTINGS.EVENT_SUBTITLE);
   }
   sh.getRange('A1').setValue('Публікація результатів на сайт').setFontWeight('bold').setFontSize(13);
-  sh.getRange('A9:B9').breakApart();
-  sh.getRange('A3:A9').setValues([['Дія'], ['Остання публікація'], ['Що показувати'], ['Заголовок'], ['Підзаголовок'], ['Реєстрація'], ['Стрілки ▲▼ місць']]);
-  sh.getRange('A3:A9').setFontWeight('bold');
-  sh.getRange('A10:B10').merge().setWrap(true);
-  sh.getRange('A10').setValue('B5 — що бачать глядачі: «' + MODE_REG + '» (аркуш «Учасники») або «' + MODE_RES +
+  // Старий макет (діапазони в рядках 12–14): звільняємо два рядки під «Кількість місць» і «Реєстрація до»
+  if (String(sh.getRange('A12').getDisplayValue()).trim() === RANGE_KEYS[0] &&
+      String(sh.getRange('A10').getDisplayValue()).indexOf('B5') === 0) {
+    sh.insertRowsAfter(9, 2);
+  }
+  sh.getRange('A9:B11').breakApart();
+  sh.getRange('A3:A11').setValues([['Дія'], ['Остання публікація'], ['Що показувати'], ['Заголовок'], ['Підзаголовок'],
+    ['Реєстрація'], ['Стрілки ▲▼ місць'], ['Кількість місць'], ['Реєстрація до']]);
+  sh.getRange('A3:A11').setFontWeight('bold');
+  sh.getRange('A12:B12').merge().setWrap(true);
+  sh.getRange('A12').setValue('B5 — що бачать глядачі: «' + MODE_REG + '» (аркуш «Учасники») або «' + MODE_RES +
     '» (вкладки «Результат» і «Тури»). Зміна режиму одразу публікує дані. Щоб оновити дані на сайті, у B3 виберіть «' +
     ACTION_PUBLISH + '». Заголовок і підзаголовок теж оновлюються при публікації. B8 — «' + REG_OPEN +
-    '» показує на сайті кнопку «Зареєструватися» (заявки йдуть в аркуш «' + REG_SHEET + '», телефон у колонку E). B9 — показувати чи ні стрілки ▲▼, на скільки місць змістився учасник після оновлення.');
-  sh.getRange('A10').setFontColor('#475467');
+    '» показує на сайті кнопку «Зареєструватися» (заявки йдуть в аркуш «' + REG_SHEET + '», телефон у колонку E). B9 — показувати чи ні стрілки ▲▼, на скільки місць змістився учасник після оновлення. ' +
+    'B10 — кількість місць: хто зареєструвався понад неї, стоїть у списку під лінією «Резерв» (порожньо — без обмеження). ' +
+    'B11 — дата й час завершення реєстрації, напр. 20.11.2026 20:00: сайт показує зворотний відлік, а після цього часу заявки не приймаються.');
+  sh.getRange('A12').setFontColor('#475467');
   sh.setColumnWidth(1, 180);
   sh.setColumnWidth(2, 420);
 
@@ -185,6 +195,20 @@ function setupSync() {
   if (currentMoves !== MOVES_ON && currentMoves !== MOVES_OFF) movesCell.setValue(MOVES_ON);
   movesCell.setFontWeight('bold').setBackground('#e3f0fa');
 
+  // Кількість місць і дата завершення реєстрації
+  var seatsCell = sh.getRange(CELL_SEATS);
+  seatsCell.clearDataValidations();
+  seatsCell.setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireNumberBetween(1, 1000).setAllowInvalid(false)
+    .setHelpText('Ціле число, напр. 28. Порожньо — без обмеження.').build());
+  seatsCell.setFontWeight('bold').setBackground('#fdf3e1').setHorizontalAlignment('left');
+  var dlCell = sh.getRange(CELL_DEADLINE);
+  dlCell.clearDataValidations();
+  dlCell.setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireDate().setAllowInvalid(false)
+    .setHelpText('Дата й час, напр. 20.11.2026 20:00. Порожньо — без обмеження.').build());
+  dlCell.setNumberFormat('dd.MM.yyyy HH:mm').setFontWeight('bold').setBackground('#fdf3e1').setHorizontalAlignment('left');
+
   // Заголовки колонок для заявок на аркуші «Учасники» (лише якщо порожні)
   var reg = ss.getSheetByName(REG_SHEET);
   if (reg) {
@@ -195,7 +219,7 @@ function setupSync() {
   }
 
   // Блок діапазонів: заповнюємо лише порожні клітинки, щоб не затерти ваші значення
-  sh.getRange('A11').setValue('Діапазони (звідки брати дані)').setFontWeight('bold');
+  sh.getRange(RANGE_ROW_FIRST - 1, 1).setValue('Діапазони (звідки брати дані)').setFontWeight('bold');
   var defaults = defaultRanges_();
   var rangeCells = sh.getRange(RANGE_ROW_FIRST, 1, RANGE_KEYS.length, 2);
   var current = rangeCells.getDisplayValues();
@@ -230,10 +254,11 @@ function handleSiteSync(e) {
   var isMode = a1 === CELL_MODE && !!MODES[v];
   var isReg = a1 === CELL_REG && (v === REG_OPEN || v === REG_CLOSED);
   var isMoves = a1 === CELL_MOVES && (v === MOVES_ON || v === MOVES_OFF);
+  var isRegSetting = a1 === CELL_SEATS || a1 === CELL_DEADLINE;
   var row = e.range.getRow();
   var isRange = e.range.getColumn() === 2 && e.range.getNumRows() === 1 &&
     row >= RANGE_ROW_FIRST && row < RANGE_ROW_FIRST + RANGE_KEYS.length;
-  if (!isPublish && !isMode && !isReg && !isMoves && !isRange) return;
+  if (!isPublish && !isMode && !isReg && !isMoves && !isRegSetting && !isRange) return;
 
   sh.getRange(CELL_STATUS).setValue('⏳ Публікуємо…');
   SpreadsheetApp.flush();
@@ -259,8 +284,33 @@ function publishNow() {
   Logger.log('Опубліковано: ' + summary_(p));
 }
 
-function isRegOpen_(sh) {
+/** Реєстрацію відкрито в B8 (без урахування дати завершення). */
+function isRegSwitchOn_(sh) {
   return !!sh && String(sh.getRange(CELL_REG).getDisplayValue()).trim() === REG_OPEN;
+}
+
+/** Реєстрація відкрита зараз: увімкнено в B8 і ще не минула дата з B11. */
+function isRegOpen_(sh) {
+  if (!isRegSwitchOn_(sh)) return false;
+  var dl = regDeadline_(sh);
+  return !dl || Date.now() < dl.getTime();
+}
+
+/** Дата завершення реєстрації (B11) або null. */
+function regDeadline_(sh) {
+  if (!sh) return null;
+  var v = sh.getRange(CELL_DEADLINE).getValue();
+  if (v instanceof Date && !isNaN(v.getTime())) return v;
+  var m = String(v || '').trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{2}))?$/);
+  if (!m) return null;
+  return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]), Number(m[4] || 23), Number(m[5] || 59));
+}
+
+/** Кількість місць (B10) або null, якщо без обмеження. */
+function seats_(sh) {
+  if (!sh) return null;
+  var n = parseInt(String(sh.getRange(CELL_SEATS).getDisplayValue()).replace(/\s/g, ''), 10);
+  return n > 0 ? n : null;
 }
 
 function currentMode_(sh) {
@@ -277,7 +327,7 @@ function defaultRanges_() {
   return out;
 }
 
-/** Підставляє діапазони з аркуша «Сайт» (B12:B14), якщо вони заповнені. */
+/** Підставляє діапазони з аркуша «Сайт» (B14:B16), якщо вони заповнені. */
 function viewsWithRanges_(sh, views) {
   if (!sh) return views;
   var vals = sh.getRange(RANGE_ROW_FIRST, 1, RANGE_KEYS.length, 2).getDisplayValues();
@@ -306,9 +356,12 @@ function publish_(ss) {
     subtitle: (sh && String(sh.getRange(CELL_SUBTITLE).getDisplayValue()).trim()) || SETTINGS.EVENT_SUBTITLE
   };
   var registration = isRegOpen_(sh);
+  var deadline = regDeadline_(sh);
+  var regDeadline = registration && deadline ? deadline.toISOString() : null;
+  var seats = seats_(sh);
   var showMoves = !sh || String(sh.getRange(CELL_MOVES).getDisplayValue()).trim() !== MOVES_OFF;
   var now = new Date().toISOString();
-  var body = JSON.stringify([event, sheets, registration, showMoves]);
+  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves]);
   var hash = Utilities.base64EncodeWebSafe(
     Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, body, Utilities.Charset.UTF_8));
 
@@ -318,6 +371,8 @@ function publish_(ss) {
     title: ss.getName(),
     event: event,
     registration: registration,
+    regDeadline: regDeadline,
+    seats: seats,
     showMoves: showMoves,
     hash: hash,
     changedAt: now,
@@ -392,7 +447,7 @@ function register_(data) {
   try {
     var ss = SpreadsheetApp.openById(getSpreadsheetId_());
     var site = ss.getSheetByName(SYNC_SHEET);
-    if (!isRegOpen_(site)) return fail_('closed', 'Реєстрацію закрито.');
+    if (!isRegOpen_(site)) return fail_('closed', isRegSwitchOn_(site) ? 'Реєстрацію завершено.' : 'Реєстрацію закрито.');
     var sh = ss.getSheetByName(REG_SHEET);
     if (!sh) return fail_('server', 'У таблиці немає аркуша «' + REG_SHEET + '».');
 
