@@ -1,6 +1,34 @@
 (function () {
   'use strict';
 
+  // ---------- Telegram Mini App ----------
+  // Лише коли сторінку відкрито як міні-застосунок Telegram: на весь екран,
+  // без закриття свайпом вниз (закривається тільки кнопкою Telegram).
+  // У звичайному браузері нічого не завантажується і не змінюється.
+  (function initTelegram() {
+    var inTg = /tgWebApp/.test(location.hash + location.search) || !!window.TelegramWebviewProxy;
+    if (!inTg) return;
+    document.documentElement.classList.add('tg');
+    var s = document.createElement('script');
+    s.src = 'https://telegram.org/js/telegram-web-app.js';
+    s.onload = function () {
+      var tg = window.Telegram && window.Telegram.WebApp;
+      if (!tg) return;
+      var at = function (v) { try { return tg.isVersionAtLeast(v); } catch (e) { return false; } };
+      try { tg.ready(); } catch (e) { /* */ }
+      try { tg.expand(); } catch (e) { /* */ }
+      try { if (at('7.7')) tg.disableVerticalSwipes(); } catch (e) { /* */ }
+      try {
+        if (at('8.0') && /^(ios|android)$/.test(tg.platform) && !tg.isFullscreen) tg.requestFullscreen();
+      } catch (e) { /* */ }
+      try {
+        if (at('6.1')) { tg.setHeaderColor('#080808'); tg.setBackgroundColor('#f4f6f8'); }
+        if (at('7.10')) tg.setBottomBarColor('#f4f6f8');
+      } catch (e) { /* */ }
+    };
+    document.head.appendChild(s);
+  })();
+
   // ---------- Config ----------
   var CFG = Object.assign({ API_URL: '', HEADER_ROWS: 2, REFRESH_SECONDS: 20 }, window.RESULTS_CONFIG || {});
   var API = String(CFG.API_URL || '').trim();
