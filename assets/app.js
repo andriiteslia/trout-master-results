@@ -27,6 +27,22 @@
       } catch (e) { /* */ }
     };
     document.head.appendChild(s);
+
+    // Чи заїхав верх «аркуша» під панель Telegram (тоді малюємо заокруглені кути зверху)
+    var frame = 0;
+    function updateStuck() {
+      frame = 0;
+      var tb = document.querySelector('.topbar');
+      var main = document.querySelector('.main');
+      if (!tb || !main) return;
+      var top = parseFloat(getComputedStyle(tb).paddingTop) || 0;
+      document.documentElement.classList.toggle('tg-stuck', main.getBoundingClientRect().top <= top + 0.5);
+    }
+    function schedule() { if (!frame) frame = requestAnimationFrame(updateStuck); }
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    s.addEventListener('load', schedule);
+    document.addEventListener('DOMContentLoaded', schedule);
   })();
 
   // ---------- Config ----------
