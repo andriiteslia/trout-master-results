@@ -105,9 +105,11 @@
     var d = new Date(iso);
     if (isNaN(d)) return '';
     var t = d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
-    if (d.toDateString() === new Date().toDateString()) return t;
-    return d.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' }) + ', ' + t;
+    if (isToday(d)) return t;
+    return d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + t;   // «31 жов. 23:57»
   }
+  var MONTHS = ['січ.', 'лют.', 'бер.', 'кві.', 'тра.', 'чер.', 'лип.', 'сер.', 'вер.', 'жов.', 'лис.', 'гру.'];
+  function isToday(d) { return d.toDateString() === new Date().toDateString(); }
   function plural(n, one, few, many) {
     var a = Math.abs(n) % 100, b = a % 10;
     if (a > 10 && a < 20) return many;
@@ -378,7 +380,12 @@
     if (DEMO) { s = 'demo'; text = ''; }
     else if (state.error) { s = p ? 'stale' : 'error'; text = 'Немає зв’язку'; }
     else if (!p || state.fromCache) { s = 'load'; text = 'Завантаження…'; }
-    else { s = 'live'; text = 'Оновлено о ' + fmtTime(p.changedAt || p.generatedAt); }
+    else {
+      s = 'live';
+      var at = p.changedAt || p.generatedAt;
+      // сьогодні: «Оновлено о 14:32», раніше: «Оновлено 31 жов. 23:57»
+      text = 'Оновлено ' + (isToday(new Date(at)) ? 'о ' : '') + fmtTime(at);
+    }
     el.status.dataset.state = s;
     el.statusText.textContent = text;
     if (pulse && s === 'live') {
