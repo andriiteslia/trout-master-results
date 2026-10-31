@@ -2,7 +2,7 @@
 window.RESULTS_CONFIG = {
   // Адреса веб-застосунку Apps Script (закінчується на /exec).
   // Поки поле порожнє, сайт показує демо-дані з файлу demo.json.
-  API_URL: "",
+  API_URL: "https://script.google.com/macros/s/AKfycbxbXAq9BaSu4nxH27TCGc2HZkzt7RlrWtWAle7zF20802ujhpsfMBLek1efKtXexdNF/exec",
 
   // Скільки верхніх рядків кожної таблиці є заголовками.
   HEADER_ROWS: 2,
