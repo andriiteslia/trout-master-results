@@ -383,8 +383,8 @@
     else {
       s = 'live';
       var at = p.changedAt || p.generatedAt;
-      // сьогодні: «Оновлено о 14:32», раніше: «Оновлено 31 жов. 23:57»
-      text = 'Оновлено ' + (isToday(new Date(at)) ? 'о ' : '') + fmtTime(at);
+      // сьогодні: «Оновлено – 14:32», раніше: «Оновлено 31 жов. 23:57»
+      text = 'Оновлено ' + (isToday(new Date(at)) ? '\u2013 ' : '') + fmtTime(at);
     }
     el.status.dataset.state = s;
     el.statusText.textContent = text;
