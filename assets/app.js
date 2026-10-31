@@ -97,7 +97,8 @@
     };
     var spanW = function (r, c) { var m = owner[r + ',' + c]; return m ? m.cs : 1; };
 
-    var he = Math.min(HEADER_ROWS, grid.length);
+    var hr = parseInt(sheet.headerRows, 10) > 0 ? parseInt(sheet.headerRows, 10) : HEADER_ROWS;
+    var he = Math.min(hr, grid.length);
     var body = grid.slice(he);
 
     // Колонки: група (рядок 1, об'єднана клітинка) + підпис (рядок 2)

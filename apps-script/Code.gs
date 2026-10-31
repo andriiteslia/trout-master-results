@@ -12,7 +12,9 @@
  *   впишіть посилання на таблицю в SETTINGS і запустіть функцію setupSync.
  *   Вона створить аркуш «Сайт», підключить список і опублікує дані.
  *
- * Які частини таблиці показувати, задано у VIEWS: назва вкладки,
+ * Що показувати, вибирається у B5 на аркуші «Сайт» (MODES нижче):
+ * «Список учасників» або «Результати». Для кожного режиму задано вкладки:
+ * назва вкладки,
  * аркуш і діапазон колонок. Перші два рядки діапазону — заголовки.
  * Номер останнього рядка можна не вказувати: скрипт візьме всі заповнені.
  */
@@ -28,12 +30,20 @@ var VIEWS = [
   { name: 'Тури',      sheet: 'Results', range: 'A1:AK' }
 ];
 
+/** Режими показу: що саме бачать глядачі. headerRows — скільки рядків заголовків. */
+var MODE_REG = 'Список учасників';
+var MODE_RES = 'Результати';
+var MODES = {};
+MODES[MODE_REG] = [{ name: 'Учасники', sheet: 'Учасники', range: 'A1:B', headerRows: 1 }];
+MODES[MODE_RES] = VIEWS;
+
 /** Аркуш з кнопкою публікації та його клітинки. */
 var SYNC_SHEET = 'Сайт';
 var ACTION_IDLE = '—';
 var ACTION_PUBLISH = 'Опублікувати на сайт';
 var CELL_PUBLISH = 'B3';
 var CELL_STATUS = 'B4';
+var CELL_MODE = 'B5';
 var CELL_TITLE = 'B6';
 var CELL_SUBTITLE = 'B7';
 
@@ -90,10 +100,11 @@ function setupSync() {
     sh.getRange(CELL_SUBTITLE).setValue(SETTINGS.EVENT_SUBTITLE);
   }
   sh.getRange('A1').setValue('Публікація результатів на сайт').setFontWeight('bold').setFontSize(13);
-  sh.getRange('A3:A7').setValues([['Дія'], ['Остання публікація'], [''], ['Заголовок'], ['Підзаголовок']]);
+  sh.getRange('A3:A7').setValues([['Дія'], ['Остання публікація'], ['Що показувати'], ['Заголовок'], ['Підзаголовок']]);
   sh.getRange('A3:A7').setFontWeight('bold');
-  sh.getRange('A9').setValue('Щоб відправити поточні результати на сайт, у клітинці B3 виберіть «' + ACTION_PUBLISH +
-    '». Після публікації список сам повернеться у «' + ACTION_IDLE + '». Заголовок і підзаголовок теж оновлюються при публікації.');
+  sh.getRange('A9').setValue('B5 — що бачать глядачі: «' + MODE_REG + '» (аркуш «Учасники») або «' + MODE_RES +
+    '» (вкладки «Результат» і «Тури»). Зміна режиму одразу публікує дані. Щоб оновити дані на сайті, у B3 виберіть «' +
+    ACTION_PUBLISH + '». Заголовок і підзаголовок теж оновлюються при публікації.');
   sh.getRange('A9').setFontColor('#475467');
   sh.setColumnWidth(1, 180);
   sh.setColumnWidth(2, 420);
@@ -106,6 +117,17 @@ function setupSync() {
     .setAllowInvalid(false)
     .build());
   cell.setValue(ACTION_IDLE).setFontWeight('bold').setBackground('#e8f3d6');
+
+  // Список режимів: що показувати на сайті
+  var modeCell = sh.getRange(CELL_MODE);
+  var currentMode = String(modeCell.getDisplayValue()).trim();
+  modeCell.clearDataValidations();
+  modeCell.setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInList([MODE_REG, MODE_RES], true)
+    .setAllowInvalid(false)
+    .build());
+  if (!MODES[currentMode]) modeCell.setValue(MODE_REG);
+  modeCell.setFontWeight('bold').setBackground('#e3f0fa');
 
   // Одна активна таблиця: старі тригери прибираємо
   ScriptApp.getProjectTriggers().forEach(function (t) {
@@ -122,9 +144,12 @@ function setupSync() {
 function handleSiteSync(e) {
   if (!e || !e.range) return;
   var sh = e.range.getSheet();
-  if (sh.getName() !== SYNC_SHEET || e.range.getA1Notation() !== CELL_PUBLISH) return;
+  if (sh.getName() !== SYNC_SHEET) return;
+  var a1 = e.range.getA1Notation();
   var v = String(e.value == null ? '' : e.value).trim();
-  if (v !== ACTION_PUBLISH && v.toUpperCase() !== 'TRUE') return;
+  var isPublish = a1 === CELL_PUBLISH && (v === ACTION_PUBLISH || v.toUpperCase() === 'TRUE');
+  var isMode = a1 === CELL_MODE && !!MODES[v];
+  if (!isPublish && !isMode) return;
 
   sh.getRange(CELL_STATUS).setValue('⏳ Публікуємо…');
   SpreadsheetApp.flush();
@@ -133,6 +158,7 @@ function handleSiteSync(e) {
   } catch (err) {
     sh.getRange(CELL_STATUS).setValue('❌ Помилка: ' + ((err && err.message) || err));
   } finally {
+    if (!isPublish) return;
     // Повертаємо клітинку у вихідний стан: «—» для списку, порожньо для галочки
     var rule = e.range.getDataValidation();
     var isCheckbox = rule && rule.getCriteriaType() === SpreadsheetApp.DataValidationCriteria.CHECKBOX;
@@ -149,9 +175,15 @@ function publishNow() {
   Logger.log('Опубліковано: ' + summary_(p));
 }
 
+function currentMode_(sh) {
+  var m = sh ? String(sh.getRange(CELL_MODE).getDisplayValue()).trim() : '';
+  return MODES[m] ? m : MODE_RES;
+}
+
 function publish_(ss) {
-  var sheets = VIEWS.map(function (view) { return readView_(ss, view); });
   var sh = ss.getSheetByName(SYNC_SHEET);
+  var mode = currentMode_(sh);
+  var sheets = MODES[mode].map(function (view) { return readView_(ss, view); });
   var event = {
     title: (sh && String(sh.getRange(CELL_TITLE).getDisplayValue()).trim()) || SETTINGS.EVENT_TITLE,
     subtitle: (sh && String(sh.getRange(CELL_SUBTITLE).getDisplayValue()).trim()) || SETTINGS.EVENT_SUBTITLE
@@ -163,6 +195,7 @@ function publish_(ss) {
 
   var payload = {
     ok: true,
+    mode: mode,
     title: ss.getName(),
     event: event,
     hash: hash,
@@ -188,12 +221,12 @@ function saveSnapshot_(json) {
 
 function writeStatus_(sh, p) {
   var t = Utilities.formatDate(new Date(p.changedAt), 'Europe/Kiev', 'dd.MM.yyyy HH:mm:ss');
-  sh.getRange(CELL_STATUS).setValue('✅ ' + t + ' • ' + summary_(p));
+  sh.getRange(CELL_STATUS).setValue('✅ ' + t + ' • ' + p.mode + ' • ' + summary_(p));
 }
 
 function summary_(p) {
   return p.sheets.map(function (s) {
-    return s.name + ': ' + Math.max(0, s.values.length - 2);
+    return s.name + ': ' + Math.max(0, s.values.length - (s.headerRows || 2));
   }).join(', ');
 }
 
@@ -221,7 +254,8 @@ function readView_(ss, view) {
   var last = sheet.getLastRow();
   var r2 = m[4] ? Math.min(Number(m[4]), last) : last;
   var width = c2 - c1 + 1;
-  if (r2 < r1 || width < 1) return { name: view.name, values: [], merges: [] };
+  var headerRows = view.headerRows || 2;
+  if (r2 < r1 || width < 1) return { name: view.name, headerRows: headerRows, values: [], merges: [] };
 
   var range = sheet.getRange(r1, c1, r2 - r1 + 1, width);
   var values = range.getDisplayValues();
@@ -241,7 +275,7 @@ function readView_(ss, view) {
     };
   }).filter(function (x) { return x.rs > 0 && x.cs > 0; });
 
-  return { name: view.name, values: values, merges: merges };
+  return { name: view.name, headerRows: headerRows, values: values, merges: merges };
 }
 
 function colIndex_(letters) {
