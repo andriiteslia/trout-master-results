@@ -133,7 +133,10 @@ function handleSiteSync(e) {
   } catch (err) {
     sh.getRange(CELL_STATUS).setValue('❌ Помилка: ' + ((err && err.message) || err));
   } finally {
-    e.range.setValue(ACTION_IDLE);
+    // Повертаємо клітинку у вихідний стан: «—» для списку, порожньо для галочки
+    var rule = e.range.getDataValidation();
+    var isCheckbox = rule && rule.getCriteriaType() === SpreadsheetApp.DataValidationCriteria.CHECKBOX;
+    e.range.setValue(isCheckbox ? false : ACTION_IDLE);
   }
 }
 
