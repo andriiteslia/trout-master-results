@@ -429,7 +429,7 @@ td.flash { animation: flash 3s ease-out 1; }
   --accent-hover: #12528b;
   --accent-ring: rgba(23, 100, 168, 0.22);
   --field-line: #8a94a6;    /* рамка поля 3:1 на білому */
-  --btn-radius: 12px;
+  --btn-radius: 999px;     /* кнопки повністю заокруглені (пігулка) */
 }
 .btn {
   appearance: none;
@@ -583,7 +583,7 @@ td.flash { animation: flash 3s ease-out 1; }
    (Chrome, Edge, Android); в інших лишаються звичайні заокруглення. */
 @supports (corner-shape: squircle) {
   .status, .notice, .notice code, .tabs, .tab, .board, .bh, .bs, .info, .code,
-  .btn, .back, .card, .field input, .form-alert,
+  .back, .card, .field input, .form-alert,
   :focus-visible, .tg .main, .tg.tg-stuck body::after {
     corner-shape: superellipse(1.5);
   }

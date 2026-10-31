@@ -54,6 +54,9 @@ var CELL_SUBTITLE = 'B7';
 var CELL_REG = 'B8';
 var REG_OPEN = 'Відкрита';
 var REG_CLOSED = 'Закрита';
+var CELL_MOVES = 'B9';          // стрілки ▲▼ зміни місць у таблиці
+var MOVES_ON = 'Показувати';
+var MOVES_OFF = 'Приховати';
 
 /** Куди пишуться заявки з форми реєстрації (номери колонок: A=1, B=2, ...). */
 var REG_SHEET = 'Учасники';
@@ -123,13 +126,15 @@ function setupSync() {
     sh.getRange(CELL_SUBTITLE).setValue(SETTINGS.EVENT_SUBTITLE);
   }
   sh.getRange('A1').setValue('Публікація результатів на сайт').setFontWeight('bold').setFontSize(13);
-  sh.getRange('A3:A8').setValues([['Дія'], ['Остання публікація'], ['Що показувати'], ['Заголовок'], ['Підзаголовок'], ['Реєстрація']]);
-  sh.getRange('A3:A8').setFontWeight('bold');
-  sh.getRange('A9').setValue('B5 — що бачать глядачі: «' + MODE_REG + '» (аркуш «Учасники») або «' + MODE_RES +
+  sh.getRange('A9:B9').breakApart();
+  sh.getRange('A3:A9').setValues([['Дія'], ['Остання публікація'], ['Що показувати'], ['Заголовок'], ['Підзаголовок'], ['Реєстрація'], ['Стрілки ▲▼ місць']]);
+  sh.getRange('A3:A9').setFontWeight('bold');
+  sh.getRange('A10:B10').merge().setWrap(true);
+  sh.getRange('A10').setValue('B5 — що бачать глядачі: «' + MODE_REG + '» (аркуш «Учасники») або «' + MODE_RES +
     '» (вкладки «Результат» і «Тури»). Зміна режиму одразу публікує дані. Щоб оновити дані на сайті, у B3 виберіть «' +
     ACTION_PUBLISH + '». Заголовок і підзаголовок теж оновлюються при публікації. B8 — «' + REG_OPEN +
-    '» показує на сайті кнопку «Зареєструватися» (заявки йдуть в аркуш «' + REG_SHEET + '», телефон у колонку E).');
-  sh.getRange('A9').setFontColor('#475467');
+    '» показує на сайті кнопку «Зареєструватися» (заявки йдуть в аркуш «' + REG_SHEET + '», телефон у колонку E). B9 — показувати чи ні стрілки ▲▼, на скільки місць змістився учасник після оновлення.');
+  sh.getRange('A10').setFontColor('#475467');
   sh.setColumnWidth(1, 180);
   sh.setColumnWidth(2, 420);
 
@@ -163,6 +168,17 @@ function setupSync() {
     .build());
   if (currentReg !== REG_OPEN && currentReg !== REG_CLOSED) regCell.setValue(REG_CLOSED);
   regCell.setFontWeight('bold').setBackground('#fdf3e1');
+
+  // Перемикач стрілок зміни місць
+  var movesCell = sh.getRange(CELL_MOVES);
+  var currentMoves = String(movesCell.getDisplayValue()).trim();
+  movesCell.clearDataValidations();
+  movesCell.setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInList([MOVES_ON, MOVES_OFF], true)
+    .setAllowInvalid(false)
+    .build());
+  if (currentMoves !== MOVES_ON && currentMoves !== MOVES_OFF) movesCell.setValue(MOVES_ON);
+  movesCell.setFontWeight('bold').setBackground('#e3f0fa');
 
   // Заголовки колонок для заявок на аркуші «Учасники» (лише якщо порожні)
   var reg = ss.getSheetByName(REG_SHEET);
@@ -208,10 +224,11 @@ function handleSiteSync(e) {
   var isPublish = a1 === CELL_PUBLISH && (v === ACTION_PUBLISH || v.toUpperCase() === 'TRUE');
   var isMode = a1 === CELL_MODE && !!MODES[v];
   var isReg = a1 === CELL_REG && (v === REG_OPEN || v === REG_CLOSED);
+  var isMoves = a1 === CELL_MOVES && (v === MOVES_ON || v === MOVES_OFF);
   var row = e.range.getRow();
   var isRange = e.range.getColumn() === 2 && e.range.getNumRows() === 1 &&
     row >= RANGE_ROW_FIRST && row < RANGE_ROW_FIRST + RANGE_KEYS.length;
-  if (!isPublish && !isMode && !isReg && !isRange) return;
+  if (!isPublish && !isMode && !isReg && !isMoves && !isRange) return;
 
   sh.getRange(CELL_STATUS).setValue('⏳ Публікуємо…');
   SpreadsheetApp.flush();
@@ -284,8 +301,9 @@ function publish_(ss) {
     subtitle: (sh && String(sh.getRange(CELL_SUBTITLE).getDisplayValue()).trim()) || SETTINGS.EVENT_SUBTITLE
   };
   var registration = isRegOpen_(sh);
+  var showMoves = !sh || String(sh.getRange(CELL_MOVES).getDisplayValue()).trim() !== MOVES_OFF;
   var now = new Date().toISOString();
-  var body = JSON.stringify([event, sheets, registration]);
+  var body = JSON.stringify([event, sheets, registration, showMoves]);
   var hash = Utilities.base64EncodeWebSafe(
     Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, body, Utilities.Charset.UTF_8));
 
@@ -295,6 +313,7 @@ function publish_(ss) {
     title: ss.getName(),
     event: event,
     registration: registration,
+    showMoves: showMoves,
     hash: hash,
     changedAt: now,
     generatedAt: now,

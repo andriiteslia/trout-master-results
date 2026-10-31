@@ -332,7 +332,8 @@
       });
     });
     var flashOn = Date.now() - state.changeTime < 3500;
-    var moves = state.moves[m.name] || {};
+    // Стрілки ▲▼ вмикаються/вимикаються на аркуші «Сайт» (B9)
+    var moves = (state.payload && state.payload.showMoves === false) ? {} : (state.moves[m.name] || {});
     var changed = state.changed[m.name] || {};
     var body = m.rows.map(function (row) {
       var sel = state.selected.has(row.key);
