@@ -278,6 +278,17 @@ td.flash { animation: flash 3s ease-out 1; }
   100% { box-shadow: inset 0 0 0 999px transparent; }
 }
 
+/* Шапка рухається разом із таблицею засобами CSS (scroll-driven animations) */
+.sda .board { timeline-scope: --tblx; }
+.sda .bs { scroll-timeline: --tblx x; }
+.sda .t-head { animation: tbl-slide linear both; animation-timeline: --tblx; }
+.sda .board.is-wide .t-head th.c-place { animation: tbl-pin linear both; animation-timeline: --tblx; }
+@media (min-width: 641px) {
+  .sda .board.is-wide .t-head th.c-name { animation: tbl-pin linear both; animation-timeline: --tblx; }
+}
+@keyframes tbl-slide { from { transform: translateX(0); } to { transform: translateX(calc(-1 * var(--max-x, 0px))); } }
+@keyframes tbl-pin { from { transform: translateX(0); } to { transform: translateX(var(--max-x, 0px)); } }
+
 /* Широка таблиця: номер (і на вебі ім'я) закріплені зліва */
 .board.is-wide td.c-place, .board.is-wide th.c-place { position: sticky; left: 0; z-index: 1; }
 .board.is-wide td.c-place { box-shadow: 1px 0 0 var(--border); }

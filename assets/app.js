@@ -310,6 +310,7 @@
     [tHead, tBody].forEach(function (t) { t.style.tableLayout = 'fixed'; t.style.width = total + 'px'; });
 
     el.board.classList.toggle('is-wide', total > scroller.clientWidth + 1);
+    el.board.style.setProperty('--max-x', Math.max(0, scroller.scrollWidth - scroller.clientWidth) + 'px');
     el.board.style.setProperty('--pw', widths[0] + 'px');
     scroller.scrollLeft = scrollX;
     headBox.scrollLeft = scroller.scrollLeft;
@@ -457,8 +458,14 @@
 
   // Шапка лише повторює горизонтальну прокрутку тіла таблиці (в один бік,
   // щоб не збивати інерцію свайпу на телефоні).
+  // Де браузер вміє scroll-driven animations, шапку рухає сам CSS у тому ж кадрі,
+  // що й таблицю. Інакше — запасний варіант через JavaScript.
+  var NATIVE_SYNC = !!(window.CSS && CSS.supports &&
+    CSS.supports('animation-timeline: --tblx') && CSS.supports('timeline-scope: --tblx'));
+  if (NATIVE_SYNC) document.documentElement.classList.add('sda');
   var syncFrame = 0;
   el.board.addEventListener('scroll', function (e) {
+    if (NATIVE_SYNC) return;
     if (!e.target.classList || !e.target.classList.contains('bs')) return;
     if (syncFrame) return;
     syncFrame = requestAnimationFrame(function () {
