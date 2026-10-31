@@ -852,6 +852,9 @@
   function setSending(on) {
     state.regSending = on;
     reg.submit.disabled = on;
+    reg.form.setAttribute('aria-busy', String(on));
+    reg.name.readOnly = on;
+    reg.phone.readOnly = on;
     reg.submit.classList.toggle('is-loading', on);
     reg.submit.querySelector('.btn__text').textContent = on ? 'Надсилаємо…' : 'Підтвердити реєстрацію';
   }
@@ -919,6 +922,8 @@
   });
 
   reg.open.addEventListener('click', goReg);
+  // iOS Safari вмикає стан :active (натиснута кнопка) лише якщо на сторінці є обробник дотику
+  document.addEventListener('touchstart', function () {}, { passive: true });
   reg.back.addEventListener('click', goList);
   reg.toList.addEventListener('click', goList);
   reg.closedBack.addEventListener('click', goList);
