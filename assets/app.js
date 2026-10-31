@@ -295,7 +295,10 @@
     if (!m) {
       el.board.innerHTML = state.error
         ? '<div class="empty"><strong>Не вдалося завантажити результати</strong>Сторінка повторить спробу автоматично.</div>'
-        : '<div class="empty"><strong>Завантаження результатів…</strong></div>';
+        : '<div class="empty is-loading">' +
+            '<picture><source srcset="assets/fish.webp" type="image/webp">' +
+            '<img class="loader-fish" src="assets/fish.png" width="120" height="58" alt=""></picture>' +
+            '<strong>Завантаження результатів…</strong></div>';
       return;
     }
     if (!m.rows.length) {

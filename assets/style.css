@@ -379,6 +379,21 @@ td.flash { animation: flash 3s ease-out 1; }
 
 .empty { padding: 40px 20px; text-align: center; color: var(--text-3); white-space: normal; }
 .empty strong { display: block; color: var(--text); font-size: 15px; margin-bottom: 4px; }
+/* Екран завантаження: рибка над текстом, легко «пливе» */
+.empty.is-loading { padding: 48px 20px 44px; }
+.loader-fish {
+  display: block;
+  width: 120px;
+  height: auto;
+  margin: 0 auto 14px;
+  animation: fish-swim 2.4s ease-in-out infinite;
+}
+@keyframes fish-swim {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(3px, -4px) rotate(-2deg); }
+  50% { transform: translate(6px, 0) rotate(0deg); }
+  75% { transform: translate(3px, 3px) rotate(2deg); }
+}
 
 .main { padding-bottom: max(32px, env(safe-area-inset-bottom)); }
 
@@ -420,7 +435,7 @@ td.flash { animation: flash 3s ease-out 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  td.flash, .status.is-pulse .status__dot { animation: none; }
+  td.flash, .status.is-pulse .status__dot, .loader-fish { animation: none; }
 }
 
 /* ---------- Реєстрація ---------- */
