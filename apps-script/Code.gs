@@ -1,16 +1,19 @@
 /**
  * Trout Master — API результатів для сайту.
  *
- * Скрипт читає Google Таблицю турніру і віддає її вміст у JSON.
- * Налаштування раунду — у блоці SETTINGS нижче.
- * Їх також можна перевизначити без перепублікації:
- * Налаштування проєкту → Властивості скрипту
- * (SPREADSHEET_ID, EVENT_TITLE, EVENT_SUBTITLE).
+ * Як це працює:
+ * 1. У таблиці раунду є аркуш «Сайт» з галочкою «Опублікувати зараз».
+ * 2. Ставите галочку → скрипт знімає поточні результати і зберігає їх.
+ * 3. Сайт кожні кілька секунд питає скрипт, чи є нова публікація.
+ *    Саму таблицю він не читає, тож глядачі бачать лише опубліковане.
  *
- * Які таблиці показувати на сайті, задано у VIEWS:
- * назва вкладки, аркуш і діапазон колонок. Перші два рядки
- * діапазону — заголовки. Номер останнього рядка можна не вказувати:
- * скрипт сам візьме всі заповнені рядки.
+ * Перший запуск і кожен новий раунд:
+ *   впишіть посилання на таблицю в SETTINGS і запустіть функцію setupSync.
+ *   Вона створить аркуш «Сайт», підключить галочку й опублікує дані.
+ *
+ * Які частини таблиці показувати, задано у VIEWS: назва вкладки,
+ * аркуш і діапазон колонок. Перші два рядки діапазону — заголовки.
+ * Номер останнього рядка можна не вказувати: скрипт візьме всі заповнені.
  */
 
 var SETTINGS = {
@@ -24,112 +27,170 @@ var VIEWS = [
   { name: 'Тури',      sheet: 'Results', range: 'A1:AK' }
 ];
 
-/** Скільки секунд тримати готову відповідь у кеші. */
-var CACHE_SECONDS = 10;
+/** Аркуш з кнопкою публікації та його клітинки. */
+var SYNC_SHEET = 'Сайт';
+var CELL_PUBLISH = 'B3';
+var CELL_STATUS = 'B4';
+var CELL_TITLE = 'B6';
+var CELL_SUBTITLE = 'B7';
+
+var CACHE_KEY = 'snapshot';
+var CACHE_TTL = 21600;   // 6 годин, максимум для CacheService
+var CHUNK = 4000;        // розмір шматка для збереження у властивостях
+
+// ---------------------------------------------------------------------------
+// Сайт: віддати останню публікацію
+// ---------------------------------------------------------------------------
 
 function doGet() {
   var out;
   try {
-    out = getPayload_();
+    out = getSnapshot_();
+    if (!out) out = { ok: false, error: 'Результати ще не опубліковано. Поставте галочку на аркуші «' + SYNC_SHEET + '».' };
   } catch (err) {
     out = { ok: false, error: String((err && err.message) || err) };
   }
-  return ContentService
-    .createTextOutput(JSON.stringify(out))
-    .setMimeType(ContentService.MimeType.JSON);
+  var text = typeof out === 'string' ? out : JSON.stringify(out);
+  return ContentService.createTextOutput(text).setMimeType(ContentService.MimeType.JSON);
 }
+
+/** Повертає JSON-рядок останньої публікації або null. */
+function getSnapshot_() {
+  var cache = CacheService.getScriptCache();
+  var hit = cache.get(CACHE_KEY);
+  if (hit) return hit;
+
+  var all = PropertiesService.getScriptProperties().getProperties();
+  var count = Number(all['snap:count'] || 0);
+  if (!count) return null;
+  var parts = [];
+  for (var i = 0; i < count; i++) parts.push(all['snap:' + i] || '');
+  var json = parts.join('');
+  try { cache.put(CACHE_KEY, json, CACHE_TTL); } catch (e) { /* завеликий для кешу */ }
+  return json;
+}
+
+// ---------------------------------------------------------------------------
+// Таблиця: кнопка публікації
+// ---------------------------------------------------------------------------
 
 /**
- * Запустіть цю функцію один раз вручну (кнопка «Виконати»),
- * щоб надати скрипту доступ і перевірити, що таблицю видно.
+ * Запустіть один раз для кожної нової таблиці раунду (кнопка «Виконати»).
+ * Створює аркуш «Сайт» з галочкою, підключає її і публікує дані.
  */
-function testConnection() {
-  var payload = buildPayload_(getSpreadsheetId_());
-  Logger.log('Таблиця: ' + payload.title);
-  payload.sheets.forEach(function (s) {
-    Logger.log('Вкладка «' + s.name + '»: ' + Math.max(0, s.values.length - 2) + ' рядків даних');
+function setupSync() {
+  var ss = SpreadsheetApp.openById(getSpreadsheetId_());
+  var sh = ss.getSheetByName(SYNC_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(SYNC_SHEET);
+    sh.getRange('A1').setValue('Публікація результатів на сайт').setFontWeight('bold').setFontSize(13);
+    sh.getRange('A3:A7').setValues([['Опублікувати зараз'], ['Остання публікація'], [''], ['Заголовок'], ['Підзаголовок']]);
+    sh.getRange('A3:A7').setFontWeight('bold');
+    sh.getRange(CELL_TITLE).setValue(SETTINGS.EVENT_TITLE);
+    sh.getRange(CELL_SUBTITLE).setValue(SETTINGS.EVENT_SUBTITLE);
+    sh.getRange('A9').setValue('Поставте галочку в B3, щоб відправити поточні результати на сайт. Заголовок і підзаголовок теж оновлюються при публікації.');
+    sh.getRange('A9').setFontColor('#475467');
+    sh.setColumnWidth(1, 180);
+    sh.setColumnWidth(2, 420);
+  }
+  sh.getRange(CELL_PUBLISH).insertCheckboxes().setValue(false);
+
+  // Одна галочка на одну активну таблицю: старі тригери прибираємо
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === 'handleSiteSync') ScriptApp.deleteTrigger(t);
   });
-  Logger.log('Усе гаразд. Тепер опублікуйте скрипт як веб-застосунок.');
+  ScriptApp.newTrigger('handleSiteSync').forSpreadsheet(ss).onEdit().create();
+
+  var p = publish_(ss);
+  writeStatus_(sh, p);
+  Logger.log('Готово. Галочка підключена, дані опубліковано: ' + summary_(p));
 }
 
-/** Властивість скрипту, якщо задана, інакше значення з SETTINGS. */
-function setting_(name) {
-  var v = PropertiesService.getScriptProperties().getProperty(name);
-  return String(v != null && v.trim() !== '' ? v : (SETTINGS[name] || '')).trim();
-}
+/** Тригер: реагує на галочку «Опублікувати зараз». */
+function handleSiteSync(e) {
+  if (!e || !e.range) return;
+  var sh = e.range.getSheet();
+  if (sh.getName() !== SYNC_SHEET || e.range.getA1Notation() !== CELL_PUBLISH) return;
+  if (String(e.value).toUpperCase() !== 'TRUE') return;
 
-function getSpreadsheetId_() {
-  var raw = setting_('SPREADSHEET_ID');
-  if (!raw) {
-    throw new Error('Не задано SPREADSHEET_ID у SETTINGS або у властивостях скрипту.');
-  }
-  var m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  return m ? m[1] : raw;
-}
-
-function getPayload_() {
-  var id = getSpreadsheetId_();
-  var cache = CacheService.getScriptCache();
-  var key = 'payload:' + id;
-
-  var hit = cache.get(key);
-  if (hit) return JSON.parse(hit);
-
-  // Якщо кеш порожній і одночасно прийшло кілька запитів,
-  // таблицю читає лише один із них, решта чекає на кеш.
-  var lock = LockService.getScriptLock();
-  var locked = lock.tryLock(8000);
+  sh.getRange(CELL_STATUS).setValue('⏳ Публікуємо…');
+  SpreadsheetApp.flush();
   try {
-    if (locked) {
-      hit = cache.get(key);
-      if (hit) return JSON.parse(hit);
-    }
-    var payload = buildPayload_(id);
-    try {
-      cache.put(key, JSON.stringify(payload), CACHE_SECONDS);
-    } catch (e) {
-      // Завелика відповідь для кешу: просто віддаємо без кешування.
-    }
-    return payload;
+    writeStatus_(sh, publish_(e.source));
+  } catch (err) {
+    sh.getRange(CELL_STATUS).setValue('❌ Помилка: ' + ((err && err.message) || err));
   } finally {
-    if (locked) lock.releaseLock();
+    e.range.setValue(false);
   }
 }
 
-function buildPayload_(id) {
-  var ss = SpreadsheetApp.openById(id);
+/** Можна запустити вручну з редактора, щоб опублікувати без галочки. */
+function publishNow() {
+  var ss = SpreadsheetApp.openById(getSpreadsheetId_());
+  var p = publish_(ss);
+  var sh = ss.getSheetByName(SYNC_SHEET);
+  if (sh) writeStatus_(sh, p);
+  Logger.log('Опубліковано: ' + summary_(p));
+}
+
+function publish_(ss) {
   var sheets = VIEWS.map(function (view) { return readView_(ss, view); });
-
-  var props = PropertiesService.getScriptProperties();
+  var sh = ss.getSheetByName(SYNC_SHEET);
   var event = {
-    title: setting_('EVENT_TITLE'),
-    subtitle: setting_('EVENT_SUBTITLE')
+    title: (sh && String(sh.getRange(CELL_TITLE).getDisplayValue()).trim()) || SETTINGS.EVENT_TITLE,
+    subtitle: (sh && String(sh.getRange(CELL_SUBTITLE).getDisplayValue()).trim()) || SETTINGS.EVENT_SUBTITLE
   };
-
-  // Хеш вмісту: сайт за ним розуміє, чи змінилися дані,
-  // а скрипт запам'ятовує час останньої зміни.
+  var now = new Date().toISOString();
   var body = JSON.stringify([event, sheets]);
-  var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, body, Utilities.Charset.UTF_8);
-  var hash = Utilities.base64EncodeWebSafe(digest);
+  var hash = Utilities.base64EncodeWebSafe(
+    Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, body, Utilities.Charset.UTF_8));
 
-  var changedAt = props.getProperty('changedAt:' + id);
-  if (props.getProperty('hash:' + id) !== hash || !changedAt) {
-    changedAt = new Date().toISOString();
-    var update = {};
-    update['hash:' + id] = hash;
-    update['changedAt:' + id] = changedAt;
-    props.setProperties(update);
-  }
-
-  return {
+  var payload = {
     ok: true,
     title: ss.getName(),
     event: event,
     hash: hash,
-    changedAt: changedAt,
-    generatedAt: new Date().toISOString(),
+    changedAt: now,
+    generatedAt: now,
     sheets: sheets
   };
+  saveSnapshot_(JSON.stringify(payload));
+  return payload;
+}
+
+function saveSnapshot_(json) {
+  var props = PropertiesService.getScriptProperties();
+  var old = Number(props.getProperty('snap:count') || 0);
+  var update = {};
+  var n = Math.ceil(json.length / CHUNK);
+  for (var i = 0; i < n; i++) update['snap:' + i] = json.slice(i * CHUNK, (i + 1) * CHUNK);
+  update['snap:count'] = String(n);
+  props.setProperties(update);
+  for (var j = n; j < old; j++) props.deleteProperty('snap:' + j);
+  try { CacheService.getScriptCache().put(CACHE_KEY, json, CACHE_TTL); } catch (e) { /* завеликий для кешу */ }
+}
+
+function writeStatus_(sh, p) {
+  var t = Utilities.formatDate(new Date(p.changedAt), 'Europe/Kiev', 'dd.MM.yyyy HH:mm:ss');
+  sh.getRange(CELL_STATUS).setValue('✅ ' + t + ' • ' + summary_(p));
+}
+
+function summary_(p) {
+  return p.sheets.map(function (s) {
+    return s.name + ': ' + Math.max(0, s.values.length - 2);
+  }).join(', ');
+}
+
+// ---------------------------------------------------------------------------
+// Читання таблиці
+// ---------------------------------------------------------------------------
+
+function getSpreadsheetId_() {
+  var v = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+  var raw = String(v && v.trim() ? v : SETTINGS.SPREADSHEET_ID || '').trim();
+  if (!raw) throw new Error('Не задано SPREADSHEET_ID у SETTINGS.');
+  var m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : raw;
 }
 
 function readView_(ss, view) {
