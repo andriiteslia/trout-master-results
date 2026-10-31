@@ -28,7 +28,7 @@
   var el = {
     status: $('status'), statusText: $('statusText'),
     title: $('title'), subtitle: $('subtitle'), notice: $('notice'),
-    tabs: $('tabs'), board: $('board')
+    tabs: $('tabs'), board: $('board'), info: $('info')
   };
 
   // ---------- State ----------
@@ -345,7 +345,17 @@
     el.notice.hidden = !notice;
   }
 
+  // Підказка про виділення рядка потрібна лише для результатів, не для списку учасників
+  function renderInfo() {
+    if (!el.info) return;
+    var p = state.payload;
+    var isReg = !!p && (p.mode === 'Список учасників' ||
+      (!p.mode && (p.sheets || []).length === 1 && /учасник/i.test(p.sheets[0].name || '')));
+    el.info.hidden = !p || isReg;
+  }
+
   function renderAll() {
+    renderInfo();
     renderHeader();
     renderTabs();
     renderBoard();
