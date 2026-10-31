@@ -830,7 +830,9 @@
       action: 'register',
       name: normalizeName(reg.name.value),
       phone: '+380' + localDigits(reg.phone.value),
-      website: reg.form.elements.website.value
+      website: reg.form.elements.website.value,
+      // Дані Telegram (ID, @username) — лише коли форму відкрито в боті
+      tg: (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || ''
     };
     setSending(true);
     sendRegistration(body)

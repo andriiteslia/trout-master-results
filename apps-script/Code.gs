@@ -14,7 +14,10 @@
  *
  * Реєстрація: у B8 на аркуші «Сайт» виберіть «Відкрита», і на сайті з'явиться кнопка
  *   «Зареєструватися». Заявки дописуються в аркуш «Учасники»: A — номер, B — прізвище та ім'я,
- *   E — телефон (на сайт не потрапляє), F — час реєстрації.
+ *   E — телефон (на сайт не потрапляє), F — час реєстрації,
+ *   G — Telegram ID і H — @username (якщо заявку надіслано з міні-застосунку бота).
+ *   Щоб Telegram ID не можна було підробити, впишіть токен бота у властивості скрипта:
+ *   ⚙️ «Налаштування проєкту» → «Властивості скрипта» → BOT_TOKEN.
  *
  * Що показувати, вибирається у B5 на аркуші «Сайт» (MODES нижче):
  * «Список учасників» або «Результати». Для кожного режиму задано вкладки:
@@ -64,6 +67,8 @@ var REG_COL_NUM = 1;     // A — порядковий номер
 var REG_COL_NAME = 2;    // B — прізвище та ім'я
 var REG_COL_PHONE = 5;   // E — телефон (лише для організатора)
 var REG_COL_TIME = 6;    // F — час реєстрації
+var REG_COL_TG_ID = 7;   // G — Telegram ID (якщо реєструвались через бота)
+var REG_COL_TG_USER = 8; // H — @username у Telegram
 
 /**
  * Діапазони, які можна змінювати прямо на аркуші «Сайт» (B12:B14).
@@ -183,7 +188,7 @@ function setupSync() {
   // Заголовки колонок для заявок на аркуші «Учасники» (лише якщо порожні)
   var reg = ss.getSheetByName(REG_SHEET);
   if (reg) {
-    [[REG_COL_PHONE, 'Телефон'], [REG_COL_TIME, 'Зареєстровано']].forEach(function (x) {
+    [[REG_COL_PHONE, 'Телефон'], [REG_COL_TIME, 'Зареєстровано'], [REG_COL_TG_ID, 'Telegram ID'], [REG_COL_TG_USER, 'Telegram']].forEach(function (x) {
       var c = reg.getRange(1, x[0]);
       if (!String(c.getDisplayValue()).trim()) c.setValue(x[1]).setFontWeight('bold');
     });
@@ -380,6 +385,7 @@ function register_(data) {
   if (!isValidName_(name)) return fail_('name', 'Вкажіть прізвище та ім’я, наприклад: Шевченко Тарас.');
   var phone = normalizePhone_(data.phone);
   if (!phone) return fail_('phone', 'Вкажіть номер у форматі +380 XX XXX XX XX.');
+  var tgUser = telegramUser_(data.tg);
 
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(20000)) return fail_('busy', 'Зараз багато заявок. Спробуйте ще раз за хвилину.');
@@ -420,6 +426,10 @@ function register_(data) {
     sh.getRange(row, REG_COL_NAME).setValue(name);
     sh.getRange(row, REG_COL_PHONE).setNumberFormat('@').setValue(formatPhone_(phone));
     sh.getRange(row, REG_COL_TIME).setValue(new Date()).setNumberFormat('dd.MM.yyyy HH:mm');
+    if (tgUser) {
+      sh.getRange(row, REG_COL_TG_ID).setNumberFormat('@').setValue(String(tgUser.id));
+      if (tgUser.username) sh.getRange(row, REG_COL_TG_USER).setValue('@' + tgUser.username);
+    }
     SpreadsheetApp.flush();
 
     // Одразу показуємо нового учасника на сайті (якщо зараз режим «Список учасників»)
@@ -429,6 +439,40 @@ function register_(data) {
     return { ok: true, number: number, name: name };
   } finally {
     lock.releaseLock();
+  }
+}
+
+/**
+ * Дані користувача з Telegram (initData міні-застосунку) або null.
+ * Якщо у властивостях скрипта є BOT_TOKEN, підпис перевіряється: підроблені дані відкидаються.
+ */
+function telegramUser_(initData) {
+  var raw = String(initData || '');
+  if (!raw || raw.length > 4096) return null;
+  var fields = {};
+  raw.split('&').forEach(function (pair) {
+    var i = pair.indexOf('=');
+    if (i < 0) return;
+    try { fields[decodeURIComponent(pair.slice(0, i))] = decodeURIComponent(pair.slice(i + 1).replace(/\+/g, ' ')); } catch (e) { /* */ }
+  });
+  if (!fields.user) return null;
+
+  var token = PropertiesService.getScriptProperties().getProperty('BOT_TOKEN');
+  if (token) {
+    var check = Object.keys(fields).filter(function (k) { return k !== 'hash'; }).sort()
+      .map(function (k) { return k + '=' + fields[k]; }).join('\n');
+    var secret = Utilities.computeHmacSha256Signature(String(token).trim(), 'WebAppData');
+    var sig = Utilities.computeHmacSha256Signature(Utilities.newBlob(check).getBytes(), secret);
+    var hex = sig.map(function (b) { return ('0' + (b & 0xff).toString(16)).slice(-2); }).join('');
+    if (hex !== String(fields.hash || '').toLowerCase()) return null;
+  }
+  try {
+    var u = JSON.parse(fields.user);
+    if (!u || !/^\d{1,20}$/.test(String(u.id))) return null;
+    var username = /^[A-Za-z0-9_]{3,32}$/.test(String(u.username || '')) ? String(u.username) : '';
+    return { id: String(u.id), username: username };
+  } catch (e) {
+    return null;
   }
 }
 
