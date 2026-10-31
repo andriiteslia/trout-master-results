@@ -36,7 +36,7 @@
     payload: null,
     models: [],
     fromCache: false,
-    tab: store.get(LS.tab, null),
+    tab: null,   // при відкритті сторінки завжди перша вкладка
     selected: new Set(store.get(LS.sel, [])),
     moves: {},
     changed: {},
@@ -436,7 +436,6 @@
     var b = e.target.closest('[data-tab]');
     if (!b) return;
     state.tab = b.getAttribute('data-tab');
-    store.set(LS.tab, state.tab);
     var sc = el.board.querySelector('.bs');
     if (sc) sc.scrollLeft = 0;
     renderTabs();
