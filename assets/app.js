@@ -709,6 +709,36 @@
   });
   document.addEventListener('tm-tg-ready', function () { if (state.view === 'reg') tgBack(true); });
 
+  // ----- Telegram: автоматично виділити свій рядок -----
+  // Скрипт таблиці за підписаними даними Telegram знаходить ім'я людини (колонка G → B).
+  // Виділяємо кожне ім'я лише один раз: якщо людина зняла виділення, воно не повертається.
+  var LS_AUTO = 'tm:autoSel';
+  function applyMyNames(names) {
+    var done = store.get(LS_AUTO, []);
+    var changed = false;
+    names.forEach(function (n) {
+      if (done.indexOf(n) !== -1) return;
+      done.push(n);
+      if (!state.selected.has(n)) { state.selected.add(n); changed = true; }
+    });
+    store.set(LS_AUTO, done.slice(-50));
+    if (!changed) return;
+    store.set(LS.sel, Array.from(state.selected));
+    if (state.models.length) renderBoard();
+  }
+  function whoAmI() {
+    var tg = window.Telegram && window.Telegram.WebApp;
+    if (DEMO || !tg || !tg.initData) return;
+    fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'whoami', tg: tg.initData })
+    }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (res) { if (res && res.ok && Array.isArray(res.names)) applyMyNames(res.names); })
+      .catch(function () { /* не вийшло — нічого страшного */ });
+  }
+  document.addEventListener('tm-tg-ready', whoAmI);
+
   window.addEventListener('popstate', function (e) {
     var v = e.state && e.state.tmView === 'reg' ? 'reg' : 'list';
     if (v === 'list') state.regPushed = false;
@@ -908,6 +938,8 @@
         // Виділяємо себе у списку
         state.selected.add(name);
         store.set(LS.sel, Array.from(state.selected));
+        var auto = store.get(LS_AUTO, []);
+        if (auto.indexOf(name) === -1) { auto.push(name); store.set(LS_AUTO, auto.slice(-50)); }
         state.focusKey = name;
         reg.form.reset();
         state.regTried = false;

@@ -421,8 +421,9 @@ function doPost(e) {
     var raw = e && e.postData && e.postData.contents;
     if (raw) { try { data = JSON.parse(raw); } catch (x) { data = {}; } }
     if (e && e.parameter) Object.keys(e.parameter).forEach(function (k) { if (data[k] == null) data[k] = e.parameter[k]; });
-    if (data.action !== 'register') out = fail_('bad_request', 'Невідомий запит.');
-    else out = register_(data);
+    if (data.action === 'register') out = register_(data);
+    else if (data.action === 'whoami') out = whoami_(data);
+    else out = fail_('bad_request', 'Невідомий запит.');
   } catch (err) {
     out = fail_('server', 'Не вдалося зберегти заявку. Спробуйте ще раз за хвилину.');
     console.error(err);
@@ -495,6 +496,29 @@ function register_(data) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/**
+ * «Хто я?»: застосунок у Telegram надсилає свої дані, скрипт шукає Telegram ID у колонці G
+ * аркуша «Учасники» й повертає імена з колонки B, щоб сайт виділив людині її рядок.
+ * Працює лише з BOT_TOKEN у властивостях скрипта: без перевірки підпису можна було б
+ * підставити чужий ID.
+ */
+function whoami_(data) {
+  if (!PropertiesService.getScriptProperties().getProperty('BOT_TOKEN')) return { ok: true, names: [] };
+  var user = telegramUser_(data.tg);
+  if (!user) return { ok: true, names: [] };
+  var ss = SpreadsheetApp.openById(getSpreadsheetId_());
+  var sh = ss.getSheetByName(REG_SHEET);
+  if (!sh || sh.getLastRow() < 2) return { ok: true, names: [] };
+  var width = Math.max(REG_COL_NAME, REG_COL_TG_ID);
+  var rows = sh.getRange(2, 1, sh.getLastRow() - 1, width).getDisplayValues();
+  var names = [];
+  rows.forEach(function (r) {
+    var name = String(r[REG_COL_NAME - 1]).trim();
+    if (name && String(r[REG_COL_TG_ID - 1]).trim() === user.id && names.indexOf(name) < 0) names.push(name);
+  });
+  return { ok: true, names: names };
 }
 
 /**
