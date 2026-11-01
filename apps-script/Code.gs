@@ -61,7 +61,8 @@ var CELL_MOVES = 'B9';          // стрілки ▲▼ зміни місць �
 var MOVES_ON = 'Показувати';
 var MOVES_OFF = 'Приховати';
 var CELL_SEATS = 'B10';         // кількість місць; хто зареєструвався після — у резерві
-var CELL_DEADLINE = 'B11';      // дата й час завершення реєстрації (порожньо — без обмеження)
+var CELL_DEADLINE = 'B11';      // дата завершення реєстрації (порожньо — без обмеження)
+var CELL_DEADLINE_TIME = 'C11'; // час завершення, напр. 20:00 (порожньо — час із B11 або 00:00)
 
 /** Куди пишуться заявки з форми реєстрації (номери колонок: A=1, B=2, ...). */
 var REG_SHEET = 'Учасники';
@@ -148,7 +149,7 @@ function setupSync() {
     ACTION_PUBLISH + '». Заголовок і підзаголовок теж оновлюються при публікації. B8 — «' + REG_OPEN +
     '» показує на сайті кнопку «Зареєструватися» (заявки йдуть в аркуш «' + REG_SHEET + '», телефон у колонку E). B9 — показувати чи ні стрілки ▲▼, на скільки місць змістився учасник після оновлення. ' +
     'B10 — кількість місць: хто зареєструвався понад неї, стоїть у списку під лінією «Резерв» (порожньо — без обмеження). ' +
-    'B11 — дата й час завершення реєстрації, напр. 20.11.2026 20:00: сайт показує зворотний відлік, а після цього часу заявки не приймаються.');
+    'B11 — дата завершення реєстрації (подвійний клік відкриває календар), C11 — час (зі списку або свій, напр. 20:15): сайт показує зворотний відлік, а в цей момент реєстрація закривається сама.');
   sh.getRange('A12').setFontColor('#475467');
   sh.setColumnWidth(1, 180);
   sh.setColumnWidth(2, 420);
@@ -206,8 +207,19 @@ function setupSync() {
   dlCell.clearDataValidations();
   dlCell.setDataValidation(SpreadsheetApp.newDataValidation()
     .requireDate().setAllowInvalid(false)
-    .setHelpText('Дата й час, напр. 20.11.2026 20:00. Порожньо — без обмеження.').build());
-  dlCell.setNumberFormat('dd.MM.yyyy HH:mm').setFontWeight('bold').setBackground('#fdf3e1').setHorizontalAlignment('left');
+    .setHelpText('Дата завершення (календар — подвійний клік). Час — у сусідній клітинці. Порожньо — без обмеження.').build());
+  dlCell.setNumberFormat('dd.MM.yyyy').setFontWeight('bold').setBackground('#fdf3e1').setHorizontalAlignment('left');
+  // Час завершення: список кожні 30 хв, можна вписати й свій (напр. 20:15)
+  var times = [];
+  for (var h = 0; h < 24; h++) times.push(('0' + h).slice(-2) + ':00', ('0' + h).slice(-2) + ':30');
+  times.push('23:59');
+  var tCell = sh.getRange(CELL_DEADLINE_TIME);
+  tCell.clearDataValidations();
+  tCell.setNumberFormat('@');
+  tCell.setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInList(times, true).setAllowInvalid(true)
+    .setHelpText('Час завершення реєстрації, напр. 20:00. Можна вписати свій, напр. 20:15.').build());
+  tCell.setFontWeight('bold').setBackground('#fdf3e1').setHorizontalAlignment('left');
 
   // Заголовки колонок для заявок на аркуші «Учасники» (лише якщо порожні)
   var reg = ss.getSheetByName(REG_SHEET);
@@ -255,7 +267,7 @@ function handleSiteSync(e) {
   var isMode = a1 === CELL_MODE && !!MODES[v];
   var isReg = a1 === CELL_REG && (v === REG_OPEN || v === REG_CLOSED);
   var isMoves = a1 === CELL_MOVES && (v === MOVES_ON || v === MOVES_OFF);
-  var isRegSetting = a1 === CELL_SEATS || a1 === CELL_DEADLINE;
+  var isRegSetting = a1 === CELL_SEATS || a1 === CELL_DEADLINE || a1 === CELL_DEADLINE_TIME;
   var row = e.range.getRow();
   var isRange = e.range.getColumn() === 2 && e.range.getNumRows() === 1 &&
     row >= RANGE_ROW_FIRST && row < RANGE_ROW_FIRST + RANGE_KEYS.length;
@@ -349,8 +361,20 @@ function isRegOpen_(sh) {
   return !dl || Date.now() < dl.getTime();
 }
 
-/** Дата завершення реєстрації (B11) або null. */
+/** Дата завершення реєстрації: дата з B11 + час із C11 (якщо вказано) або null. */
 function regDeadline_(sh) {
+  var d = regDeadlineDate_(sh);
+  if (!d) return null;
+  var t = String(sh.getRange(CELL_DEADLINE_TIME).getDisplayValue()).trim().match(/^(\d{1,2})[:.](\d{2})$/);
+  if (!t || Number(t[1]) > 23 || Number(t[2]) > 59) return d;
+  // Час із B11 (у часовому поясі таблиці) замінюємо на час із C11
+  var tz = sh.getParent().getSpreadsheetTimeZone();
+  var cur = Utilities.formatDate(d, tz, 'H:m').split(':');
+  var shift = (Number(t[1]) * 60 + Number(t[2])) - (Number(cur[0]) * 60 + Number(cur[1]));
+  return new Date(d.getTime() + shift * 60000);
+}
+
+function regDeadlineDate_(sh) {
   if (!sh) return null;
   var v = sh.getRange(CELL_DEADLINE).getValue();
   if (v instanceof Date && !isNaN(v.getTime())) return v;
