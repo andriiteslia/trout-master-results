@@ -240,6 +240,7 @@ function setupSync() {
 
   var p = publish_(ss);
   writeStatus_(sh, p);
+  scheduleRegClose_(sh);
   Logger.log('Готово. Список у B3 підключено, дані опубліковано: ' + summary_(p));
 }
 
@@ -264,6 +265,7 @@ function handleSiteSync(e) {
   SpreadsheetApp.flush();
   try {
     writeStatus_(sh, publish_(e.source));
+    if (isReg || isRegSetting) scheduleRegClose_(sh);
   } catch (err) {
     sh.getRange(CELL_STATUS).setValue('❌ Помилка: ' + ((err && err.message) || err));
   } finally {
@@ -282,6 +284,57 @@ function publishNow() {
   var sh = ss.getSheetByName(SYNC_SHEET);
   if (sh) writeStatus_(sh, p);
   Logger.log('Опубліковано: ' + summary_(p));
+}
+
+// ---------------------------------------------------------------------------
+// Автоматичне закриття реєстрації в момент з B11
+// ---------------------------------------------------------------------------
+
+var CLOSE_HANDLER = 'closeRegistration';
+
+/**
+ * Ставить «будильник» на дату з B11: у цей момент скрипт сам вибере в B8 «Закрита»
+ * й опублікує дані. Старий будильник прибирається. Викликається при зміні B8 або B11.
+ * Google запускає такі тригери з точністю до кількох хвилин; сайт ховає кнопку точно вчасно сам.
+ */
+function scheduleRegClose_(sh) {
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === CLOSE_HANDLER) ScriptApp.deleteTrigger(t);
+  });
+  var dl = regDeadline_(sh);
+  if (!dl || !isRegSwitchOn_(sh) || dl.getTime() <= Date.now()) return null;
+  ScriptApp.newTrigger(CLOSE_HANDLER).timeBased().at(dl).create();
+  return dl;
+}
+
+/** Можна запустити з редактора, щоб поставити будильник для поточної дати в B11. */
+function scheduleRegistrationClose() {
+  var sh = SpreadsheetApp.openById(getSpreadsheetId_()).getSheetByName(SYNC_SHEET);
+  var dl = scheduleRegClose_(sh);
+  Logger.log(dl ? 'Реєстрація закриється автоматично: ' + dl : 'Будильник не потрібен: дата в B11 порожня або минула, чи реєстрацію вже закрито.');
+}
+
+/** Тригер за часом: закриває реєстрацію в B8 і публікує. */
+function closeRegistration() {
+  var ss = SpreadsheetApp.openById(getSpreadsheetId_());
+  var sh = ss.getSheetByName(SYNC_SHEET);
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === CLOSE_HANDLER) ScriptApp.deleteTrigger(t);
+  });
+  if (!sh || !isRegSwitchOn_(sh)) return;
+  var dl = regDeadline_(sh);
+  // Дату перенесли на пізніше — ставимо новий будильник замість закриття
+  if (dl && dl.getTime() > Date.now() + 60000) { scheduleRegClose_(sh); return; }
+  sh.getRange(CELL_REG).setValue(REG_CLOSED);
+  SpreadsheetApp.flush();
+  try {
+    var p = publish_(ss);
+    writeStatus_(sh, p);
+    var t = Utilities.formatDate(new Date(), 'Europe/Kiev', 'dd.MM.yyyy HH:mm');
+    sh.getRange(CELL_STATUS).setValue(sh.getRange(CELL_STATUS).getDisplayValue() + ' • реєстрацію закрито автоматично о ' + t);
+  } catch (err) {
+    sh.getRange(CELL_STATUS).setValue('❌ Помилка: ' + ((err && err.message) || err));
+  }
 }
 
 /** Реєстрацію відкрито в B8 (без урахування дати завершення). */
