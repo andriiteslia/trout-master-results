@@ -16,6 +16,7 @@
  *   «Зареєструватися». Заявки дописуються в аркуш «Учасники»: A — номер, B — прізвище та ім'я,
  *   E — телефон (на сайт не потрапляє), F — час реєстрації,
  *   G — Telegram ID і H — @username (якщо заявку надіслано з міні-застосунку бота).
+ *   Хто відкривав застосунок у Telegram, записується в аркуш «Відвідування» (лише з BOT_TOKEN).
  *   Щоб Telegram ID не можна було підробити, впишіть токен бота у властивості скрипта:
  *   ⚙️ «Налаштування проєкту» → «Властивості скрипта» → BOT_TOKEN.
  *
@@ -587,15 +588,58 @@ function whoami_(data) {
   if (!user) return { ok: true, names: [] };
   var ss = SpreadsheetApp.openById(getSpreadsheetId_());
   var sh = ss.getSheetByName(REG_SHEET);
-  if (!sh || sh.getLastRow() < 2) return { ok: true, names: [] };
-  var width = Math.max(REG_COL_NAME, REG_COL_TG_ID);
-  var rows = sh.getRange(2, 1, sh.getLastRow() - 1, width).getDisplayValues();
   var names = [];
-  rows.forEach(function (r) {
-    var name = String(r[REG_COL_NAME - 1]).trim();
-    if (name && String(r[REG_COL_TG_ID - 1]).trim() === user.id && names.indexOf(name) < 0) names.push(name);
-  });
+  if (sh && sh.getLastRow() >= 2) {
+    var width = Math.max(REG_COL_NAME, REG_COL_TG_ID);
+    var rows = sh.getRange(2, 1, sh.getLastRow() - 1, width).getDisplayValues();
+    rows.forEach(function (r) {
+      var name = String(r[REG_COL_NAME - 1]).trim();
+      if (name && String(r[REG_COL_TG_ID - 1]).trim() === user.id && names.indexOf(name) < 0) names.push(name);
+    });
+  }
+  try { logVisit_(ss, user, names); } catch (err) { console.error(err); }
   return { ok: true, names: names };
+}
+
+// ---------------------------------------------------------------------------
+// Хто відкривав застосунок у Telegram (аркуш «Відвідування»)
+// ---------------------------------------------------------------------------
+
+var VISITS_SHEET = 'Відвідування';
+var VISITS_HEAD = ['Telegram ID', 'Telegram', 'Ім\u2019я в Telegram', 'Зареєстрований як', 'Перший візит', 'Останній візит', 'Візитів'];
+
+/** Один рядок на людину: при повторному відкритті оновлюються дані, час і лічильник. */
+function logVisit_(ss, user, names) {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return;
+  try {
+    var sh = ss.getSheetByName(VISITS_SHEET);
+    if (!sh) {
+      sh = ss.insertSheet(VISITS_SHEET);
+      sh.getRange(1, 1, 1, VISITS_HEAD.length).setValues([VISITS_HEAD]).setFontWeight('bold').setBackground('#e3f0fa');
+      sh.setFrozenRows(1);
+      sh.getRange('A:A').setNumberFormat('@');
+      sh.getRange('E:F').setNumberFormat('dd.MM.yyyy HH:mm');
+      sh.setColumnWidth(3, 180);
+      sh.setColumnWidth(4, 200);
+    }
+    var now = new Date();
+    var at = user.username ? '@' + user.username : '';
+    var reg = names.join(', ');
+    var last = sh.getLastRow();
+    var ids = last > 1 ? sh.getRange(2, 1, last - 1, 1).getDisplayValues() : [];
+    for (var i = 0; i < ids.length; i++) {
+      if (String(ids[i][0]).trim() !== user.id) continue;
+      var r = i + 2;
+      var count = Number(sh.getRange(r, 7).getValue()) || 0;
+      sh.getRange(r, 2, 1, 3).setValues([[at, user.name, reg]]);
+      sh.getRange(r, 6, 1, 2).setValues([[now, count + 1]]);
+      return;
+    }
+    sh.appendRow([user.id, at, user.name, reg, now, now, 1]);
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 /**
@@ -626,7 +670,8 @@ function telegramUser_(initData) {
     var u = JSON.parse(fields.user);
     if (!u || !/^\d{1,20}$/.test(String(u.id))) return null;
     var username = /^[A-Za-z0-9_]{3,32}$/.test(String(u.username || '')) ? String(u.username) : '';
-    return { id: String(u.id), username: username };
+    var full = [u.first_name, u.last_name].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().slice(0, 80);
+    return { id: String(u.id), username: username, name: full };
   } catch (e) {
     return null;
   }
