@@ -650,6 +650,9 @@ tbody tr.reserve-sep th {
 .done__icon { width: 56px; height: 56px; margin-bottom: 4px; }
 .done__icon circle { fill: var(--win-bg); stroke: #abefc6; stroke-width: 1.5; }
 .done__icon path { fill: none; stroke: var(--win); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.done__icon--late circle { fill: #fffaeb; stroke: #fedf89; }
+.done__icon--late .face { fill: none; stroke: #b54708; stroke-width: 2.5; }
+.done__icon--late path { stroke: #b54708; stroke-width: 2.5; }
 .done__title { margin: 0; font-size: 20px; font-weight: 750; letter-spacing: -0.01em; }
 .done__text { margin: 0 0 12px; color: var(--text-3); }
 .done__text strong { color: var(--text); }
