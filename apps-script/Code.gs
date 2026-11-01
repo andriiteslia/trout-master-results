@@ -501,7 +501,7 @@ function register_(data) {
   try {
     var ss = SpreadsheetApp.openById(getSpreadsheetId_());
     var site = ss.getSheetByName(SYNC_SHEET);
-    if (!isRegOpen_(site)) return fail_('closed', 'От халепа( Ти запізнився, реєстрація вже завершена.');
+    if (!isRegOpen_(site)) return fail_('closed', 'От халепа( На жаль, реєстрацію вже завершено.');
     var sh = ss.getSheetByName(REG_SHEET);
     if (!sh) return fail_('server', 'У таблиці немає аркуша «' + REG_SHEET + '».');
 
