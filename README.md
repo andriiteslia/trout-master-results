@@ -10,7 +10,7 @@ Google Таблиця  →  Apps Script (віддає JSON)  →  сайт на 
 
 | Файл | Навіщо |
 |---|---|
-| `index.html`, `assets/` | Сам сайт: розмітка, стилі, скрипт, шрифт Manrope, логотип |
+| `index.html`, `assets/` | Сам сайт: розмітка, стилі, скрипт, шрифт Fixel від MacPaw (ліцензія SIL OFL), логотип |
 | `config.js` | Налаштування сайту: адреса Apps Script і частота оновлення |
 | `demo.json` | Демо-дані. Сайт показує їх, поки в `config.js` не вставлено адресу Apps Script |
 | `apps-script/Code.gs` | Код для Apps Script, який читає таблицю |

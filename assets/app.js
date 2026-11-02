@@ -619,7 +619,7 @@
     if (!on) { clearInterval(timerId); timerId = null; return; }
     var left = d.getTime() - Date.now();
     if (left <= 0) { clearInterval(timerId); timerId = null; renderReg(); return; }   // час вийшов: ховаємо кнопку
-    reg.timerTxt.textContent = 'до кінця ' + fmtLeft(left);
+    reg.timerTxt.innerHTML = 'до кінця ' + fmtLeft(left).replace(/\d/g, '<span class="dg">$&</span>');
     var sr = 'Реєстрація триває до ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' +
       d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
     if (reg.timerSr.textContent !== sr) reg.timerSr.textContent = sr;
