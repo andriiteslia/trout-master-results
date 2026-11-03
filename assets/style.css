@@ -712,14 +712,24 @@ tbody tr.reserve-sep th {
 .hm-row { display: grid; grid-template-columns: 22px repeat(var(--hm-n, 14), minmax(14px, 1fr)) 30px; gap: 2px; align-items: center; }
 @media (min-width: 641px) { .hm-row { grid-template-columns: 34px repeat(var(--hm-n, 14), minmax(22px, 1fr)) 44px; gap: 3px; } .hm-cell { height: 28px; font-size: 12px; } }
 .hm-sec { font-size: 12px; font-weight: 700; color: var(--text-2); text-align: center; }
+.hm-sec__b { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 3px; border-radius: 10px; background: var(--head); color: var(--text); font-size: 11px; font-weight: 750; }
+.hm-sec--h { font-size: 9.5px !important; letter-spacing: -0.01em; }
+.hm-axis { margin-bottom: -2px; }
+.hm-axis__t { font-size: 11px; font-weight: 700; color: var(--text-3); text-align: center; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); padding-bottom: 2px; }
 .hm-cell { display: grid; place-items: center; height: 24px; border-radius: 3px; font-size: 10.5px; font-weight: 650; background: var(--zebra); }
-.hm-th { background: none; height: auto; color: var(--text-4); font-weight: 600; }
+.hm-th { background: none; height: auto; color: var(--text-3); font-weight: 700; }
 .hm-empty { background: none; box-shadow: inset 0 0 0 1px var(--border); }
 .hm-avg { font-size: 12px; font-weight: 700; text-align: right; color: var(--text-2); padding-right: 2px; }
 .hm-head .hm-sec, .hm-head .hm-avg { font-size: 10.5px; font-weight: 600; color: var(--text-4); }
 .hm-avg.hm-best { color: var(--win); }
 .hm-avg.hm-worst { color: var(--loss); }
-.hm-note { margin: 0 0 10px; }
+.hm-note { margin: 0 0 10px; display: block; }
+.hm-note b { color: var(--text-2); }
+/* Рекорди: усі власники рекорду */
+.ts-who { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
+.ts-who li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: 13.5px; }
+.ts-who__n { font-weight: 650; color: var(--text); }
+.ts-who__m { font-size: 12.5px; color: var(--text-3); }
 .hm-scale { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--text-4); }
 .hm-scale i { flex: 0 1 160px; height: 8px; border-radius: 4px; }
 
@@ -734,6 +744,7 @@ tbody tr.reserve-sep th {
 .ts-top__place { font-size: 12px; font-weight: 600; color: var(--text-4); white-space: nowrap; }
 
 /* Частки результатів */
+.ts-share__note { margin: 0 0 10px; }
 .ts-share { display: flex; height: 14px; border-radius: 7px; overflow: hidden; gap: 2px; }
 .ts-share__seg { min-width: 4px; }
 .seg-w { background: #32a467; } .seg-l { background: #e0675c; } .seg-d { background: #4f8fe0; } .seg-z { background: #98a2b3; }

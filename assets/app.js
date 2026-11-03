@@ -943,8 +943,9 @@
           me.tours.forEach(function (r, i) {
             if (!r.code) { cur = 0; return; }
             fishSum += r.fish;
-            if (!bestCatch || r.fish > bestCatch.fish) bestCatch = { name: me.name, fish: r.fish, tour: i + 1, sector: dp && dp.t[i] ? dp.t[i][0] : null, more: 0 };
-            else if (r.fish === bestCatch.fish) bestCatch.more++;
+            var hit = { name: me.name, tour: i + 1, sector: dp && dp.t[i] ? dp.t[i][0] : null };
+            if (!bestCatch || r.fish > bestCatch.fish) bestCatch = { fish: r.fish, who: [hit] };
+            else if (r.fish === bestCatch.fish) bestCatch.who.push(hit);
             cur = r.code === 'w' ? cur + 1 : 0;
             if (cur > best) best = cur;
             // «Суха» перемога: суперник не спіймав нічого
@@ -955,10 +956,10 @@
               if (or && or.code && or.fish === 0) dryN++;
             }
           });
-          if (best && (!streak || best > streak.n)) streak = { name: me.name, n: best, more: 0 };
-          else if (best && streak && best === streak.n) streak.more++;
-          if (dryN && (!dry || dryN > dry.n)) dry = { name: me.name, n: dryN, more: 0 };
-          else if (dryN && dry && dryN === dry.n) dry.more++;
+          if (best && (!streak || best > streak.n)) streak = { n: best, who: [me.name] };
+          else if (best && streak && best === streak.n) streak.who.push(me.name);
+          if (dryN && (!dry || dryN > dry.n)) dry = { n: dryN, who: [me.name] };
+          else if (dryN && dry && dryN === dry.n) dry.who.push(me.name);
           fishTop.push({ name: me.name, fish: fishSum, place: me.place });
         });
         fishTop.sort(function (a, b) { return b.fish - a.fish || (a.place || 99) - (b.place || 99); });
@@ -988,6 +989,7 @@
           rounds: t.rounds, played: played.length, players: names.length,
           totals: totals, totalFish: t.totalFish, avg: t.avgPerTour,
           cnt: cnt, entries: entries,
+          battles: Math.round(entries / 2), battlesPlanned: Math.floor(names.length / 2) * t.rounds,
           bestCatch: bestCatch, streak: streak, dry: dry, fishTop: fishTop.slice(0, 5), heat: heat
         };
       }
@@ -1004,15 +1006,15 @@
     var ev = (state.payload && state.payload.event) || {};
     document.title = 'Статистика | Trout Master';
     if (!S) { ts.body.innerHTML = '<div class="card empty">Статистика з’явиться після перших турів.</div>'; return; }
-    var more = function (x) { return x.more ? ' і ще ' + x.more : ''; };
     var h = '<header class="pc-head"><div class="pc-head__txt"><h1 class="title" id="tsTitle" tabindex="-1">Статистика турніру</h1>' +
-      '<p class="subtitle">' + esc([ev.title, S.played < S.rounds ? 'після ' + S.played + ' з ' + S.rounds + ' турів' : 'усі ' + S.rounds + ' турів'].filter(Boolean).join(' • ')) + '</p></div></header>';
+      '<p class="subtitle">' + esc([ev.title, S.players + ' ' + plural(S.players, 'учасник', 'учасники', 'учасників'),
+        S.played < S.rounds ? 'після ' + S.played + ' з ' + S.rounds + ' турів' : 'усі ' + S.rounds + ' турів'].filter(Boolean).join(' • ')) + '</p></div></header>';
 
     h += '<div class="pc-tiles">' +
       tsTile('Турів зіграно', S.played + ' <small>з ' + S.rounds + '</small>') +
+      tsTile('Батлів зіграно', S.battles + ' <small>з ' + S.battlesPlanned + '</small>') +
       tsTile('Усього риби', S.totalFish) +
-      tsTile('Середній улов', fmt1(S.avg) + ' <small>на учасника за тур</small>') +
-      tsTile('Учасників', S.players) + '</div>';
+      tsTile('Середній улов', fmt1(S.avg) + ' <small>на учасника за тур</small>') + '</div>';
 
     // Улов по турах
     h += '<section class="card pc-block"><h2 class="pc-h2">Улов по турах</h2>' + tourBars(S) +
@@ -1024,9 +1026,11 @@
     // Рекорди
     var rec = [];
     if (S.bestCatch) rec.push(recRow('Найбільший улов за тур', S.bestCatch.fish + ' ' + fishWord(S.bestCatch.fish),
-      S.bestCatch.name + more(S.bestCatch) + ' • тур ' + S.bestCatch.tour + (S.bestCatch.sector ? ', сектор ' + S.bestCatch.sector : '')));
-    if (S.streak) rec.push(recRow('Найдовша серія перемог', S.streak.n + ' ' + plural(S.streak.n, 'тур', 'тури', 'турів') + ' поспіль', S.streak.name + more(S.streak)));
-    if (S.dry) rec.push(recRow('Найбільше «сухих» перемог', S.dry.n, S.dry.name + more(S.dry) + ' • суперник не спіймав жодної риби'));
+      S.bestCatch.who.map(function (x) { return [x.name, 'тур ' + x.tour + (x.sector ? ', сектор ' + x.sector : '')]; })));
+    if (S.streak) rec.push(recRow('Найдовша серія перемог', S.streak.n + ' ' + plural(S.streak.n, 'тур', 'тури', 'турів') + ' поспіль',
+      S.streak.who.map(function (n) { return [n, '']; })));
+    if (S.dry) rec.push(recRow('Найбільше «сухих» перемог', S.dry.n + ' ' + plural(S.dry.n, 'перемога', 'перемоги', 'перемог'),
+      S.dry.who.map(function (n) { return [n, '']; }), 'суперник не спіймав жодної риби'));
     if (rec.length) h += '<section class="card pc-block"><h2 class="pc-h2">Рекорди</h2><dl class="pc-stats">' + rec.join('') + '</dl></section>';
 
     // Топ за уловом
@@ -1039,7 +1043,9 @@
 
     // Частки результатів
     var parts = [['w', 'Перемоги'], ['l', 'Поразки'], ['d', 'Рибні нічиї'], ['z', 'Безрибні нічиї']];
-    h += '<section class="card pc-block"><h2 class="pc-h2">Результати турів</h2><div class="ts-share" role="img" aria-label="' +
+    h += '<section class="card pc-block"><h2 class="pc-h2">Результати турів</h2>' +
+      '<p class="pc-legend ts-share__note">' + S.battles + ' ' + plural(S.battles, 'батл', 'батли', 'батлів') + ': у кожному один учасник виграє, а другий програє, або обидва грають унічию</p>' +
+      '<div class="ts-share" role="img" aria-label="' +
       parts.map(function (p) { return p[1] + ' ' + pct(S.cnt[p[0]]); }).join(', ') + '">' +
       parts.map(function (p) { return S.cnt[p[0]] ? '<span class="ts-share__seg seg-' + p[0] + '" style="flex:' + S.cnt[p[0]] + '"></span>' : ''; }).join('') +
       '</div><ul class="ts-share__legend">' +
@@ -1052,8 +1058,13 @@
     function tsTile(label, valHtml) {
       return '<div class="pc-tile"><span class="pc-tile__label">' + label + '</span><span class="pc-tile__val">' + valHtml + '</span></div>';
     }
-    function recRow(k, v, sub) {
-      return '<div class="pc-stat"><dt>' + k + '</dt><dd><b>' + esc(v) + '</b><span>' + esc(sub) + '</span></dd></div>';
+    // Рекорд: значення і всі, хто його має
+    function recRow(k, v, who, note) {
+      return '<div class="pc-stat ts-rec"><dt>' + k + '</dt><dd><b>' + esc(v) + '</b>' +
+        (note ? '<span>' + esc(note) + '</span>' : '') +
+        '<ul class="ts-who">' + who.map(function (w) {
+          return '<li><span class="ts-who__n">' + esc(w[0]) + '</span>' + (w[1] ? '<span class="ts-who__m">' + esc(w[1]) + '</span>' : '') + '</li>';
+        }).join('') + '</ul></dd></div>';
     }
   }
 
@@ -1082,7 +1093,8 @@
     var max = S.heat.max || 1;
     var bestAvg = -1, worstAvg = Infinity;
     S.heat.rows.forEach(function (r) { if (r.avg != null) { if (r.avg > bestAvg) bestAvg = r.avg; if (r.avg < worstAvg) worstAvg = r.avg; } });
-    var head = '<div class="hm-row hm-head"><span class="hm-sec">Сек</span>';
+    var head = '<div class="hm-row hm-axis"><span></span><span class="hm-axis__t" style="grid-column: 2 / span ' + S.rounds + '">Тури →</span><span></span></div>' +
+      '<div class="hm-row hm-head"><span class="hm-sec hm-sec--h" title="Сектор">Сек.</span>';
     for (var i = 0; i < S.rounds; i++) head += '<span class="hm-cell hm-th">' + (i + 1) + '</span>';
     head += '<span class="hm-avg">Сер.</span></div>';
     var rows = S.heat.rows.map(function (r) {
@@ -1095,11 +1107,11 @@
         cells += '<span class="hm-cell" style="background:' + bg + ';color:' + (k > 0.55 ? '#fff' : 'var(--text)') + '" title="Сектор ' + r.sector + ', тур ' + (i + 1) + ': ' + v + '">' + v + '</span>';
       }
       var mark = r.avg === bestAvg ? ' hm-best' : r.avg === worstAvg ? ' hm-worst' : '';
-      return '<div class="hm-row"><span class="hm-sec">' + r.sector + '</span>' + cells +
+      return '<div class="hm-row"><span class="hm-sec"><span class="hm-sec__b">' + r.sector + '</span></span>' + cells +
         '<span class="hm-avg' + mark + '">' + (r.avg != null ? r.avg.toFixed(1).replace('.', ',') : '—') + '</span></div>';
     }).join('');
     return '<section class="card pc-block"><h2 class="pc-h2">Карта секторів</h2>' +
-      '<p class="pc-legend hm-note">Скільки риби спіймали в секторі за тур (обидва береги разом). «Сер.» — середній улов на учасника за тур.</p>' +
+      '<p class="pc-legend hm-note"><b>Рядок — сектор, колонка — тур.</b> У клітинці — скільки риби спіймали в цьому секторі за тур (обидва береги разом). «Сер.» — середній улов на учасника за тур у секторі.</p>' +
       '<div class="hm" style="--hm-n:' + S.rounds + '" role="img" aria-label="Карта секторів: улов по секторах і турах">' + head + rows + '</div>' +
       '<div class="hm-scale"><span>мало</span><i style="background:linear-gradient(90deg,' + heatColor(0) + ',' + heatColor(0.5) + ',' + heatColor(1) + ')"></i><span>багато</span></div></section>';
   }
