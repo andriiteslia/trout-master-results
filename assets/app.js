@@ -670,6 +670,31 @@
     return !!drawPlayer(name) || !!(t && t.byName[normName(name)]);
   }
 
+  // Сектори по всьому турніру: середній улов на одного учасника за тур у кожному секторі
+  var secCache = { payload: null, data: null };
+  function tournamentSectors() {
+    if (secCache.payload === state.payload) return secCache.data;
+    var t = toursData(), d = drawData(), list = null;
+    if (t && d) {
+      var acc = {};
+      d.players.forEach(function (pl) {
+        var me = t.byName[normName(pl.name)];
+        if (!me) return;
+        pl.t.forEach(function (x, i) {
+          var r = me.tours[i];
+          if (!x[0] || !r || !r.code) return;
+          var a = acc[x[0]] || (acc[x[0]] = { sector: x[0], fish: 0, n: 0 });
+          a.fish += r.fish; a.n++;
+        });
+      });
+      list = Object.keys(acc).map(function (k) { var a = acc[k]; return { sector: a.sector, avg: a.fish / a.n, fish: a.fish, n: a.n }; });
+      list.sort(function (a, b) { return b.avg - a.avg || a.sector - b.sector; });
+      if (list.length < 2) list = null;
+    }
+    secCache = { payload: state.payload, data: list };
+    return list;
+  }
+
   // Усе для картки одного гравця
   function playerStats(name) {
     var t = toursData(), d = drawData();
@@ -792,7 +817,14 @@
       rows.push(stat('Найдовша серія перемог', st.streak ? st.streak + ' ' + plural(st.streak, 'тур', 'тури', 'турів') + ' поспіль' : '—', ''));
       if (st.secBest) rows.push(stat('Найуловистіший сектор', 'Сектор ' + st.secBest.sector, secText(st.secBest)));
       if (st.secWorst) rows.push(stat('Найслабший сектор', 'Сектор ' + st.secWorst.sector, secText(st.secWorst)));
-      h += '<section class="card pc-block"><h2 class="pc-h2">Статистика</h2><dl class="pc-stats">' + rows.join('') + '</dl></section>';
+      var ts = tournamentSectors(), tRows = [];
+      if (ts) {
+        var tb = ts[0], tw = ts[ts.length - 1];
+        tRows.push(stat('Найуловистіший сектор турніру', 'Сектор ' + tb.sector, [tSecText(tb), mySecText(tb.sector)]));
+        tRows.push(stat('Найслабший сектор турніру', 'Сектор ' + tw.sector, [tSecText(tw), mySecText(tw.sector)]));
+      }
+      h += '<section class="card pc-block"><h2 class="pc-h2">Статистика</h2><dl class="pc-stats">' + rows.join('') + '</dl>' +
+        (tRows.length ? '<h3 class="pc-h3">По турніру</h3><dl class="pc-stats">' + tRows.join('') + '</dl>' : '') + '</section>';
 
       // Особисті зустрічі
       var groups = [['w', 'Обіграв'], ['d', 'Рибна нічия'], ['z', 'Безрибна нічия'], ['l', 'Програв']].filter(function (g) { return st.meet[g[0]].length; });
@@ -811,7 +843,20 @@
         (unit ? ' <small>' + unit + '</small>' : '') + '</span></div>';
     }
     function stat(k, v, sub) {
-      return '<div class="pc-stat"><dt>' + k + '</dt><dd><b>' + esc(v) + '</b>' + (sub ? '<span>' + esc(sub) + '</span>' : '') + '</dd></div>';
+      var subs = (Array.isArray(sub) ? sub : [sub]).filter(Boolean);
+      return '<div class="pc-stat"><dt>' + k + '</dt><dd><b>' + esc(v) + '</b>' +
+        subs.map(function (x, i) { return '<span' + (i ? ' class="pc-stat__me"' : '') + '>' + esc(x) + '</span>'; }).join('') + '</dd></div>';
+    }
+    // Улов цього учасника в секторі (для блоку «По турніру»)
+    function mySecText(sector) {
+      var mine = st.tours.filter(function (x) { return x.code && x.sector === sector; });
+      if (!mine.length) return st.nextTour ? 'Учасник у цьому секторі ще не рибалив' : 'Учасник у цьому секторі не рибалив';
+      var f = mine.reduce(function (a, x) { return a + x.fish; }, 0);
+      return 'Улов учасника тут: ' + f + ' ' + fishWord(f) + ' (' + (mine.length > 1 ? 'тури ' : 'тур ') +
+        mine.map(function (x) { return x.n; }).join(', ') + ')';
+    }
+    function tSecText(x) {
+      return 'в середньому ' + fmt1(x.avg) + ' ' + fishWord(x.avg) + ' на учасника за тур (' + x.fish + ' ' + fishWord(x.fish) + ' усього)';
     }
     function secText(x) {
       return x.times > 1 ? 'в середньому ' + fmt1(x.avg) + ' ' + fishWord(x.avg) + ' (' + x.times + ' тури)' : fmt1(x.avg) + ' ' + fishWord(x.avg) + ' (тур ' + x.tours[0] + ')';
