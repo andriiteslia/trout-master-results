@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
   <link rel="preload" href="assets/fonts/fixel-cyrillic-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fish.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="assets/style.css?v=20261103e">
-  <script src="config.js?v=20261103e"></script>
+  <link rel="stylesheet" href="assets/style.css?v=20261103g">
+  <script src="config.js?v=20261103g"></script>
   <script>
     // Запитуємо результати одразу, паралельно з завантаженням решти сторінки
     (function () {
@@ -24,7 +24,7 @@
       } catch (e) { window.__tmEarly = null; }
     })();
   </script>
-  <script src="assets/app.js?v=20261103e" defer></script>
+  <script src="assets/app.js?v=20261103g" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -118,9 +118,22 @@
         <button type="button" class="btn btn-secondary" id="regClosedBack">До списку учасників</button>
       </div>
     </section>
+
+    <!-- Картка гравця: показується замість таблиці -->
+    <section class="pcard" id="pcard" aria-labelledby="pcTitle" hidden>
+      <button type="button" class="back" id="pcBack">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg>
+        До таблиці
+      </button>
+      <div id="pcBody"></div>
+    </section>
   </main>
 
   <div class="regbar" id="regbar" hidden>
+    <button type="button" class="btn btn-primary" id="cardOpen" hidden>
+      <svg class="btn__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6"/></svg>
+      <span class="btn__text" id="cardOpenText">Картка гравця</span>
+    </button>
     <button type="button" class="btn btn-primary" id="regOpen">Зареєструватися</button>
   </div>
 

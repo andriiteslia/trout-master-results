@@ -581,6 +581,133 @@ tbody tr.reserve-sep th {
 }
 .has-regbar .main { padding-bottom: calc(112px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px))); }
 
+/* Дві кнопки внизу: «Картка гравця» і «Зареєструватися» */
+.regbar { display: flex; justify-content: center; gap: 10px; }
+.regbar .btn { flex: 1 1 0; min-width: 0; margin: 0; }
+.regbar.two .btn { max-width: 280px; }
+@media (max-width: 640px) {
+  /* Дві кнопки поруч на телефоні: без іконки й трохи менший шрифт, щоб текст не обрізався */
+  .regbar.two .btn { font-size: 15px; padding: 0 12px; gap: 0; }
+  .regbar.two .btn__icon { display: none; }
+}
+.regbar .btn-secondary { box-shadow: 0 8px 20px rgba(16, 24, 40, 0.12), 0 2px 4px rgba(16, 24, 40, 0.06); }
+.regbar .btn__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Картка гравця ---------- */
+.view-card .intro, .view-card .notice, .view-card .tabs, .view-card .info:not(.pc-note), .view-card .board,
+.view-card .reg-live { display: none !important; }
+.pcard { max-width: 640px; }
+.pcard .title:focus { outline: none; }
+.pc-head { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.pc-head .subtitle { margin-top: 4px; }
+.pc-place {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--head);
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 800;
+  font-stretch: 100%;
+}
+.pc-place.medal-1 { background: #fbefc6; color: #6b4d00; box-shadow: inset 0 0 0 2px var(--gold); }
+.pc-place.medal-2 { background: #e9edf2; color: #344054; box-shadow: inset 0 0 0 2px var(--silver); }
+.pc-place.medal-3 { background: #f6e3d2; color: #7a3f12; box-shadow: inset 0 0 0 2px var(--bronze); }
+
+.pc-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+.pc-tile {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+.pc-tile__label { font-size: 12.5px; font-weight: 600; color: var(--text-4); }
+.pc-tile__val { font-size: 24px; font-weight: 750; color: var(--text); line-height: 1.2; white-space: nowrap; }
+.pc-tile__val small { font-size: 13px; font-weight: 600; color: var(--text-3); }
+.pc-tile--wdl .pc-tile__val { display: flex; align-items: baseline; gap: 4px; font-size: 20px; }
+.pc-tile--wdl i { font-style: normal; color: var(--border-strong); font-weight: 500; }
+.c-w { color: var(--win); } .c-d { color: var(--draw); } .c-z { color: var(--zero); } .c-l { color: var(--loss); }
+.pc-note { margin-bottom: 14px; }
+
+.pc-block { padding: 16px; margin-bottom: 14px; }
+.pc-h2 { margin: 0 0 10px; font-size: 16px; font-weight: 750; }
+
+.pc-tours { list-style: none; margin: 0; padding: 0; }
+.pc-tour {
+  display: grid;
+  grid-template-columns: 52px 88px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+}
+.pc-tour:first-child { border-top: 0; }
+.pc-tour__n { font-weight: 650; color: var(--text-3); }
+.pc-tour__sec { color: var(--text-3); white-space: nowrap; }
+.pc-tour__sec b { color: var(--text); font-weight: 750; }
+.pc-tour__opp { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--text); }
+.pc-num { color: var(--text-4); font-weight: 600; }
+.pc-tour__res { display: inline-flex; align-items: center; gap: 8px; justify-self: end; }
+.pc-score { min-width: 40px; text-align: right; font-weight: 750; color: var(--text); white-space: nowrap; }
+.pc-wait { font-size: 12.5px; color: var(--text-4); }
+.pc-tour.is-wait .pc-tour__opp { color: var(--text-2); font-weight: 550; }
+.pc-tour.is-next { background: #eef6fc; margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+.pc-tour.is-next .pc-wait { color: #2e6f9e; font-weight: 700; }
+
+.pc-chart { display: block; width: 100%; max-width: 480px; height: auto; }
+.pc-chart .ax { stroke: var(--border-strong); stroke-width: 1; }
+.pc-chart .bar-w { fill: #32a467; } .pc-chart .bar-l { fill: #e0675c; } .pc-chart .bar-d { fill: #4f8fe0; } .pc-chart .bar-z { fill: #98a2b3; }
+.pc-chart .bar-wait { fill: none; stroke: var(--border-strong); stroke-dasharray: 2 2; }
+.pc-chart .avg { fill: var(--surface); stroke: #0b1220; stroke-width: 1.4; }
+.pc-chart .val { font-size: 9px; font-weight: 700; fill: var(--text-2); text-anchor: middle; }
+.pc-chart .lbl { font-size: 9px; fill: var(--text-4); text-anchor: middle; }
+.pc-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin: 8px 0 0; font-size: 12.5px; color: var(--text-4); }
+.lg-bar { width: 10px; height: 10px; border-radius: 2px; background: linear-gradient(90deg, #32a467 50%, #e0675c 50%); }
+.lg-dot { width: 9px; height: 9px; border-radius: 50%; border: 1.4px solid #0b1220; margin-left: 6px; }
+
+.pc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin: 0; }
+.pc-stat { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--radius); background: var(--zebra); }
+.pc-stat dt { font-size: 12.5px; font-weight: 600; color: var(--text-4); }
+.pc-stat dd { margin: 0; display: grid; gap: 1px; }
+.pc-stat dd b { font-size: 17px; font-weight: 750; color: var(--text); }
+.pc-stat dd span { font-size: 12.5px; color: var(--text-3); }
+
+.pc-meet { display: grid; gap: 6px; padding: 8px 0; border-top: 1px solid var(--border); }
+.pc-meet:first-of-type { border-top: 0; padding-top: 0; }
+.pc-meet__k { font-size: 13px; font-weight: 700; }
+.pc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.pc-chips li { padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: 13px; font-weight: 600; color: var(--text); }
+.pc-chips li span { color: var(--text-4); font-weight: 600; margin-left: 2px; }
+
+@media (max-width: 640px) {
+  .pc-tiles { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .pc-tile { padding: 10px 12px; }
+  .pc-tile__val { font-size: 22px; }
+  .pc-block { padding: 14px 12px; }
+  /* Тур на телефоні: зверху «Тур · Сектор», знизу повне ім'я суперника, праворуч результат */
+  .pc-tour {
+    grid-template-columns: auto auto 1fr auto;
+    grid-template-areas: "n sec . res" "opp opp opp res";
+    gap: 2px 8px;
+    padding: 8px 0;
+    font-size: 14px;
+  }
+  .pc-tour__n { grid-area: n; font-size: 12.5px; }
+  .pc-tour__sec { grid-area: sec; font-size: 12.5px; }
+  .pc-tour__opp { grid-area: opp; white-space: normal; }
+  .pc-tour__res { grid-area: res; align-self: center; }
+  .pc-tour.is-next { margin: 0 -12px; padding-left: 12px; padding-right: 12px; }
+  .pc-stats { grid-template-columns: 1fr; gap: 8px; }
+}
+
 /* Сторінка форми: замість таблиці */
 .view-reg .intro, .view-reg .notice, .view-reg .tabs, .view-reg .info, .view-reg .board { display: none !important; }
 .reg { max-width: 520px; }

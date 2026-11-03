@@ -88,6 +88,13 @@ var REG_COL_TG_USER = 8; // H — @username у Telegram
 var RANGE_ROW_FIRST = 14;
 var RANGE_KEYS = ['Учасники', 'Результат', 'Тури'];
 
+/**
+ * Жеребкування (аркуш «Жеребкування»): вставляється кнопкою «📋 Для таблиці» із сервісу жеребкування.
+ * Рядок на гравця: № | Учасник | Сторона | Тур 1 сектор | Тур 1 суперник | Тур 2 сектор | …
+ * Публікується разом із результатами для «Картки гравця». Імена беруться з «Учасників» за номером.
+ */
+var DRAW_SHEET = 'Жеребкування';
+
 var CACHE_KEY = 'snapshot';
 var CACHE_TTL = 21600;   // 6 годин, максимум для CacheService
 var CHUNK = 4000;        // розмір шматка для збереження у властивостях
@@ -439,13 +446,15 @@ function publish_(ss) {
     title: (sh && String(sh.getRange(CELL_TITLE).getDisplayValue()).trim()) || SETTINGS.EVENT_TITLE,
     subtitle: (sh && String(sh.getRange(CELL_SUBTITLE).getDisplayValue()).trim()) || SETTINGS.EVENT_SUBTITLE
   };
+  var draw = null;
+  try { draw = readDraw_(ss); } catch (err) { console.error(err); }
   var registration = isRegOpen_(sh);
   var deadline = regDeadline_(sh);
   var regDeadline = registration && deadline ? deadline.toISOString() : null;
   var seats = seats_(sh);
   var showMoves = !sh || String(sh.getRange(CELL_MOVES).getDisplayValue()).trim() !== MOVES_OFF;
   var now = new Date().toISOString();
-  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves]);
+  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw]);
   var hash = Utilities.base64EncodeWebSafe(
     Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, body, Utilities.Charset.UTF_8));
 
@@ -458,6 +467,7 @@ function publish_(ss) {
     regDeadline: regDeadline,
     seats: seats,
     showMoves: showMoves,
+    draw: draw,
     hash: hash,
     changedAt: now,
     generatedAt: now,
@@ -465,6 +475,44 @@ function publish_(ss) {
   };
   saveSnapshot_(JSON.stringify(payload));
   return payload;
+}
+
+/**
+ * Жеребкування для картки гравця: { rounds, players: [{ n, name, side, t: [[сектор, № суперника], …] }] }
+ * або null, якщо аркуша немає чи він порожній.
+ */
+function readDraw_(ss) {
+  var sh = ss.getSheetByName(DRAW_SHEET);
+  if (!sh || sh.getLastRow() < 2 || sh.getLastColumn() < 5) return null;
+  var vals = sh.getRange(1, 1, sh.getLastRow(), sh.getLastColumn()).getDisplayValues();
+  var rounds = Math.floor((vals[0].length - 3) / 2);
+  while (rounds > 0 && !vals.slice(1).some(function (r) { return String(r[3 + (rounds - 1) * 2]).trim(); })) rounds--;
+  if (!rounds) return null;
+
+  // № → прізвище та ім'я з «Учасників» (як у реєстрації)
+  var names = {};
+  var reg = ss.getSheetByName(REG_SHEET);
+  if (reg && reg.getLastRow() > 1) {
+    reg.getRange(2, REG_COL_NUM, reg.getLastRow() - 1, REG_COL_NAME - REG_COL_NUM + 1).getDisplayValues().forEach(function (r) {
+      var n = parseInt(r[0], 10);
+      var nm = String(r[REG_COL_NAME - REG_COL_NUM]).trim();
+      if (n > 0 && nm) names[n] = nm;
+    });
+  }
+
+  var players = [];
+  vals.slice(1).forEach(function (r) {
+    var n = parseInt(r[0], 10);
+    if (!(n > 0)) return;
+    var t = [];
+    for (var i = 0; i < rounds; i++) {
+      var sec = parseInt(r[3 + i * 2], 10);
+      var opp = parseInt(r[4 + i * 2], 10);
+      t.push([sec > 0 ? sec : null, opp > 0 ? opp : null]);
+    }
+    players.push({ n: n, name: names[n] || String(r[1]).trim(), side: String(r[2]).trim(), t: t });
+  });
+  return players.length ? { rounds: rounds, players: players } : null;
 }
 
 function saveSnapshot_(json) {
