@@ -666,6 +666,29 @@ tbody tr.reserve-sep th {
 .done__text { margin: 0 0 12px; color: var(--text-3); }
 .done__text strong { color: var(--text); }
 
+/* Пропозиція сповіщень після реєстрації (лише в Telegram) */
+.notify {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  margin: 4px 0 4px;
+  padding: 16px;
+  border: 1px solid #c5def0;
+  border-radius: var(--radius);
+  background: #eef6fc;
+}
+.notify__text { margin: 0; color: var(--text-2); font-weight: 600; }
+.notify__ok {
+  margin: 0 0 4px;
+  padding: 10px 14px;
+  border: 1px solid #abefc6;
+  border-radius: var(--radius);
+  background: var(--win-bg);
+  color: var(--win);
+  font-weight: 650;
+}
+.btn__icon { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
 @media (max-width: 640px) {
   .card { padding: 20px 16px; }
   .done { padding: 28px 16px; }

@@ -734,10 +734,59 @@
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'whoami', tg: tg.initData })
     }).then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (res) { if (res && res.ok && Array.isArray(res.names)) applyMyNames(res.names); })
+      .then(function (res) {
+        if (res && res.ok && res.canWrite === true) state.canWrite = true;
+        if (res && res.ok && Array.isArray(res.names)) applyMyNames(res.names);
+      })
       .catch(function () { /* не вийшло — нічого страшного */ });
   }
   document.addEventListener('tm-tg-ready', whoAmI);
+
+  // ----- Telegram: дозвіл боту писати (нагадування, результати) -----
+  // Пропонуємо після реєстрації: системне вікно Telegram «Дозволити боту надсилати повідомлення?»
+  var LS_WRITE = 'tm:writeOk';
+  function tgApp() { return window.Telegram && window.Telegram.WebApp; }
+  function canOfferNotify() {
+    var tg = tgApp();
+    if (DEMO || !tg || !tg.initData || typeof tg.requestWriteAccess !== 'function') return false;
+    try { if (!tg.isVersionAtLeast('6.9')) return false; } catch (e) { return false; }
+    var u = tg.initDataUnsafe && tg.initDataUnsafe.user;
+    if (u && u.allows_write_to_pm) return false;
+    return !state.canWrite && !store.get(LS_WRITE, false);
+  }
+  function renderNotify(mode) {   // 'offer' | 'ok' | 'none'
+    var nb = $('regNotify'), ok = $('regNotifyOk'), toList = $('regToList');
+    nb.hidden = mode !== 'offer';
+    ok.hidden = mode !== 'ok';
+    // Поки пропонуємо сповіщення, головна кнопка — вона, а «Переглянути список» другорядна
+    toList.classList.toggle('btn-primary', mode !== 'offer');
+    toList.classList.toggle('btn-secondary', mode === 'offer');
+  }
+  function sendWriteAccess(granted) {
+    var tg = tgApp();
+    if (!tg || !tg.initData) return;
+    fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'writeAccess', tg: tg.initData, granted: granted })
+    }).catch(function () { /* */ });
+  }
+  $('regNotifyBtn').addEventListener('click', function () {
+    var tg = tgApp();
+    if (!tg) return;
+    try {
+      tg.requestWriteAccess(function (granted) {
+        if (granted) {
+          state.canWrite = true;
+          store.set(LS_WRITE, true);
+          renderNotify('ok');
+          sendWriteAccess(true);
+        } else {
+          renderNotify('none');
+        }
+      });
+    } catch (e) { renderNotify('none'); }
+  });
 
   window.addEventListener('popstate', function (e) {
     var v = e.state && e.state.tmView === 'reg' ? 'reg' : 'list';
@@ -944,6 +993,7 @@
         reg.form.reset();
         state.regTried = false;
         renderReg();
+        renderNotify(canOfferNotify() ? 'offer' : 'none');
         try { reg.done.focus({ preventScroll: true }); } catch (x) { reg.done.focus(); }
         load();   // підтягнути оновлений список
       })

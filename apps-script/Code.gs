@@ -30,7 +30,13 @@
 var SETTINGS = {
   SPREADSHEET_ID: 'https://docs.google.com/spreadsheets/d/13wvgmiuQeCl6ap4QmScSdf1dR0_wUuljV9-1-GggLdk/edit',
   EVENT_TITLE: 'Round 1',
-  EVENT_SUBTITLE: '21 листопада • Плугів • Krychevychi Area Fishing'
+  EVENT_SUBTITLE: '21 листопада • Плугів • Krychevychi Area Fishing',
+  // Адреса розгортання (/exec) — для вебхука Telegram. Та сама, що в config.js сайту.
+  WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbxbXAq9BaSu4nxH27TCGc2HZkzt7RlrWtWAle7zF20802ujhpsfMBLek1efKtXexdNF/exec',
+  // Сайт (міні-застосунок) — для кнопки в привітанні бота
+  SITE_URL: 'https://andriiteslia.github.io/trout-master-results/',
+  // Відповідь бота на Start. Порожньо — бот мовчить.
+  BOT_GREETING: 'Привіт! Тут онлайн-результати та реєстрація на турніри TROUT MASTER 🎣\nНатисни кнопку нижче, щоб відкрити застосунок.'
 };
 
 var VIEWS = [
@@ -493,6 +499,11 @@ function summary_(p) {
  * Відповідь: { ok: true, number: 29, name: '...' } або { ok: false, code: '...', error: '...' }.
  */
 function doPost(e) {
+  // Вебхук Telegram (адреса з ?hook=секрет): нічого не повертаємо — так Telegram отримує «200 OK»
+  if (e && e.parameter && e.parameter.hook) {
+    try { handleTelegramUpdate_(e); } catch (err) { console.error(err); }
+    return;
+  }
   var out;
   try {
     var data = {};
@@ -501,6 +512,7 @@ function doPost(e) {
     if (e && e.parameter) Object.keys(e.parameter).forEach(function (k) { if (data[k] == null) data[k] = e.parameter[k]; });
     if (data.action === 'register') out = register_(data);
     else if (data.action === 'whoami') out = whoami_(data);
+    else if (data.action === 'writeAccess') out = writeAccess_(data);
     else out = fail_('bad_request', 'Невідомий запит.');
   } catch (err) {
     out = fail_('server', 'Не вдалося зберегти заявку. Спробуйте ще раз за хвилину.');
@@ -587,18 +599,34 @@ function whoami_(data) {
   var user = telegramUser_(data.tg);
   if (!user) return { ok: true, names: [] };
   var ss = SpreadsheetApp.openById(getSpreadsheetId_());
+  var names = regNamesFor_(ss, user.id);
+  try { upsertTgUser_(ss, user, { visit: true, canWrite: user.allowsWrite ? true : null, names: names }); } catch (err) { console.error(err); }
+  return { ok: true, names: names, canWrite: user.allowsWrite };
+}
+
+/** Імена з «Учасників», зареєстровані з цього Telegram ID (колонка G). */
+function regNamesFor_(ss, id) {
   var sh = ss.getSheetByName(REG_SHEET);
   var names = [];
-  if (sh && sh.getLastRow() >= 2) {
-    var width = Math.max(REG_COL_NAME, REG_COL_TG_ID);
-    var rows = sh.getRange(2, 1, sh.getLastRow() - 1, width).getDisplayValues();
-    rows.forEach(function (r) {
-      var name = String(r[REG_COL_NAME - 1]).trim();
-      if (name && String(r[REG_COL_TG_ID - 1]).trim() === user.id && names.indexOf(name) < 0) names.push(name);
-    });
+  if (!sh || sh.getLastRow() < 2) return names;
+  var width = Math.max(REG_COL_NAME, REG_COL_TG_ID);
+  sh.getRange(2, 1, sh.getLastRow() - 1, width).getDisplayValues().forEach(function (r) {
+    var name = String(r[REG_COL_NAME - 1]).trim();
+    if (name && String(r[REG_COL_TG_ID - 1]).trim() === String(id) && names.indexOf(name) < 0) names.push(name);
+  });
+  return names;
+}
+
+/** Застосунок повідомляє, що людина дозволила (чи ні) боту писати їй. */
+function writeAccess_(data) {
+  if (!PropertiesService.getScriptProperties().getProperty('BOT_TOKEN')) return { ok: true };
+  var user = telegramUser_(data.tg);
+  if (!user) return { ok: true };
+  if (data.granted === true || data.granted === 'true') {
+    var ss = SpreadsheetApp.openById(getSpreadsheetId_());
+    upsertTgUser_(ss, user, { canWrite: true, names: regNamesFor_(ss, user.id) });
   }
-  try { logVisit_(ss, user, names); } catch (err) { console.error(err); }
-  return { ok: true, names: names };
+  return { ok: true };
 }
 
 // ---------------------------------------------------------------------------
@@ -606,39 +634,144 @@ function whoami_(data) {
 // ---------------------------------------------------------------------------
 
 var VISITS_SHEET = 'Відвідування';
-var VISITS_HEAD = ['Telegram ID', 'Telegram', 'Ім\u2019я в Telegram', 'Зареєстрований як', 'Перший візит', 'Останній візит', 'Візитів'];
+var VISITS_HEAD = ['Telegram ID', 'Telegram', 'Ім’я в Telegram', 'Зареєстрований як', 'Перший візит', 'Останній візит', 'Візитів', 'Можна писати'];
+var VISITS_COL_WRITE = 8;   // H — чи може бот писати людині (так/ні)
 
-/** Один рядок на людину: при повторному відкритті оновлюються дані, час і лічильник. */
-function logVisit_(ss, user, names) {
+/**
+ * Один рядок на людину в «Відвідуваннях». opts:
+ *   visit: true — людина відкрила застосунок (оновити час і лічильник);
+ *   canWrite: true/false — змінити «Можна писати»; null — не чіпати;
+ *   names: імена з «Учасників» для колонки «Зареєстрований як».
+ */
+function upsertTgUser_(ss, user, opts) {
+  opts = opts || {};
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(10000)) return;
   try {
-    var sh = ss.getSheetByName(VISITS_SHEET);
-    if (!sh) {
-      sh = ss.insertSheet(VISITS_SHEET);
-      sh.getRange(1, 1, 1, VISITS_HEAD.length).setValues([VISITS_HEAD]).setFontWeight('bold').setBackground('#e3f0fa');
-      sh.setFrozenRows(1);
-      sh.getRange('A:A').setNumberFormat('@');
-      sh.getRange('E:F').setNumberFormat('dd.MM.yyyy HH:mm');
-      sh.setColumnWidth(3, 180);
-      sh.setColumnWidth(4, 200);
-    }
+    var sh = visitsSheet_(ss);
     var now = new Date();
     var at = user.username ? '@' + user.username : '';
-    var reg = names.join(', ');
+    var reg = (opts.names || []).join(', ');
+    var write = opts.canWrite === true ? 'так' : opts.canWrite === false ? 'ні' : null;
     var last = sh.getLastRow();
     var ids = last > 1 ? sh.getRange(2, 1, last - 1, 1).getDisplayValues() : [];
     for (var i = 0; i < ids.length; i++) {
       if (String(ids[i][0]).trim() !== user.id) continue;
       var r = i + 2;
-      var count = Number(sh.getRange(r, 7).getValue()) || 0;
-      sh.getRange(r, 2, 1, 3).setValues([[at, user.name, reg]]);
-      sh.getRange(r, 6, 1, 2).setValues([[now, count + 1]]);
+      var row = sh.getRange(r, 1, 1, VISITS_HEAD.length).getValues()[0];
+      sh.getRange(r, 2, 1, 3).setValues([[at || row[1], user.name || row[2], reg || row[3]]]);
+      if (opts.visit) sh.getRange(r, 5, 1, 3).setValues([[row[4] || now, now, (Number(row[6]) || 0) + 1]]);
+      if (write) sh.getRange(r, VISITS_COL_WRITE).setValue(write);
+      else if (!row[VISITS_COL_WRITE - 1]) sh.getRange(r, VISITS_COL_WRITE).setValue('ні');
       return;
     }
-    sh.appendRow([user.id, at, user.name, reg, now, now, 1]);
+    sh.appendRow([user.id, at, user.name || '', reg, opts.visit ? now : '', opts.visit ? now : '', opts.visit ? 1 : 0, write || 'ні']);
   } finally {
     lock.releaseLock();
+  }
+}
+
+function visitsSheet_(ss) {
+  var sh = ss.getSheetByName(VISITS_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(VISITS_SHEET);
+    sh.setFrozenRows(1);
+    sh.getRange('A:A').setNumberFormat('@');
+    sh.getRange('E:F').setNumberFormat('dd.MM.yyyy HH:mm');
+    sh.setColumnWidth(3, 180);
+    sh.setColumnWidth(4, 200);
+  }
+  // Заголовки (і нові колонки в старому аркуші)
+  var head = sh.getRange(1, 1, 1, VISITS_HEAD.length);
+  if (head.getDisplayValues()[0].join('|') !== VISITS_HEAD.join('|')) {
+    head.setValues([VISITS_HEAD]).setFontWeight('bold').setBackground('#e3f0fa');
+  }
+  return sh;
+}
+
+// ---------------------------------------------------------------------------
+// Вебхук Telegram: хто натиснув Start, дозволив повідомлення або заблокував бота
+// ---------------------------------------------------------------------------
+
+/**
+ * Запустіть один раз з редактора (кнопка «Виконати»), щоб Telegram надсилав скрипту
+ * натискання Start і блокування бота. Потрібен BOT_TOKEN у властивостях скрипта.
+ * Якщо в бота вже є інший вебхук (сервіс-конструктор тощо), функція нічого не змінить.
+ */
+function setupTelegramWebhook() {
+  var props = PropertiesService.getScriptProperties();
+  var token = props.getProperty('BOT_TOKEN');
+  if (!token) throw new Error('Спершу додайте BOT_TOKEN у властивості скрипта.');
+  var info = tgApi_('getWebhookInfo', {});
+  var current = info && info.result && info.result.url;
+  if (current && current.indexOf(SETTINGS.WEBAPP_URL) !== 0) {
+    Logger.log('У бота вже є інший вебхук: ' + current.replace(/\?.*$/, '') +
+      '. Щоб не зламати його, нічого не змінюю. Якщо він більше не потрібен, запустіть removeTelegramWebhook і повторіть.');
+    return;
+  }
+  var secret = props.getProperty('TG_HOOK_SECRET');
+  if (!secret) {
+    secret = Utilities.getUuid().replace(/-/g, '');
+    props.setProperty('TG_HOOK_SECRET', secret);
+  }
+  var res = tgApi_('setWebhook', {
+    url: SETTINGS.WEBAPP_URL + '?hook=' + secret,
+    allowed_updates: ['message', 'my_chat_member'],
+    drop_pending_updates: true
+  });
+  Logger.log(res && res.ok ? 'Готово: Telegram надсилатиме скрипту натискання Start і блокування бота.' : 'Не вдалося: ' + JSON.stringify(res));
+}
+
+/** Вимкнути вебхук (якщо колись знадобиться інший сервіс для бота). */
+function removeTelegramWebhook() {
+  var res = tgApi_('deleteWebhook', {});
+  Logger.log(res && res.ok ? 'Вебхук вимкнено.' : 'Не вдалося: ' + JSON.stringify(res));
+}
+
+function tgApi_(method, payload) {
+  var token = PropertiesService.getScriptProperties().getProperty('BOT_TOKEN');
+  var resp = UrlFetchApp.fetch('https://api.telegram.org/bot' + String(token).trim() + '/' + method, {
+    method: 'post', contentType: 'application/json', payload: JSON.stringify(payload), muteHttpExceptions: true
+  });
+  try { return JSON.parse(resp.getContentText()); } catch (e) { return null; }
+}
+
+function handleTelegramUpdate_(e) {
+  var secret = PropertiesService.getScriptProperties().getProperty('TG_HOOK_SECRET');
+  if (!secret || e.parameter.hook !== secret) return;   // чужий запит
+  var upd = JSON.parse((e.postData && e.postData.contents) || '{}');
+  var msg = upd.message;
+  var member = upd.my_chat_member;
+  var from = (msg && msg.from) || (member && member.from);
+  var chat = (msg && msg.chat) || (member && member.chat);
+  if (!from || from.is_bot || !chat || chat.type !== 'private') return;
+
+  // Telegram може надіслати те саме оновлення двічі — обробляємо один раз
+  var cache = CacheService.getScriptCache();
+  var key = 'upd:' + upd.update_id;
+  if (cache.get(key)) return;
+  cache.put(key, '1', 21600);
+
+  var user = {
+    id: String(from.id),
+    username: /^[A-Za-z0-9_]{3,32}$/.test(String(from.username || '')) ? String(from.username) : '',
+    name: [from.first_name, from.last_name].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().slice(0, 80)
+  };
+  var ss = SpreadsheetApp.openById(getSpreadsheetId_());
+  if (member) {
+    var st = member.new_chat_member && member.new_chat_member.status;
+    if (st === 'kicked') upsertTgUser_(ss, user, { canWrite: false, names: regNamesFor_(ss, user.id) });      // заблокував бота
+    else if (st === 'member') upsertTgUser_(ss, user, { canWrite: true, names: regNamesFor_(ss, user.id) });  // розблокував
+    return;
+  }
+  // Будь-яке повідомлення боту (Start, текст, дозвіл із застосунку) означає, що писати можна
+  upsertTgUser_(ss, user, { canWrite: true, names: regNamesFor_(ss, user.id) });
+  if (/^\/start\b/.test(String(msg.text || '')) && SETTINGS.BOT_GREETING) {
+    tgApi_('sendMessage', {
+      chat_id: from.id,
+      text: SETTINGS.BOT_GREETING,
+      reply_markup: { inline_keyboard: [[{ text: 'Відкрити TM APP', web_app: { url: SETTINGS.SITE_URL } }]] }
+    });
   }
 }
 
@@ -671,7 +804,7 @@ function telegramUser_(initData) {
     if (!u || !/^\d{1,20}$/.test(String(u.id))) return null;
     var username = /^[A-Za-z0-9_]{3,32}$/.test(String(u.username || '')) ? String(u.username) : '';
     var full = [u.first_name, u.last_name].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().slice(0, 80);
-    return { id: String(u.id), username: username, name: full };
+    return { id: String(u.id), username: username, name: full, allowsWrite: u.allows_write_to_pm === true };
   } catch (e) {
     return null;
   }
