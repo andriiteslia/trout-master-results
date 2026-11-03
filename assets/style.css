@@ -652,7 +652,7 @@ tbody tr.reserve-sep th {
 .pc-tour:first-child { border-top: 0; }
 .pc-tour--head { min-height: 0; padding: 0 0 6px; border-top: 0; font-size: 11.5px; font-weight: 650; color: var(--text-4); text-transform: uppercase; letter-spacing: 0.04em; }
 .pc-tour__sec { text-align: center; }
-.pc-side { margin-left: 1px; font-size: 0.86em; font-weight: 700; color: var(--text-3); }
+.pc-side { margin-left: 1px; font-weight: 700; color: var(--text-3); }
 .pc-tour--head span:nth-child(2) { text-align: center; }
 
 .pc-tour__n { font-weight: 650; color: var(--text-3); }
