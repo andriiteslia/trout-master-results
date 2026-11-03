@@ -83,6 +83,8 @@
     fromCache: false,
     tab: null,   // при відкритті сторінки завжди перша вкладка
     selected: new Set(store.get(LS.sel, []).slice(-1)),   // виділяється лише один гравець
+    // Раніше можна було виділити кількох: тоді у Telegram один раз перевиділимо «себе»
+    legacyMulti: store.get(LS.sel, []).length > 1,
     moves: {},
     changed: {},
     changeTime: 0,
@@ -722,6 +724,14 @@
   var LS_AUTO = 'tm:autoSel';
   function applyMyNames(names) {
     var done = store.get(LS_AUTO, []);
+    // Було старе виділення кількох рядків — ставимо одне: першу реєстрацію з цього акаунта (себе)
+    if (state.legacyMulti && names.length) {
+      state.legacyMulti = false;
+      names.forEach(function (n) { if (done.indexOf(n) === -1) done.push(n); });
+      store.set(LS_AUTO, done.slice(-50));
+      if (!state.selected.has(names[0])) { selectOnly(names[0]); if (state.models.length) renderBoard(); }
+      return;
+    }
     // Перше ім'я (своя реєстрація), якого ще не виділяли автоматично
     var pick = null;
     names.forEach(function (n) {
