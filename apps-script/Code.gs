@@ -16,6 +16,8 @@
  *   «Зареєструватися». Заявки дописуються в аркуш «Учасники»: A — номер, B — прізвище та ім'я,
  *   E — телефон (на сайт не потрапляє), F — час реєстрації,
  *   G — Telegram ID і H — @username (якщо заявку надіслано з міні-застосунку бота).
+ *   Після жеребкування в колонку A вписуються номери, які учасники витягнули (1–28): за ними
+ *   скрипт підставляє імена в аркуш «Жеребкування» і в картки учасників.
  *   Хто відкривав застосунок у Telegram, записується в аркуш «Відвідування» (лише з BOT_TOKEN).
  *   Щоб Telegram ID не можна було підробити, впишіть токен бота у властивості скрипта:
  *   ⚙️ «Налаштування проєкту» → «Властивості скрипта» → BOT_TOKEN.
@@ -82,7 +84,6 @@ var REG_COL_PHONE = 5;   // E — телефон (лише для організ
 var REG_COL_TIME = 6;    // F — час реєстрації
 var REG_COL_TG_ID = 7;   // G — Telegram ID (якщо реєструвались через бота)
 var REG_COL_TG_USER = 8; // H — @username у Telegram
-var REG_COL_DRAWNUM = 9; // I — № жеребкування (номер, який учасник витягнув на водоймі)
 
 /**
  * Діапазони, які можна змінювати прямо на аркуші «Сайт» (блок «Діапазони…», B15:B17).
@@ -263,7 +264,7 @@ function setupSync() {
   // Заголовки колонок для заявок на аркуші «Учасники» (лише якщо порожні)
   var reg = ss.getSheetByName(REG_SHEET);
   if (reg) {
-    [[REG_COL_PHONE, 'Телефон'], [REG_COL_TIME, 'Зареєстровано'], [REG_COL_TG_ID, 'Telegram ID'], [REG_COL_TG_USER, 'Telegram'], [REG_COL_DRAWNUM, '№ жеребкування']].forEach(function (x) {
+    [[REG_COL_PHONE, 'Телефон'], [REG_COL_TIME, 'Зареєстровано'], [REG_COL_TG_ID, 'Telegram ID'], [REG_COL_TG_USER, 'Telegram']].forEach(function (x) {
       var c = reg.getRange(1, x[0]);
       if (!String(c.getDisplayValue()).trim()) c.setValue(x[1]).setFontWeight('bold');
     });
@@ -302,7 +303,7 @@ function handleSiteSync(e) {
   var sh = e.range.getSheet();
   // Вставили жеребкування або змінили номери/імена в «Учасниках» — підставляємо імена в «Жеребкування»
   if (sh.getName() === DRAW_SHEET ||
-      (sh.getName() === REG_SHEET && e.range.getColumn() <= REG_COL_DRAWNUM && e.range.getLastColumn() >= REG_COL_NUM)) {
+      (sh.getName() === REG_SHEET && e.range.getColumn() <= REG_COL_NAME && e.range.getLastColumn() >= REG_COL_NUM)) {
     try { syncDrawNames_(e.source); } catch (err) { console.error(err); }
     return;
   }
@@ -542,23 +543,19 @@ function readDraw_(ss) {
 }
 
 /**
- * № у жеребкуванні → прізвище та ім'я з «Учасників».
- * Якщо в колонці «№ жеребкування» (I) є хоч один номер — беремо номери звідти
- * (номер, який учасник витягнув на водоймі); інакше — порядкові номери з колонки A.
+ * № у жеребкуванні → прізвище та ім'я з «Учасників» (колонка A → колонка B).
+ * До жеребкування в колонці A порядкові номери, після — номери, які учасники витягнули на водоймі.
  */
 function drawNames_(ss) {
   var reg = ss.getSheetByName(REG_SHEET);
-  var byDraw = {}, byReg = {}, anyDraw = false;
-  if (!reg || reg.getLastRow() < 2) return {};
-  reg.getRange(2, 1, reg.getLastRow() - 1, REG_COL_DRAWNUM).getDisplayValues().forEach(function (r) {
+  var names = {};
+  if (!reg || reg.getLastRow() < 2) return names;
+  reg.getRange(2, 1, reg.getLastRow() - 1, Math.max(REG_COL_NUM, REG_COL_NAME)).getDisplayValues().forEach(function (r) {
     var nm = String(r[REG_COL_NAME - 1]).trim();
-    if (!nm) return;
-    var rn = parseInt(r[REG_COL_NUM - 1], 10);
-    var dn = parseInt(r[REG_COL_DRAWNUM - 1], 10);
-    if (rn > 0) byReg[rn] = nm;
-    if (dn > 0) { byDraw[dn] = nm; anyDraw = true; }
+    var n = parseInt(r[REG_COL_NUM - 1], 10);
+    if (nm && n > 0) names[n] = nm;
   });
-  return anyDraw ? byDraw : byReg;
+  return names;
 }
 
 /** Вписує імена учасників у колонку B «Жеребкування» (лише там, де вони змінилися). */
