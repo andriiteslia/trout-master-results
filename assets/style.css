@@ -595,7 +595,9 @@ tbody tr.reserve-sep th {
 
 /* ---------- Картка гравця ---------- */
 .view-card .intro, .view-card .notice, .view-card .tabs, .view-card .info:not(.pc-note), .view-card .board,
-.view-card .reg-live { display: none !important; }
+.view-card .reg-live,
+.view-stats .intro, .view-stats .notice, .view-stats .tabs, .view-stats .info, .view-stats .board,
+.view-stats .reg-live { display: none !important; }
 .pcard { max-width: 640px; }
 .pcard .title:focus { outline: none; }
 .pc-head { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
@@ -693,6 +695,53 @@ tbody tr.reserve-sep th {
 .pc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .pc-chips li { padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: 13px; font-weight: 600; color: var(--text); }
 .pc-chips li span { color: var(--text-4); font-weight: 600; margin-left: 2px; }
+
+/* Графік місця по турах */
+.pc-chart .grid { stroke: var(--border); stroke-width: 1; }
+.pc-chart .lbl-y { text-anchor: end; }
+.pc-chart .place-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.pc-chart .place-dot { fill: var(--surface); stroke: var(--accent); stroke-width: 1.6; }
+.pc-chart .val-last { font-size: 10.5px; fill: var(--accent); }
+.pc-chart .bar-t { fill: #6fa8dc; }
+
+/* ---------- Статистика турніру ---------- */
+.tstats .pc-tile__val small { display: block; font-size: 12px; font-weight: 550; color: var(--text-4); white-space: normal; }
+
+/* Карта секторів */
+.hm { display: grid; gap: 2px; overflow-x: auto; padding-bottom: 2px; }
+.hm-row { display: grid; grid-template-columns: 22px repeat(var(--hm-n, 14), minmax(14px, 1fr)) 30px; gap: 2px; align-items: center; }
+@media (min-width: 641px) { .hm-row { grid-template-columns: 34px repeat(var(--hm-n, 14), minmax(22px, 1fr)) 44px; gap: 3px; } .hm-cell { height: 28px; font-size: 12px; } }
+.hm-sec { font-size: 12px; font-weight: 700; color: var(--text-2); text-align: center; }
+.hm-cell { display: grid; place-items: center; height: 24px; border-radius: 3px; font-size: 10.5px; font-weight: 650; background: var(--zebra); }
+.hm-th { background: none; height: auto; color: var(--text-4); font-weight: 600; }
+.hm-empty { background: none; box-shadow: inset 0 0 0 1px var(--border); }
+.hm-avg { font-size: 12px; font-weight: 700; text-align: right; color: var(--text-2); padding-right: 2px; }
+.hm-head .hm-sec, .hm-head .hm-avg { font-size: 10.5px; font-weight: 600; color: var(--text-4); }
+.hm-avg.hm-best { color: var(--win); }
+.hm-avg.hm-worst { color: var(--loss); }
+.hm-note { margin: 0 0 10px; }
+.hm-scale { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--text-4); }
+.hm-scale i { flex: 0 1 160px; height: 8px; border-radius: 4px; }
+
+/* Топ за уловом */
+.ts-top { list-style: none; margin: 0; padding: 0; }
+.ts-top li { display: grid; grid-template-columns: 24px 1fr auto auto; gap: 10px; align-items: center; min-height: 44px; border-top: 1px solid var(--border); font-size: 14px; }
+.ts-top li:first-child { border-top: 0; }
+.ts-top__n { font-weight: 750; color: var(--text-3); }
+.ts-top__name { font-weight: 650; color: var(--text); min-width: 0; }
+.ts-top__fish { font-weight: 750; white-space: nowrap; }
+.ts-top__fish small { font-weight: 600; color: var(--text-3); }
+.ts-top__place { font-size: 12px; font-weight: 600; color: var(--text-4); white-space: nowrap; }
+
+/* Частки результатів */
+.ts-share { display: flex; height: 14px; border-radius: 7px; overflow: hidden; gap: 2px; }
+.ts-share__seg { min-width: 4px; }
+.seg-w { background: #32a467; } .seg-l { background: #e0675c; } .seg-d { background: #4f8fe0; } .seg-z { background: #98a2b3; }
+.ts-share__legend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin: 12px 0 0; padding: 0; list-style: none; font-size: 13.5px; color: var(--text-2); }
+.ts-share__legend li { display: flex; align-items: center; gap: 6px; }
+.ts-share__legend b { color: var(--text); }
+.ts-share__legend small { color: var(--text-4); }
+.ts-share__legend .sw { width: 10px; height: 10px; border-radius: 3px; flex: none; }
 
 @media (max-width: 640px) {
   .pc-tiles { grid-template-columns: 1fr 1fr; gap: 8px; }

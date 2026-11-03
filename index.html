@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
   <link rel="preload" href="assets/fonts/fixel-cyrillic-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fish.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="assets/style.css?v=20261104d">
-  <script src="config.js?v=20261104d"></script>
+  <link rel="stylesheet" href="assets/style.css?v=20261104k">
+  <script src="config.js?v=20261104k"></script>
   <script>
     // Запитуємо результати одразу, паралельно з завантаженням решти сторінки
     (function () {
@@ -24,7 +24,7 @@
       } catch (e) { window.__tmEarly = null; }
     })();
   </script>
-  <script src="assets/app.js?v=20261104d" defer></script>
+  <script src="assets/app.js?v=20261104k" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -127,6 +127,15 @@
       </button>
       <div id="pcBody"></div>
     </section>
+
+    <!-- Статистика турніру: показується замість таблиці -->
+    <section class="pcard tstats" id="tstats" aria-labelledby="tsTitle" hidden>
+      <button type="button" class="back" id="tsBack">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg>
+        До таблиці
+      </button>
+      <div id="tsBody"></div>
+    </section>
   </main>
 
   <div class="regbar" id="regbar" hidden>
@@ -135,6 +144,10 @@
       <span class="btn__text" id="cardOpenText">Картка учасника</span>
     </button>
     <button type="button" class="btn btn-primary" id="regOpen">Зареєструватися</button>
+    <button type="button" class="btn btn-primary" id="statsOpen" hidden>
+      <svg class="btn__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+      <span class="btn__text">Статистика</span>
+    </button>
   </div>
 
 </body>

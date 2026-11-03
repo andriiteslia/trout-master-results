@@ -435,6 +435,7 @@
     renderBoard();
     renderReg();
     if (state.view === 'card') renderCard();
+    if (state.view === 'stats') renderStats();
     revealFocusRow();
   }
 
@@ -745,6 +746,11 @@
       best: best, streak: streak,
       secBest: secList.length > 1 ? secList[0] : null, secWorst: secList.length > 1 ? secList[secList.length - 1] : null,
       meet: meet, hasResults: !!me, hasDraw: !!dp,
+      vsOpp: (function () {
+        var mine = 0, theirs = 0, n = 0;
+        played.forEach(function (x) { if (x.oppFish != null) { mine += x.fish; theirs += x.oppFish; n++; } });
+        return n ? { mine: mine, theirs: theirs, n: n } : null;
+      })(),
       nextTour: tours.find(function (x) { return !x.code; }) || null
     };
   }
@@ -808,9 +814,19 @@
       h += '<section class="card pc-block"><h2 class="pc-h2">Улов по турах</h2>' + chartSvg(st) +
         '<p class="pc-legend"><span class="lg-bar"></span>улов учасника <span class="lg-line"></span>середній улов у турі</p></section>';
 
+      // Місце по турах
+      var stand = standings(), myPlaces = stand && stand.byName[normName(st.name)];
+      if (myPlaces && myPlaces.length > 1) {
+        var tCount = Object.keys(toursData().byName).length;
+        h += '<section class="card pc-block"><h2 class="pc-h2">Місце по турах</h2>' + placeSvg(myPlaces, tCount) +
+          '<p class="pc-legend">Місце після кожного туру: бали (В 3, РН 2, БН 1, П 0), при рівних — більше перемог, далі більше риби</p></section>';
+      }
+
       // Статистика
       var rows = [];
       rows.push(stat('Відсоток перемог', Math.round(st.winRate * 100) + '%', st.cnt.w + ' з ' + st.played + ' ' + plural(st.played, 'туру', 'турів', 'турів')));
+      if (st.vsOpp) rows.push(stat('Сумарно проти суперників', st.vsOpp.mine + ' : ' + st.vsOpp.theirs,
+        'різниця ' + (st.vsOpp.mine - st.vsOpp.theirs > 0 ? '+' : '') + (st.vsOpp.mine - st.vsOpp.theirs) + ' ' + fishWord(Math.abs(st.vsOpp.mine - st.vsOpp.theirs))));
       rows.push(stat('Середній улов за тур', fmt1(st.avg) + ' ' + fishWord(st.avg), st.tAvg != null ? 'по турніру в середньому ' + fmt1(st.tAvg) : ''));
       if (st.share != null) rows.push(stat('Частка від усієї риби', fmt1(st.share * 100) + '%', st.fish + ' з ' + st.totalFish + ' ' + fishWord(st.totalFish) + ' турніру'));
       if (st.best) rows.push(stat('Найкращий тур', 'Тур ' + st.best.n, st.best.fish + ' ' + fishWord(st.best.fish) + (st.best.sector ? ', сектор ' + st.best.sector : '')));
@@ -861,6 +877,258 @@
     function secText(x) {
       return x.times > 1 ? 'в середньому ' + fmt1(x.avg) + ' ' + fishWord(x.avg) + ' (' + x.times + ' тури)' : fmt1(x.avg) + ' ' + fishWord(x.avg) + ' (тур ' + x.tours[0] + ')';
     }
+  }
+
+  // ---------- Таблиця по ходу турніру й статистика турніру ----------
+  var POINTS = { w: 3, d: 2, z: 1, l: 0 };   // В — 3, РН — 2, БН — 1, П — 0
+
+  // Місце кожного учасника після кожного туру: бали (3/2/1/0), далі кількість перемог, далі улов; повна рівність — одне місце
+  var standCache = { payload: null, data: null };
+  function standings() {
+    if (standCache.payload === state.payload) return standCache.data;
+    var t = toursData(), out = null;
+    if (t) {
+      var names = Object.keys(t.byName);
+      var acc = {};
+      names.forEach(function (k) { acc[k] = { p: 0, w: 0, f: 0 }; });
+      out = { byName: {}, rounds: t.rounds };
+      names.forEach(function (k) { out.byName[k] = []; });
+      for (var i = 0; i < t.rounds; i++) {
+        var anyPlayed = false;
+        names.forEach(function (k) {
+          var r = t.byName[k].tours[i];
+          if (r && r.code) { acc[k].p += POINTS[r.code]; acc[k].f += r.fish; if (r.code === 'w') acc[k].w++; anyPlayed = true; }
+        });
+        if (!anyPlayed) break;
+        var order = names.slice().sort(function (a, b) { return acc[b].p - acc[a].p || acc[b].w - acc[a].w || acc[b].f - acc[a].f; });
+        var place = 0, prev = null;
+        order.forEach(function (k, idx) {
+          if (!prev || acc[k].p !== acc[prev].p || acc[k].w !== acc[prev].w || acc[k].f !== acc[prev].f) place = idx + 1;
+          out.byName[k].push(place);
+          prev = k;
+        });
+      }
+    }
+    // Остання точка — офіційне місце з таблиці (там можуть бути додаткові правила для повної рівності)
+    if (out) Object.keys(out.byName).forEach(function (k) {
+      var arr = out.byName[k], official = t.byName[k].place;
+      if (arr.length && official > 0) arr[arr.length - 1] = official;
+    });
+    standCache = { payload: state.payload, data: out };
+    return out;
+  }
+
+  // Статистика всього турніру
+  var tsCache = { payload: null, data: null };
+  function tournamentStats() {
+    if (tsCache.payload === state.payload) return tsCache.data;
+    var t = toursData(), d = drawData(), data = null;
+    if (t) {
+      var names = Object.keys(t.byName);
+      var played = [], totals = [], cnt = { w: 0, l: 0, d: 0, z: 0 }, entries = 0;
+      for (var i = 0; i < t.rounds; i++) {
+        var f = 0, n = 0;
+        names.forEach(function (k) { var r = t.byName[k].tours[i]; if (r && r.code) { f += r.fish; n++; cnt[r.code]++; entries++; } });
+        totals.push(n ? { fish: f, n: n, avg: f / n } : null);
+        if (n) played.push(i);
+      }
+      if (played.length) {
+        // Рекорди
+        var bestCatch = null, streak = null, dry = null, fishTop = [];
+        var byNum = {};
+        if (d) d.players.forEach(function (x) { byNum[normName(x.name)] = x; });
+        names.forEach(function (k) {
+          var me = t.byName[k], dp = byNum[k];
+          var cur = 0, best = 0, dryN = 0, fishSum = 0;
+          me.tours.forEach(function (r, i) {
+            if (!r.code) { cur = 0; return; }
+            fishSum += r.fish;
+            if (!bestCatch || r.fish > bestCatch.fish) bestCatch = { name: me.name, fish: r.fish, tour: i + 1, sector: dp && dp.t[i] ? dp.t[i][0] : null, more: 0 };
+            else if (r.fish === bestCatch.fish) bestCatch.more++;
+            cur = r.code === 'w' ? cur + 1 : 0;
+            if (cur > best) best = cur;
+            // «Суха» перемога: суперник не спіймав нічого
+            if (r.code === 'w' && dp && dp.t[i] && dp.t[i][1]) {
+              var opp = d.players.find(function (x) { return x.n === dp.t[i][1]; });
+              var orow = opp && t.byName[normName(opp.name)];
+              var or = orow && orow.tours[i];
+              if (or && or.code && or.fish === 0) dryN++;
+            }
+          });
+          if (best && (!streak || best > streak.n)) streak = { name: me.name, n: best, more: 0 };
+          else if (best && streak && best === streak.n) streak.more++;
+          if (dryN && (!dry || dryN > dry.n)) dry = { name: me.name, n: dryN, more: 0 };
+          else if (dryN && dry && dryN === dry.n) dry.more++;
+          fishTop.push({ name: me.name, fish: fishSum, place: me.place });
+        });
+        fishTop.sort(function (a, b) { return b.fish - a.fish || (a.place || 99) - (b.place || 99); });
+        // Карта секторів: улов у кожному секторі в кожному турі (обидва береги разом)
+        var heat = null;
+        if (d) {
+          var sectors = {};
+          d.players.forEach(function (pl) {
+            var me = t.byName[normName(pl.name)];
+            pl.t.forEach(function (x, i) {
+              if (!x[0]) return;
+              var row = sectors[x[0]] || (sectors[x[0]] = { sector: x[0], cells: [], fish: 0, n: 0 });
+              var r = me && me.tours[i];
+              if (r && r.code) {
+                row.cells[i] = (row.cells[i] || 0) + r.fish;
+                row.fish += r.fish; row.n++;
+              }
+            });
+          });
+          var list = Object.keys(sectors).map(function (k) { var r = sectors[k]; r.avg = r.n ? r.fish / r.n : null; return r; });
+          list.sort(function (a, b) { return a.sector - b.sector; });
+          var max = 0;
+          list.forEach(function (r) { r.cells.forEach(function (v) { if (v > max) max = v; }); });
+          heat = { rows: list, max: max };
+        }
+        data = {
+          rounds: t.rounds, played: played.length, players: names.length,
+          totals: totals, totalFish: t.totalFish, avg: t.avgPerTour,
+          cnt: cnt, entries: entries,
+          bestCatch: bestCatch, streak: streak, dry: dry, fishTop: fishTop.slice(0, 5), heat: heat
+        };
+      }
+    }
+    tsCache = { payload: state.payload, data: data };
+    return data;
+  }
+  function statsReady() { return !!tournamentStats(); }
+
+  var ts = { root: $('tstats'), body: $('tsBody'), back: $('tsBack'), open: $('statsOpen') };
+
+  function renderStats() {
+    var S = tournamentStats();
+    var ev = (state.payload && state.payload.event) || {};
+    document.title = 'Статистика | Trout Master';
+    if (!S) { ts.body.innerHTML = '<div class="card empty">Статистика з’явиться після перших турів.</div>'; return; }
+    var more = function (x) { return x.more ? ' і ще ' + x.more : ''; };
+    var h = '<header class="pc-head"><div class="pc-head__txt"><h1 class="title" id="tsTitle" tabindex="-1">Статистика турніру</h1>' +
+      '<p class="subtitle">' + esc([ev.title, S.played < S.rounds ? 'після ' + S.played + ' з ' + S.rounds + ' турів' : 'усі ' + S.rounds + ' турів'].filter(Boolean).join(' • ')) + '</p></div></header>';
+
+    h += '<div class="pc-tiles">' +
+      tsTile('Турів зіграно', S.played + ' <small>з ' + S.rounds + '</small>') +
+      tsTile('Усього риби', S.totalFish) +
+      tsTile('Середній улов', fmt1(S.avg) + ' <small>на учасника за тур</small>') +
+      tsTile('Учасників', S.players) + '</div>';
+
+    // Улов по турах
+    h += '<section class="card pc-block"><h2 class="pc-h2">Улов по турах</h2>' + tourBars(S) +
+      '<p class="pc-legend">Скільки риби спіймали всі учасники за тур</p></section>';
+
+    // Карта секторів
+    if (S.heat && S.heat.rows.length) h += heatHtml(S);
+
+    // Рекорди
+    var rec = [];
+    if (S.bestCatch) rec.push(recRow('Найбільший улов за тур', S.bestCatch.fish + ' ' + fishWord(S.bestCatch.fish),
+      S.bestCatch.name + more(S.bestCatch) + ' • тур ' + S.bestCatch.tour + (S.bestCatch.sector ? ', сектор ' + S.bestCatch.sector : '')));
+    if (S.streak) rec.push(recRow('Найдовша серія перемог', S.streak.n + ' ' + plural(S.streak.n, 'тур', 'тури', 'турів') + ' поспіль', S.streak.name + more(S.streak)));
+    if (S.dry) rec.push(recRow('Найбільше «сухих» перемог', S.dry.n, S.dry.name + more(S.dry) + ' • суперник не спіймав жодної риби'));
+    if (rec.length) h += '<section class="card pc-block"><h2 class="pc-h2">Рекорди</h2><dl class="pc-stats">' + rec.join('') + '</dl></section>';
+
+    // Топ за уловом
+    h += '<section class="card pc-block"><h2 class="pc-h2">Топ за уловом</h2><ol class="ts-top">' +
+      S.fishTop.map(function (x, i) {
+        return '<li><span class="ts-top__n">' + (i + 1) + '</span><span class="ts-top__name">' + esc(x.name) + '</span>' +
+          '<span class="ts-top__fish">' + x.fish + ' <small>' + fishWord(x.fish) + '</small></span>' +
+          (x.place ? '<span class="ts-top__place">' + x.place + ' місце</span>' : '') + '</li>';
+      }).join('') + '</ol><p class="pc-legend">Поруч — місце за балами</p></section>';
+
+    // Частки результатів
+    var parts = [['w', 'Перемоги'], ['l', 'Поразки'], ['d', 'Рибні нічиї'], ['z', 'Безрибні нічиї']];
+    h += '<section class="card pc-block"><h2 class="pc-h2">Результати турів</h2><div class="ts-share" role="img" aria-label="' +
+      parts.map(function (p) { return p[1] + ' ' + pct(S.cnt[p[0]]); }).join(', ') + '">' +
+      parts.map(function (p) { return S.cnt[p[0]] ? '<span class="ts-share__seg seg-' + p[0] + '" style="flex:' + S.cnt[p[0]] + '"></span>' : ''; }).join('') +
+      '</div><ul class="ts-share__legend">' +
+      parts.map(function (p) { return '<li><span class="sw seg-' + p[0] + '"></span>' + p[1] + ' <b>' + pct(S.cnt[p[0]]) + '</b> <small>(' + S.cnt[p[0]] + ')</small></li>'; }).join('') +
+      '</ul></section>';
+
+    ts.body.innerHTML = h;
+
+    function pct(n) { return S.entries ? Math.round(n / S.entries * 100) + '%' : '—'; }
+    function tsTile(label, valHtml) {
+      return '<div class="pc-tile"><span class="pc-tile__label">' + label + '</span><span class="pc-tile__val">' + valHtml + '</span></div>';
+    }
+    function recRow(k, v, sub) {
+      return '<div class="pc-stat"><dt>' + k + '</dt><dd><b>' + esc(v) + '</b><span>' + esc(sub) + '</span></dd></div>';
+    }
+  }
+
+  function tourBars(S) {
+    var n = S.rounds, W = 320, H = 130, top = 14, bottom = 22, gap = 4, max = 1;
+    S.totals.forEach(function (x) { if (x && x.fish > max) max = x.fish; });
+    var bw = (W - gap * (n - 1)) / n, ph = H - top - bottom;
+    var out = '<svg class="pc-chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Улов по турах">' +
+      '<line x1="0" x2="' + W + '" y1="' + (top + ph) + '" y2="' + (top + ph) + '" class="ax"/>';
+    S.totals.forEach(function (x, i) {
+      var x0 = i * (bw + gap);
+      if (x) {
+        var hh = Math.max(x.fish > 0 ? 2 : 0, x.fish / max * ph);
+        out += '<rect x="' + x0 + '" y="' + (top + ph - hh) + '" width="' + bw + '" height="' + hh + '" rx="2" class="bar-t"><title>Тур ' + (i + 1) + ': ' + x.fish + '</title></rect>' +
+          '<text x="' + (x0 + bw / 2) + '" y="' + (top + ph - hh - 3) + '" class="val">' + x.fish + '</text>';
+      } else {
+        out += '<rect x="' + (x0 + 0.5) + '" y="' + (top + ph - 8) + '" width="' + (bw - 1) + '" height="8" rx="2" class="bar-wait"/>';
+      }
+      out += '<text x="' + (x0 + bw / 2) + '" y="' + (H - 6) + '" class="lbl">' + (i + 1) + '</text>';
+    });
+    return out + '</svg>';
+  }
+
+  // Карта секторів: рядок — сектор, колонка — тур; колір — скільки риби спіймали в секторі за тур
+  function heatHtml(S) {
+    var max = S.heat.max || 1;
+    var bestAvg = -1, worstAvg = Infinity;
+    S.heat.rows.forEach(function (r) { if (r.avg != null) { if (r.avg > bestAvg) bestAvg = r.avg; if (r.avg < worstAvg) worstAvg = r.avg; } });
+    var head = '<div class="hm-row hm-head"><span class="hm-sec">Сек</span>';
+    for (var i = 0; i < S.rounds; i++) head += '<span class="hm-cell hm-th">' + (i + 1) + '</span>';
+    head += '<span class="hm-avg">Сер.</span></div>';
+    var rows = S.heat.rows.map(function (r) {
+      var cells = '';
+      for (var i = 0; i < S.rounds; i++) {
+        var v = r.cells[i];
+        if (v == null) { cells += '<span class="hm-cell hm-empty"></span>'; continue; }
+        var k = v / max;
+        var bg = heatColor(k);
+        cells += '<span class="hm-cell" style="background:' + bg + ';color:' + (k > 0.55 ? '#fff' : 'var(--text)') + '" title="Сектор ' + r.sector + ', тур ' + (i + 1) + ': ' + v + '">' + v + '</span>';
+      }
+      var mark = r.avg === bestAvg ? ' hm-best' : r.avg === worstAvg ? ' hm-worst' : '';
+      return '<div class="hm-row"><span class="hm-sec">' + r.sector + '</span>' + cells +
+        '<span class="hm-avg' + mark + '">' + (r.avg != null ? r.avg.toFixed(1).replace('.', ',') : '—') + '</span></div>';
+    }).join('');
+    return '<section class="card pc-block"><h2 class="pc-h2">Карта секторів</h2>' +
+      '<p class="pc-legend hm-note">Скільки риби спіймали в секторі за тур (обидва береги разом). «Сер.» — середній улов на учасника за тур.</p>' +
+      '<div class="hm" style="--hm-n:' + S.rounds + '" role="img" aria-label="Карта секторів: улов по секторах і турах">' + head + rows + '</div>' +
+      '<div class="hm-scale"><span>мало</span><i style="background:linear-gradient(90deg,' + heatColor(0) + ',' + heatColor(0.5) + ',' + heatColor(1) + ')"></i><span>багато</span></div></section>';
+  }
+  // Від світло-блакитного до насиченого синього
+  function heatColor(k) {
+    k = Math.max(0, Math.min(1, k));
+    var a = [238, 246, 252], b = [111, 168, 220], c = [13, 63, 107];
+    var from = k < 0.5 ? a : b, to = k < 0.5 ? b : c, t = k < 0.5 ? k * 2 : (k - 0.5) * 2;
+    return 'rgb(' + from.map(function (v, i) { return Math.round(v + (to[i] - v) * t); }).join(',') + ')';
+  }
+
+  // Графік місця по турах (1 — угорі)
+  function placeSvg(places, players) {
+    var n = places.length, W = 320, H = 130, top = 12, bottom = 22, left = 22, right = 8;
+    var maxP = Math.max(players, 2);
+    var x = function (i) { return left + (n > 1 ? i * (W - left - right) / (n - 1) : (W - left - right) / 2); };
+    var y = function (p) { return top + (p - 1) / (maxP - 1) * (H - top - bottom); };
+    var out = '<svg class="pc-chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Місце після кожного туру: ' + places.join(', ') + '">';
+    [1, Math.ceil(maxP / 2), maxP].forEach(function (p) {
+      out += '<line x1="' + left + '" x2="' + (W - right) + '" y1="' + y(p) + '" y2="' + y(p) + '" class="grid"/>' +
+        '<text x="' + (left - 6) + '" y="' + (y(p) + 3) + '" class="lbl lbl-y">' + p + '</text>';
+    });
+    out += '<polyline points="' + places.map(function (p, i) { return x(i).toFixed(1) + ',' + y(p).toFixed(1); }).join(' ') + '" class="place-line"/>';
+    places.forEach(function (p, i) {
+      out += '<circle cx="' + x(i) + '" cy="' + y(p) + '" r="3" class="place-dot"><title>Після туру ' + (i + 1) + ': ' + p + ' місце</title></circle>' +
+        '<text x="' + x(i) + '" y="' + (y(p) - 7) + '" class="val' + (i === n - 1 ? ' val-last' : '') + '">' + p + '</text>' +
+        '<text x="' + x(i) + '" y="' + (H - 6) + '" class="lbl">' + (i + 1) + '</text>';
+    });
+    return out + '</svg>';
   }
 
   // Стовпчики улову по турах + точки середнього улову в турі
@@ -947,20 +1215,26 @@
     var html = document.documentElement;
     html.classList.toggle('view-reg', isReg);
     html.classList.toggle('view-card', state.view === 'card');
+    html.classList.toggle('view-stats', state.view === 'stats');
+    ts.root.hidden = state.view !== 'stats';
     reg.root.hidden = !isReg;
     pc.root.hidden = state.view !== 'card';
     // Нижня панель: «Картка учасника» (коли виділено гравця) і «Зареєструватися» (коли реєстрація відкрита)
     var showReg = isList && regOpenNow();
+    // «Статистика» — на місці «Зареєструватися», коли реєстрація закрита і вже є зіграні тури
+    var showStats = isList && !showReg && statsReady();
     var player = isList ? selectedPlayerName() : null;
     var cardOn = !(state.payload && state.payload.showCard === false);   // B12 на аркуші «Сайт»
     var showCard = cardOn && !!player && hasCardData(player);
+    var other = showReg || showStats;
     reg.open.hidden = !showReg;
+    ts.open.hidden = !showStats;
     pc.open.hidden = !showCard;
-    pc.openText.textContent = showReg ? 'Картка учасника' : 'Картка учасника · ' + player;
-    pc.open.classList.toggle('btn-primary', !showReg);
-    pc.open.classList.toggle('btn-secondary', showReg);
-    reg.bar.classList.toggle('two', showReg && showCard);
-    var showBar = showReg || showCard;
+    pc.openText.textContent = other ? 'Картка учасника' : 'Картка учасника · ' + player;
+    pc.open.classList.toggle('btn-primary', !other);
+    pc.open.classList.toggle('btn-secondary', other);
+    reg.bar.classList.toggle('two', other && showCard);
+    var showBar = other || showCard;
     reg.bar.hidden = !showBar;
     reg.live.hidden = !showReg;   // плашка «Триває реєстрація» над таблицею
     renderTimer();
@@ -999,7 +1273,11 @@
     renderReg();
     tgBack(v !== 'list');
     window.scrollTo(0, 0);
-    if (v === 'card') {
+    if (v === 'stats') {
+      renderStats();
+      var hs = document.getElementById('tsTitle');
+      if (hs) { try { hs.focus({ preventScroll: true }); } catch (e) { hs.focus(); } }
+    } else if (v === 'card') {
       renderCard();
       var h = document.getElementById('pcTitle');
       if (h) { try { h.focus({ preventScroll: true }); } catch (e) { h.focus(); } }
@@ -1026,6 +1304,13 @@
     state.regPushed = true;
     try { history.pushState({ tmView: 'card' }, '', IN_TG ? location.href : '#player'); } catch (e) { state.regPushed = false; }
     setView('card');
+  }
+
+  function goStats() {
+    if (state.view === 'stats') return;
+    state.regPushed = true;
+    try { history.pushState({ tmView: 'stats' }, '', IN_TG ? location.href : '#stats'); } catch (e) { state.regPushed = false; }
+    setView('stats');
   }
 
   function goList() {
@@ -1133,7 +1418,7 @@
   });
 
   window.addEventListener('popstate', function (e) {
-    var v = e.state && (e.state.tmView === 'reg' || e.state.tmView === 'card') ? e.state.tmView : 'list';
+    var v = e.state && /^(reg|card|stats)$/.test(e.state.tmView) ? e.state.tmView : 'list';
     if (v === 'card' && !selectedPlayerName()) v = 'list';
     if (v === 'list') state.regPushed = false;
     setView(v);
@@ -1350,6 +1635,8 @@
   reg.open.addEventListener('click', goReg);
   pc.open.addEventListener('click', goCard);
   pc.back.addEventListener('click', goList);
+  ts.open.addEventListener('click', goStats);
+  ts.back.addEventListener('click', goList);
   // iOS Safari вмикає стан :active (натиснута кнопка) лише якщо на сторінці є обробник дотику
   document.addEventListener('touchstart', function () {}, { passive: true });
   reg.back.addEventListener('click', goList);
@@ -1357,7 +1644,7 @@
   reg.closedBack.addEventListener('click', goList);
 
   // Пряме посилання на форму: сайт#register або t.me/бот?startapp=register
-  if (location.hash === '#player') {
+  if (location.hash === '#player' || location.hash === '#stats') {
     try { history.replaceState({ tmView: 'list' }, '', location.pathname + location.search); } catch (e) { /* */ }
   }
   var wantReg = /^#register$/.test(location.hash) || /tgWebAppStartParam=register(&|$)/.test(location.hash + location.search);
