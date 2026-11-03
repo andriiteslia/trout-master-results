@@ -82,7 +82,7 @@
     models: [],
     fromCache: false,
     tab: null,   // при відкритті сторінки завжди перша вкладка
-    selected: new Set(store.get(LS.sel, [])),
+    selected: new Set(store.get(LS.sel, []).slice(-1)),   // виділяється лише один гравець
     moves: {},
     changed: {},
     changeTime: 0,
@@ -529,17 +529,24 @@
     e.preventDefault();
   });
 
-  // Тап по рядку: виділити / зняти виділення (працює на всіх вкладках)
+  // Виділено лише одного гравця (діє на всіх вкладках)
+  function selectOnly(key) {
+    state.selected = new Set(key ? [key] : []);
+    store.set(LS.sel, Array.from(state.selected));
+  }
+
+  // Тап по рядку: виділити цього гравця (інших — зняти) / повторний тап — зняти виділення
   el.board.addEventListener('click', function (e) {
     var tr = e.target.closest('tbody tr[data-key]');
     if (!tr) return;
     var key = tr.getAttribute('data-key');
-    if (state.selected.has(key)) state.selected.delete(key); else state.selected.add(key);
-    store.set(LS.sel, Array.from(state.selected));
-    var on = state.selected.has(key);
-    tr.classList.toggle('is-sel', on);
-    var btn = tr.querySelector('.nm');
-    if (btn) btn.setAttribute('aria-pressed', String(on));
+    selectOnly(state.selected.has(key) ? null : key);
+    Array.prototype.forEach.call(el.board.querySelectorAll('tbody tr[data-key]'), function (row) {
+      var on = state.selected.has(row.getAttribute('data-key'));
+      row.classList.toggle('is-sel', on);
+      var btn = row.querySelector('.nm');
+      if (btn) btn.setAttribute('aria-pressed', String(on));
+    });
   });
 
   // Шапка лише повторює горизонтальну прокрутку тіла таблиці (в один бік,
@@ -715,15 +722,16 @@
   var LS_AUTO = 'tm:autoSel';
   function applyMyNames(names) {
     var done = store.get(LS_AUTO, []);
-    var changed = false;
+    // Перше ім'я (своя реєстрація), якого ще не виділяли автоматично
+    var pick = null;
     names.forEach(function (n) {
       if (done.indexOf(n) !== -1) return;
       done.push(n);
-      if (!state.selected.has(n)) { state.selected.add(n); changed = true; }
+      if (!pick) pick = n;
     });
     store.set(LS_AUTO, done.slice(-50));
-    if (!changed) return;
-    store.set(LS.sel, Array.from(state.selected));
+    if (!pick || state.selected.has(pick)) return;
+    selectOnly(pick);
     if (state.models.length) renderBoard();
   }
   function whoAmI() {
@@ -985,8 +993,7 @@
         var name = res.name || body.name;
         state.regDone = { name: name, number: res.number };
         // Виділяємо себе у списку
-        state.selected.add(name);
-        store.set(LS.sel, Array.from(state.selected));
+        selectOnly(name);
         var auto = store.get(LS_AUTO, []);
         if (auto.indexOf(name) === -1) { auto.push(name); store.set(LS_AUTO, auto.slice(-50)); }
         state.focusKey = name;
