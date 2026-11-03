@@ -70,6 +70,9 @@ var MOVES_OFF = 'Приховати';
 var CELL_SEATS = 'B10';         // кількість місць; хто зареєструвався після — у резерві
 var CELL_DEADLINE = 'B11';      // дата завершення реєстрації (порожньо — без обмеження)
 var CELL_DEADLINE_TIME = 'C11'; // час завершення, напр. 20:00 (порожньо — час із B11 або 00:00)
+var CELL_CARD = 'B12';          // «Картка учасника» на сайті: показувати чи ні
+var CARD_ON = 'Показувати';
+var CARD_OFF = 'Приховати';
 
 /** Куди пишуться заявки з форми реєстрації (номери колонок: A=1, B=2, ...). */
 var REG_SHEET = 'Учасники';
@@ -79,13 +82,23 @@ var REG_COL_PHONE = 5;   // E — телефон (лише для організ
 var REG_COL_TIME = 6;    // F — час реєстрації
 var REG_COL_TG_ID = 7;   // G — Telegram ID (якщо реєструвались через бота)
 var REG_COL_TG_USER = 8; // H — @username у Telegram
+var REG_COL_DRAWNUM = 9; // I — № жеребкування (номер, який учасник витягнув на водоймі)
 
 /**
- * Діапазони, які можна змінювати прямо на аркуші «Сайт» (B14:B16).
+ * Діапазони, які можна змінювати прямо на аркуші «Сайт» (блок «Діапазони…», B15:B17).
  * Формат: A1:B50, A1:AK (без номера рядка — до останнього заповненого)
  * або з назвою аркуша: Results!A1:AK. Порожня клітинка — діапазон із коду.
  */
-var RANGE_ROW_FIRST = 14;
+var RANGE_ROW_FIRST = 15;     // якщо блок зсунуто, рядок шукається за заголовком «Діапазони…»
+var RANGES_TITLE = 'Діапазони (звідки брати дані)';
+
+/** Перший рядок блоку діапазонів (під заголовком «Діапазони…»). */
+function rangeRowFirst_(sh) {
+  if (!sh) return RANGE_ROW_FIRST;
+  var col = sh.getRange(1, 1, 40, 1).getDisplayValues();
+  for (var i = 0; i < col.length; i++) if (String(col[i][0]).trim() === RANGES_TITLE) return i + 2;
+  return RANGE_ROW_FIRST;
+}
 var RANGE_KEYS = ['Учасники', 'Результат', 'Тури'];
 
 /**
@@ -153,18 +166,21 @@ function setupSync() {
       String(sh.getRange('A10').getDisplayValue()).indexOf('B5') === 0) {
     sh.insertRowsAfter(9, 2);
   }
-  sh.getRange('A9:B11').breakApart();
-  sh.getRange('A3:A11').setValues([['Дія'], ['Остання публікація'], ['Що показувати'], ['Заголовок'], ['Підзаголовок'],
-    ['Реєстрація'], ['Стрілки ▲▼ місць'], ['Кількість місць'], ['Реєстрація до']]);
-  sh.getRange('A3:A11').setFontWeight('bold');
-  sh.getRange('A12:B12').merge().setWrap(true);
-  sh.getRange('A12').setValue('B5 — що бачать глядачі: «' + MODE_REG + '» (аркуш «Учасники») або «' + MODE_RES +
+  // Макет до «Картки учасника» (підказка в рядку 12): звільняємо рядок 12 під перемикач
+  if (String(sh.getRange('A12').getDisplayValue()).indexOf('B5') === 0) sh.insertRowsAfter(11, 1);
+  sh.getRange('A9:B12').breakApart();
+  sh.getRange('A3:A12').setValues([['Дія'], ['Остання публікація'], ['Що показувати'], ['Заголовок'], ['Підзаголовок'],
+    ['Реєстрація'], ['Стрілки ▲▼ місць'], ['Кількість місць'], ['Реєстрація до'], ['Картка учасника']]);
+  sh.getRange('A3:A12').setFontWeight('bold');
+  sh.getRange('A13:B13').merge().setWrap(true);
+  sh.getRange('A13').setValue('B5 — що бачать глядачі: «' + MODE_REG + '» (аркуш «Учасники») або «' + MODE_RES +
     '» (вкладки «Результат» і «Тури»). Зміна режиму одразу публікує дані. Щоб оновити дані на сайті, у B3 виберіть «' +
     ACTION_PUBLISH + '». Заголовок і підзаголовок теж оновлюються при публікації. B8 — «' + REG_OPEN +
     '» показує на сайті кнопку «Зареєструватися» (заявки йдуть в аркуш «' + REG_SHEET + '», телефон у колонку E). B9 — показувати чи ні стрілки ▲▼, на скільки місць змістився учасник після оновлення. ' +
     'B10 — кількість місць: хто зареєструвався понад неї, стоїть у списку під лінією «Резерв» (порожньо — без обмеження). ' +
-    'B11 — дата завершення реєстрації (подвійний клік відкриває календар), C11 — час (зі списку або свій, напр. 20:15): сайт показує зворотний відлік, а в цей момент реєстрація закривається сама.');
-  sh.getRange('A12').setFontColor('#475467');
+    'B11 — дата завершення реєстрації (подвійний клік відкриває календар), C11 — час (зі списку або свій, напр. 20:15): сайт показує зворотний відлік, а в цей момент реєстрація закривається сама. ' +
+    'B12 — чи показувати на сайті кнопку «Картка учасника».');
+  sh.getRange('A13').setFontColor('#475467');
   sh.setColumnWidth(1, 180);
   sh.setColumnWidth(2, 420);
 
@@ -198,6 +214,15 @@ function setupSync() {
     .build());
   if (currentReg !== REG_OPEN && currentReg !== REG_CLOSED) regCell.setValue(REG_CLOSED);
   regCell.setFontWeight('bold').setBackground('#fdf3e1');
+
+  // Перемикач «Картка учасника»
+  var cardCell = sh.getRange(CELL_CARD);
+  var currentCard = String(cardCell.getDisplayValue()).trim();
+  cardCell.clearDataValidations();
+  cardCell.setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInList([CARD_ON, CARD_OFF], true).setAllowInvalid(false).build());
+  if (currentCard !== CARD_ON && currentCard !== CARD_OFF) cardCell.setValue(CARD_ON);
+  cardCell.setFontWeight('bold').setBackground('#e3f0fa');
 
   // Перемикач стрілок зміни місць
   var movesCell = sh.getRange(CELL_MOVES);
@@ -238,23 +263,24 @@ function setupSync() {
   // Заголовки колонок для заявок на аркуші «Учасники» (лише якщо порожні)
   var reg = ss.getSheetByName(REG_SHEET);
   if (reg) {
-    [[REG_COL_PHONE, 'Телефон'], [REG_COL_TIME, 'Зареєстровано'], [REG_COL_TG_ID, 'Telegram ID'], [REG_COL_TG_USER, 'Telegram']].forEach(function (x) {
+    [[REG_COL_PHONE, 'Телефон'], [REG_COL_TIME, 'Зареєстровано'], [REG_COL_TG_ID, 'Telegram ID'], [REG_COL_TG_USER, 'Telegram'], [REG_COL_DRAWNUM, '№ жеребкування']].forEach(function (x) {
       var c = reg.getRange(1, x[0]);
       if (!String(c.getDisplayValue()).trim()) c.setValue(x[1]).setFontWeight('bold');
     });
   }
 
   // Блок діапазонів: заповнюємо лише порожні клітинки, щоб не затерти ваші значення
-  sh.getRange(RANGE_ROW_FIRST - 1, 1).setValue('Діапазони (звідки брати дані)').setFontWeight('bold');
+  var rr = RANGE_ROW_FIRST;
+  sh.getRange(rr - 1, 1).setValue(RANGES_TITLE).setFontWeight('bold');
   var defaults = defaultRanges_();
-  var rangeCells = sh.getRange(RANGE_ROW_FIRST, 1, RANGE_KEYS.length, 2);
+  var rangeCells = sh.getRange(rr, 1, RANGE_KEYS.length, 2);
   var current = rangeCells.getDisplayValues();
   rangeCells.setValues(RANGE_KEYS.map(function (k, i) {
     return [k, String(current[i][1]).trim() || defaults[k]];
   }));
-  sh.getRange(RANGE_ROW_FIRST, 1, RANGE_KEYS.length, 1).setFontWeight('bold');
-  sh.getRange(RANGE_ROW_FIRST, 2, RANGE_KEYS.length, 1).setBackground('#f2f4f7');
-  sh.getRange(RANGE_ROW_FIRST + RANGE_KEYS.length, 1).setValue(
+  sh.getRange(rr, 1, RANGE_KEYS.length, 1).setFontWeight('bold');
+  sh.getRange(rr, 2, RANGE_KEYS.length, 1).setBackground('#f2f4f7');
+  sh.getRange(rr + RANGE_KEYS.length, 1).setValue(
     'Можна вказати з назвою аркуша, напр. Results!A1:AK. Без номера останнього рядка (A1:AK) береться все заповнене. Зміна діапазону одразу публікує дані.')
     .setFontColor('#475467');
 
@@ -274,6 +300,12 @@ function setupSync() {
 function handleSiteSync(e) {
   if (!e || !e.range) return;
   var sh = e.range.getSheet();
+  // Вставили жеребкування або змінили номери/імена в «Учасниках» — підставляємо імена в «Жеребкування»
+  if (sh.getName() === DRAW_SHEET ||
+      (sh.getName() === REG_SHEET && e.range.getColumn() <= REG_COL_DRAWNUM && e.range.getLastColumn() >= REG_COL_NUM)) {
+    try { syncDrawNames_(e.source); } catch (err) { console.error(err); }
+    return;
+  }
   if (sh.getName() !== SYNC_SHEET) return;
   var a1 = e.range.getA1Notation();
   var v = String(e.value == null ? '' : e.value).trim();
@@ -282,10 +314,11 @@ function handleSiteSync(e) {
   var isReg = a1 === CELL_REG && (v === REG_OPEN || v === REG_CLOSED);
   var isMoves = a1 === CELL_MOVES && (v === MOVES_ON || v === MOVES_OFF);
   var isRegSetting = a1 === CELL_SEATS || a1 === CELL_DEADLINE || a1 === CELL_DEADLINE_TIME;
+  var isCard = a1 === CELL_CARD && (v === CARD_ON || v === CARD_OFF);
   var row = e.range.getRow();
   var isRange = e.range.getColumn() === 2 && e.range.getNumRows() === 1 &&
-    row >= RANGE_ROW_FIRST && row < RANGE_ROW_FIRST + RANGE_KEYS.length;
-  if (!isPublish && !isMode && !isReg && !isMoves && !isRegSetting && !isRange) return;
+    row >= rangeRowFirst_(sh) && row < rangeRowFirst_(sh) + RANGE_KEYS.length;
+  if (!isPublish && !isMode && !isReg && !isMoves && !isRegSetting && !isCard && !isRange) return;
 
   sh.getRange(CELL_STATUS).setValue('⏳ Публікуємо…');
   SpreadsheetApp.flush();
@@ -418,10 +451,10 @@ function defaultRanges_() {
   return out;
 }
 
-/** Підставляє діапазони з аркуша «Сайт» (B14:B16), якщо вони заповнені. */
+/** Підставляє діапазони з аркуша «Сайт» (блок «Діапазони…»), якщо вони заповнені. */
 function viewsWithRanges_(sh, views) {
   if (!sh) return views;
-  var vals = sh.getRange(RANGE_ROW_FIRST, 1, RANGE_KEYS.length, 2).getDisplayValues();
+  var vals = sh.getRange(rangeRowFirst_(sh), 1, RANGE_KEYS.length, 2).getDisplayValues();
   var byName = {};
   vals.forEach(function (r) { byName[String(r[0]).trim()] = String(r[1]).trim(); });
   return views.map(function (v) {
@@ -447,14 +480,15 @@ function publish_(ss) {
     subtitle: (sh && String(sh.getRange(CELL_SUBTITLE).getDisplayValue()).trim()) || SETTINGS.EVENT_SUBTITLE
   };
   var draw = null;
-  try { draw = readDraw_(ss); } catch (err) { console.error(err); }
+  try { draw = readDraw_(ss); syncDrawNames_(ss, draw); } catch (err) { console.error(err); }
+  var showCard = !sh || String(sh.getRange(CELL_CARD).getDisplayValue()).trim() !== CARD_OFF;
   var registration = isRegOpen_(sh);
   var deadline = regDeadline_(sh);
   var regDeadline = registration && deadline ? deadline.toISOString() : null;
   var seats = seats_(sh);
   var showMoves = !sh || String(sh.getRange(CELL_MOVES).getDisplayValue()).trim() !== MOVES_OFF;
   var now = new Date().toISOString();
-  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw]);
+  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw, showCard]);
   var hash = Utilities.base64EncodeWebSafe(
     Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, body, Utilities.Charset.UTF_8));
 
@@ -468,6 +502,7 @@ function publish_(ss) {
     seats: seats,
     showMoves: showMoves,
     draw: draw,
+    showCard: showCard,
     hash: hash,
     changedAt: now,
     generatedAt: now,
@@ -489,16 +524,7 @@ function readDraw_(ss) {
   while (rounds > 0 && !vals.slice(1).some(function (r) { return String(r[3 + (rounds - 1) * 2]).trim(); })) rounds--;
   if (!rounds) return null;
 
-  // № → прізвище та ім'я з «Учасників» (як у реєстрації)
-  var names = {};
-  var reg = ss.getSheetByName(REG_SHEET);
-  if (reg && reg.getLastRow() > 1) {
-    reg.getRange(2, REG_COL_NUM, reg.getLastRow() - 1, REG_COL_NAME - REG_COL_NUM + 1).getDisplayValues().forEach(function (r) {
-      var n = parseInt(r[0], 10);
-      var nm = String(r[REG_COL_NAME - REG_COL_NUM]).trim();
-      if (n > 0 && nm) names[n] = nm;
-    });
-  }
+  var names = drawNames_(ss);
 
   var players = [];
   vals.slice(1).forEach(function (r) {
@@ -513,6 +539,43 @@ function readDraw_(ss) {
     players.push({ n: n, name: names[n] || String(r[1]).trim(), side: String(r[2]).trim(), t: t });
   });
   return players.length ? { rounds: rounds, players: players } : null;
+}
+
+/**
+ * № у жеребкуванні → прізвище та ім'я з «Учасників».
+ * Якщо в колонці «№ жеребкування» (I) є хоч один номер — беремо номери звідти
+ * (номер, який учасник витягнув на водоймі); інакше — порядкові номери з колонки A.
+ */
+function drawNames_(ss) {
+  var reg = ss.getSheetByName(REG_SHEET);
+  var byDraw = {}, byReg = {}, anyDraw = false;
+  if (!reg || reg.getLastRow() < 2) return {};
+  reg.getRange(2, 1, reg.getLastRow() - 1, REG_COL_DRAWNUM).getDisplayValues().forEach(function (r) {
+    var nm = String(r[REG_COL_NAME - 1]).trim();
+    if (!nm) return;
+    var rn = parseInt(r[REG_COL_NUM - 1], 10);
+    var dn = parseInt(r[REG_COL_DRAWNUM - 1], 10);
+    if (rn > 0) byReg[rn] = nm;
+    if (dn > 0) { byDraw[dn] = nm; anyDraw = true; }
+  });
+  return anyDraw ? byDraw : byReg;
+}
+
+/** Вписує імена учасників у колонку B «Жеребкування» (лише там, де вони змінилися). */
+function syncDrawNames_(ss, draw) {
+  var sh = ss.getSheetByName(DRAW_SHEET);
+  if (!sh || sh.getLastRow() < 2) return;
+  var names = drawNames_(ss);
+  var rng = sh.getRange(2, 1, sh.getLastRow() - 1, 2);
+  var vals = rng.getDisplayValues();
+  var changed = false;
+  var out = vals.map(function (r) {
+    var n = parseInt(r[0], 10);
+    var nm = n > 0 && names[n] ? names[n] : r[1];
+    if (nm !== r[1]) changed = true;
+    return [nm];
+  });
+  if (changed) sh.getRange(2, 2, out.length, 1).setValues(out);
 }
 
 function saveSnapshot_(json) {

@@ -536,7 +536,7 @@
   function selectOnly(key) {
     state.selected = new Set(key ? [key] : []);
     store.set(LS.sel, Array.from(state.selected));
-    if (typeof renderReg === 'function' && reg) renderReg();   // кнопка «Картка гравця»
+    if (typeof renderReg === 'function' && reg) renderReg();   // кнопка «Картка учасника»
   }
 
   // Тап по рядку: виділити цього гравця (інших — зняти) / повторний тап — зняти виділення
@@ -597,7 +597,7 @@
     bar: $('regbar'), open: $('regOpen'), live: $('regLive'),
     timer: $('regTimer'), timerTxt: $('regTimerTxt'), timerSr: $('regTimerSr')
   };
-  // ---------- Картка гравця ----------
+  // ---------- Картка учасника ----------
   // Дані: жеребкування (payload.draw: сектор і суперник по турах) + аркуш «Тури»
   // (результат В/П/РН/БН і риба по турах, підсумок). Статистика рахується тут, з кожної публікації.
   var pc = {
@@ -726,7 +726,7 @@
 
   function renderCard() {
     var name = selectedPlayerName();
-    if (!name || !hasCardData(name)) { pc.body.innerHTML = '<div class="card empty">Виберіть гравця в таблиці.</div>'; return; }
+    if (!name || !hasCardData(name)) { pc.body.innerHTML = '<div class="card empty">Виберіть учасника в таблиці.</div>'; return; }
     var st = playerStats(name);
     var ev = (state.payload && state.payload.event) || {};
     document.title = st.name + ' | Trout Master';
@@ -754,7 +754,9 @@
     }
 
     // Тури
-    h += '<section class="card pc-block"><h2 class="pc-h2">Тури</h2><ol class="pc-tours">' +
+    h += '<section class="card pc-block"><h2 class="pc-h2">Тури</h2>' +
+      '<div class="pc-tour pc-tour--head" aria-hidden="true"><span>Тур</span><span>Сектор</span><span>Суперник</span><span class="pc-tour__res">Результат</span></div>' +
+      '<ol class="pc-tours">' +
       st.tours.map(function (x) {
         var next = st.nextTour === x && started;
         var res = x.code
@@ -763,8 +765,8 @@
             '<span class="pc-score">' + x.fish + (x.oppFish != null ? ' : ' + x.oppFish : '') + '</span>'
           : '<span class="pc-wait">' + (next ? 'наступний' : 'очікується') + '</span>';
         return '<li class="pc-tour' + (x.code ? '' : ' is-wait') + (next ? ' is-next' : '') + '">' +
-          '<span class="pc-tour__n">Тур ' + x.n + '</span>' +
-          '<span class="pc-tour__sec">' + (x.sector ? 'Сектор <b>' + x.sector + '</b>' : '') + '</span>' +
+          '<span class="pc-tour__n" title="Тур ' + x.n + '">Т' + x.n + '</span>' +
+          '<span class="pc-tour__sec">' + (x.sector ? '<span class="visually-hidden">сектор </span><b>' + x.sector + '</b>' : '') + '</span>' +
           '<span class="pc-tour__opp">' + (x.oppName ? '<span class="pc-num">№' + x.oppNum + '</span> ' + esc(x.oppName) : (x.oppNum ? '№' + x.oppNum : '')) + '</span>' +
           '<span class="pc-tour__res">' + res + '</span>' +
           (x.code ? '<span class="visually-hidden">, ' + RES_TEXT[x.code] + ', ' + x.fish + ' ' + fishWord(x.fish) +
@@ -775,7 +777,7 @@
     if (started) {
       // Графік улову по турах
       h += '<section class="card pc-block"><h2 class="pc-h2">Улов по турах</h2>' + chartSvg(st) +
-        '<p class="pc-legend"><span class="lg-bar"></span>улов гравця <span class="lg-dot"></span>середній улов у турі</p></section>';
+        '<p class="pc-legend"><span class="lg-bar"></span>улов учасника <span class="lg-line"></span>середній улов у турі</p></section>';
 
       // Статистика
       var rows = [];
@@ -830,9 +832,18 @@
       } else {
         out += '<rect x="' + (x0 + 0.5) + '" y="' + (top + ph - 8) + '" width="' + (bw - 1) + '" height="8" rx="2" class="bar-wait"/>';
       }
-      if (x.code && x.avg != null) out += '<circle cx="' + (x0 + bw / 2) + '" cy="' + y(x.avg) + '" r="2.6" class="avg"/>';
       out += '<text x="' + (x0 + bw / 2) + '" y="' + (H - 6) + '" class="lbl">' + x.n + '</text>';
     });
+    // Середній улов у турі — лінія через усі зіграні тури (по центру стовпчиків)
+    var pts = [];
+    st.tours.forEach(function (x, i) {
+      if (x.code && x.avg != null) pts.push((i * (bw + gap) + bw / 2).toFixed(1) + ',' + y(x.avg).toFixed(1));
+    });
+    if (pts.length > 1) out += '<polyline points="' + pts.join(' ') + '" class="avg-line"/>';
+    else if (pts.length === 1) {
+      var c = pts[0].split(',');
+      out += '<line x1="' + (+c[0] - bw / 2) + '" x2="' + (+c[0] + bw / 2) + '" y1="' + c[1] + '" y2="' + c[1] + '" class="avg-line"/>';
+    }
     return out + '</svg>';
   }
 
@@ -889,13 +900,14 @@
     html.classList.toggle('view-card', state.view === 'card');
     reg.root.hidden = !isReg;
     pc.root.hidden = state.view !== 'card';
-    // Нижня панель: «Картка гравця» (коли виділено гравця) і «Зареєструватися» (коли реєстрація відкрита)
+    // Нижня панель: «Картка учасника» (коли виділено гравця) і «Зареєструватися» (коли реєстрація відкрита)
     var showReg = isList && regOpenNow();
     var player = isList ? selectedPlayerName() : null;
-    var showCard = !!player && hasCardData(player);
+    var cardOn = !(state.payload && state.payload.showCard === false);   // B12 на аркуші «Сайт»
+    var showCard = cardOn && !!player && hasCardData(player);
     reg.open.hidden = !showReg;
     pc.open.hidden = !showCard;
-    pc.openText.textContent = showReg ? 'Картка гравця' : 'Картка гравця · ' + player;
+    pc.openText.textContent = showReg ? 'Картка учасника' : 'Картка учасника · ' + player;
     pc.open.classList.toggle('btn-primary', !showReg);
     pc.open.classList.toggle('btn-secondary', showReg);
     reg.bar.classList.toggle('two', showReg && showCard);
