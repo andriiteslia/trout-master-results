@@ -729,10 +729,23 @@ tbody tr.reserve-sep th {
 .pond-sec.is-top { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px #32a467; }
 .pond-sec.is-low { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px #e0675c; }
 .pond-water {
+  position: relative; overflow: hidden;
   display: grid; place-items: center; min-height: 120px; border-radius: 6px;
-  background: linear-gradient(160deg, #7fd3ee, #5cc5e8); color: rgba(255, 255, 255, 0.9);
+  /* Хвильки: два рідкі шари різного розміру, що повільно рухаються */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='80' viewBox='0 0 140 80'%3E%3Cg fill='none' stroke='%23fff' stroke-linecap='round' stroke-width='1.6'%3E%3Cpath stroke-opacity='.55' d='M12 18c4-4 8-4 12 0s8 4 12 0'/%3E%3Cpath stroke-opacity='.4' d='M78 34c4-4 8-4 12 0s8 4 12 0s8 4 12 0'/%3E%3Cpath stroke-opacity='.5' d='M30 62c4-4 8-4 12 0s8 4 12 0'/%3E%3Cpath stroke-opacity='.35' d='M104 70c3-3 6-3 9 0s6 3 9 0'/%3E%3C/g%3E%3C/svg%3E"), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='190' height='110' viewBox='0 0 190 110'%3E%3Cg fill='none' stroke='%23fff' stroke-linecap='round' stroke-width='1.3' stroke-opacity='.25'%3E%3Cpath d='M40 30c5-5 10-5 15 0s10 5 15 0'/%3E%3Cpath d='M120 82c5-5 10-5 15 0s10 5 15 0s10 5 15 0'/%3E%3C/g%3E%3C/svg%3E"), radial-gradient(120% 90% at 30% 20%, #8fdcf3 0%, #5cc5e8 55%, #43b3dc 100%);
+  background-size: 140px 80px, 190px 110px, auto;
+  background-position: 0 0, 60px 30px, 0 0;
+  color: rgba(255, 255, 255, 0.95);
   font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(11, 79, 120, 0.35);
+  animation: pond-waves 14s linear infinite;
 }
+.pond-water span { padding: 2px 10px; border-radius: 999px; background: rgba(41, 150, 199, 0.4); }
+@keyframes pond-waves {
+  from { background-position: 0 0, 60px 30px, 0 0; }
+  to { background-position: 140px 0, -130px 30px, 0 0; }
+}
+@media (prefers-reduced-motion: reduce) { .pond-water { animation: none; } }
 .pond-key { display: inline-flex; align-items: center; gap: 6px; margin-left: 4px; white-space: nowrap; }
 .pond-key i { width: 10px; height: 10px; border-radius: 3px; border: 2px solid; }
 .pond-key i.is-top { border-color: #32a467; } .pond-key i.is-low { border-color: #e0675c; margin-left: 6px; }
