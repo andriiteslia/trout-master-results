@@ -728,6 +728,9 @@
     var name = selectedPlayerName();
     if (!name || !hasCardData(name)) { pc.body.innerHTML = '<div class="card empty">Виберіть учасника в таблиці.</div>'; return; }
     var st = playerStats(name);
+    // Сторона з жеребкування: «лівий» → Л, «правий» → П
+    var sideL = /^л/i.test(st.side) ? 'Л' : /^п/i.test(st.side) ? 'П' : '';
+    var sideWord = sideL === 'Л' ? 'лівий' : sideL === 'П' ? 'правий' : '';
     var ev = (state.payload && state.payload.event) || {};
     document.title = st.name + ' | Trout Master';
     var started = st.played > 0;
@@ -766,7 +769,8 @@
           : '<span class="pc-wait">' + (next ? 'наступний' : 'очікується') + '</span>';
         return '<li class="pc-tour' + (x.code ? '' : ' is-wait') + (next ? ' is-next' : '') + '">' +
           '<span class="pc-tour__n" title="Тур ' + x.n + '">Т' + x.n + '</span>' +
-          '<span class="pc-tour__sec">' + (x.sector ? '<span class="visually-hidden">сектор </span><b>' + x.sector + '</b>' : '') + '</span>' +
+          '<span class="pc-tour__sec">' + (x.sector ? '<span class="visually-hidden">сектор </span><b>' + x.sector + '</b>' +
+            (sideL ? '<span class="pc-side" aria-hidden="true">' + sideL + '</span><span class="visually-hidden">, ' + sideWord + '</span>' : '') : '') + '</span>' +
           '<span class="pc-tour__opp">' + (x.oppName ? '<span class="pc-num">№' + x.oppNum + '</span> ' + esc(x.oppName) : (x.oppNum ? '№' + x.oppNum : '')) + '</span>' +
           '<span class="pc-tour__res">' + res + '</span>' +
           (x.code ? '<span class="visually-hidden">, ' + RES_TEXT[x.code] + ', ' + x.fish + ' ' + fishWord(x.fish) +
