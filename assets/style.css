@@ -682,9 +682,9 @@ tbody tr.reserve-sep th {
 
 .pc-h3 { margin: 16px 0 8px; font-size: 13px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.04em; }
 .pc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin: 0; }
-.pc-stat { display: grid; gap: 2px; padding: 10px 12px; border-radius: var(--radius); background: var(--zebra); }
+.pc-stat { display: grid; align-content: start; gap: 2px; padding: 10px 12px; border-radius: var(--radius); background: var(--zebra); }
 .pc-stat dt { font-size: 12.5px; font-weight: 600; color: var(--text-4); }
-.pc-stat dd { margin: 0; display: grid; gap: 1px; }
+.pc-stat dd { margin: 0; display: grid; align-content: start; gap: 1px; }
 .pc-stat dd b { font-size: 17px; font-weight: 750; color: var(--text); }
 .pc-stat dd span { font-size: 12.5px; color: var(--text-3); }
 .pc-stat dd .pc-stat__me { margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--border); color: var(--text); font-weight: 650; }
