@@ -1020,8 +1020,8 @@
     h += '<section class="card pc-block"><h2 class="pc-h2">Улов по турах</h2>' + tourBars(S) +
       '<p class="pc-legend">Скільки риби спіймали всі учасники за тур</p></section>';
 
-    // Карта секторів
-    if (S.heat && S.heat.rows.length) h += heatHtml(S);
+    // Карта водойми і карта секторів
+    if (S.heat && S.heat.rows.length) h += '<div id="pondWrap">' + pondHtml(S) + '</div>' + heatHtml(S);
 
     // Рекорди
     var rec = [];
@@ -1115,6 +1115,65 @@
       '<div class="hm" style="--hm-n:' + S.rounds + '" role="img" aria-label="Карта секторів: улов по секторах і турах">' + head + rows + '</div>' +
       '<div class="hm-scale"><span>мало</span><i style="background:linear-gradient(90deg,' + heatColor(0) + ',' + heatColor(0.5) + ',' + heatColor(1) + ')"></i><span>багато</span></div></section>';
   }
+  // Карта водойми: сектори по колу — 1…N/2 нижнім берегом зліва направо, далі верхнім справа наліво.
+  // Колір — середній улов на учасника за тур (або улов у вибраному турі).
+  state.pondTour = 'all';
+  function pondHtml(S) {
+    var rows = S.heat.rows, bySec = {};
+    rows.forEach(function (r) { bySec[r.sector] = r; });
+    var N = rows.reduce(function (m, r) { return Math.max(m, r.sector); }, 0);
+    var half = Math.ceil(N / 2);
+    var tour = state.pondTour;
+    if (tour !== 'all' && !S.totals[tour]) tour = state.pondTour = 'all';
+    var val = function (r) {
+      if (!r) return null;
+      if (tour === 'all') return r.avg;
+      var v = r.cells[tour];
+      return v == null ? null : v;
+    };
+    var max = 0, min = Infinity;
+    for (var s1 = 1; s1 <= N; s1++) { var v1 = val(bySec[s1]); if (v1 != null) { max = Math.max(max, v1); min = Math.min(min, v1); } }
+    var fmtV = function (v) { return tour === 'all' ? v.toFixed(1).replace('.', ',') : String(v); };
+    var tile = function (sec) {
+      var r = bySec[sec], v = val(r);
+      if (v == null) return '<div class="pond-sec is-empty"><b>' + sec + '</b><span>—</span></div>';
+      var k = max > min ? (v - min) / (max - min) : 0.5;
+      var light = k > 0.55;
+      var tag = v === max && max > min ? ' is-top' : v === min && max > min ? ' is-low' : '';
+      return '<div class="pond-sec' + tag + '" style="background:' + heatColor(k) + ';color:' + (light ? '#fff' : 'var(--text)') + '" title="Сектор ' + sec + ': ' + fmtV(v) + '">' +
+        '<b>' + sec + '</b><span>' + fmtV(v) + '</span></div>';
+    };
+    var top = '', bottom = '';
+    for (var i = N; i > half; i--) top += tile(i);         // верхній берег: N … half+1 зліва направо
+    for (var j = 1; j <= half; j++) bottom += tile(j);     // нижній берег: 1 … half
+    var chips = '<button type="button" class="pond-chip" data-pond="all" aria-pressed="' + (tour === 'all') + '">Усі тури</button>' +
+      S.totals.map(function (x, i) {
+        return '<button type="button" class="pond-chip" data-pond="' + i + '" aria-pressed="' + (tour === i) + '"' + (x ? '' : ' disabled') + '>' + (i + 1) + '</button>';
+      }).join('');
+    var caption = tour === 'all'
+      ? 'Колір і число — середній улов на учасника за тур у секторі за весь турнір.'
+      : 'Тур ' + (tour + 1) + ': скільки риби спіймали в секторі (обидва учасники разом).';
+    return '<section class="card pc-block"><h2 class="pc-h2">Карта водойми</h2>' +
+      '<div class="pond-chips" role="group" aria-label="Тур для карти">' + chips + '</div>' +
+      '<div class="pond" style="--pond-n:' + half + '" role="img" aria-label="Карта водойми: ' + caption + '">' +
+        '<div class="pond-row pond-row--top">' + top + '</div>' +
+        '<div class="pond-water"><span>водойма</span></div>' +
+        '<div class="pond-row">' + bottom + '</div>' +
+      '</div><p class="pc-legend">' + caption + ' <span class="pond-key"><i class="is-top"></i>найкращий <i class="is-low"></i>найслабший</span></p></section>';
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-pond]');
+    if (!b || b.disabled) return;
+    var v = b.getAttribute('data-pond');
+    state.pondTour = v === 'all' ? 'all' : +v;
+    var wrap = document.getElementById('pondWrap'), S = tournamentStats();
+    if (wrap && S && S.heat) {
+      wrap.innerHTML = pondHtml(S);
+      var cur = wrap.querySelector('[data-pond="' + v + '"]');
+      if (cur) cur.focus();
+    }
+  });
+
   // Від світло-блакитного до насиченого синього
   function heatColor(k) {
     k = Math.max(0, Math.min(1, k));
