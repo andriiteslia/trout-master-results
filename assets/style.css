@@ -1146,7 +1146,7 @@ html, body { background: var(--nav); }
 .fillcard__row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 13px; }
 .fillcard__row b { font-weight: 650; }
 .fillcard__row span { color: var(--muted); white-space: nowrap; }
-@media (min-width: 980px) { .fillcard { display: none !important; } }
+.fillcard { display: none !important; } /* лічильник місць є в плитках шапки */
 .reg-live, .info { display: none !important; }
 
 /* ----- Розкладка: таблиця + бічна панель ----- */
@@ -1561,4 +1561,10 @@ html, body { background: var(--nav); }
 .plist .pt.is-sel { border-radius: 12px; border-bottom-color: transparent; background: var(--sel-bg); }
 @media (min-width: 980px) {
   .pt { padding: 0 16px; }
+}
+
+/* Телефон, список учасників: без порожнього рядка інструментів таблиця стоїть від верху аркуша на тій самій відстані, що й від боків */
+@media (max-width: 979px) {
+  .bcard:has(.tabs:empty) > .btools { display: none; }
+  .bcard:has(.tabs:empty) > #selbar[hidden] + .board { margin-top: -4px; }
 }
