@@ -466,6 +466,7 @@
         var changed = applyPayload(p);
         state.error = null;
         if (changed) renderAll();
+        openWantedPlayer();
         renderStatus(true);
       })
       .catch(function (err) {
@@ -729,6 +730,24 @@
     };
   }
 
+  // Сусіди в заліку для кнопок «‹ ›» у картці
+  function cardOrder() {
+    var s = standingsRows();
+    var list = s ? s.rows.map(function (r) { return { key: r.key, name: r.name }; }) : [];
+    if (!list.length) { var t = toursData(); if (t) list = Object.keys(t.byName).map(function (k) { return { key: t.byName[k].name, name: t.byName[k].name }; }); }
+    return list.filter(function (x) { return hasCardData(x.name); });
+  }
+  function cardNav(name) {
+    var list = cardOrder(), i = -1;
+    list.forEach(function (x, j) { if (normName(x.name) === normName(name)) i = j; });
+    return { prev: i > 0 ? list[i - 1] : null, next: i >= 0 && i < list.length - 1 ? list[i + 1] : null };
+  }
+  function cardPlayersCount() {
+    var s = standingsRows();
+    if (s) return s.rows.length;
+    var t = toursData();
+    return t ? Object.keys(t.byName).length : 0;
+  }
   function renderCard() {
     var name = selectedPlayerName();
     if (!name || !hasCardData(name)) { pc.body.innerHTML = '<div class="card empty">Виберіть учасника в таблиці.</div>'; return; }
@@ -742,20 +761,44 @@
     var medal = started && st.place >= 1 && st.place <= 3 ? ' medal-' + st.place : '';
     var h = '';
 
-    // Шапка
-    h += '<header class="pc-head">' +
+    // Шапка: на телефоні темна, на комп'ютері світла
+    var nav = cardNav(name);
+    var total = cardPlayersCount();
+    var placeTxt = started && st.place ? st.place + ' місце' + (total ? ' з ' + total : '') : '';
+    var chips = [st.num ? '№ ' + st.num : '', sideWord ? sideWord.charAt(0).toUpperCase() + sideWord.slice(1) + ' берег' : ''].filter(Boolean);
+    var I_BACK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
+    var I_NEXT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+    var I_SHARE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>';
+    h += '<header class="pc-hero"><div class="pc-hero__bar">' +
+      '<button type="button" class="hero-back pc-back" data-act="back">' + I_BACK + '<span class="l-m">Назад</span><span class="l-d">До заліку</span></button>' +
+      '<span class="pc-hero__acts">' +
+        (nav.prev ? '<button type="button" class="pc-ibtn d-only" data-act="prev" aria-label="Попередній учасник: ' + esc(nav.prev.name) + '">' + I_BACK + '</button>' : '') +
+        (nav.next ? '<button type="button" class="pc-ibtn d-only" data-act="next" aria-label="Наступний учасник: ' + esc(nav.next.name) + '">' + I_NEXT + '</button>' : '') +
+        '<button type="button" class="pc-share" data-act="share" aria-label="Поділитися карткою">' + I_SHARE + '<span class="d-only">Поділитися карткою</span></button>' +
+      '</span></div>' +
+      '<div class="pc-hero__main">' +
       (started && st.place ? '<div class="pc-place' + medal + '" aria-hidden="true">' + st.place + '</div>' : '') +
       '<div class="pc-head__txt"><h1 class="title" id="pcTitle" tabindex="-1">' + esc(st.name) + '</h1>' +
-      '<p class="subtitle">' + [st.num ? '№ ' + st.num : '', ev.title || ''].filter(Boolean).map(esc).join(' • ') + '</p></div></header>';
+      '<p class="pc-sub m-only">' + esc([st.num ? '№ ' + st.num : '', sideWord ? sideWord + ' берег' : '', placeTxt].filter(Boolean).join(' · ')) + '</p>' +
+      '<p class="pc-chips d-only">' + chips.map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('') +
+        (placeTxt ? '<span class="chip chip-place' + medal + '">' + esc(placeTxt) + '</span>' : '') +
+        (ev.title ? '<span class="chip chip-plain">' + esc(ev.title) + '</span>' : '') + '</p>' +
+      '</div></div></header><div class="pc-sheet">';
 
     // Плитки
     if (started) {
-      h += '<div class="pc-tiles">' +
-        tile('Місце', st.place != null ? st.place : '—') +
-        tile('Бали', st.points != null ? st.points : '—') +
-        tile('Улов', st.fish, fishWord(st.fish)) +
-        '<div class="pc-tile pc-tile--wdl"><span class="pc-tile__label">В · РН · БН · П</span><span class="pc-tile__val">' +
-          '<b class="c-w">' + st.cnt.w + '</b><i>·</i><b class="c-d">' + st.cnt.d + '</b><i>·</i><b class="c-z">' + st.cnt.z + '</b><i>·</i><b class="c-l">' + st.cnt.l + '</b></span></div>' +
+      var diff = st.vsOpp ? st.vsOpp.mine - st.vsOpp.theirs : null;
+      h += '<div class="pc-k">' +
+        '<div class="pk"><span class="pk__l">Бали</span><span class="pk__v">' + (st.points != null ? st.points : '—') + '</span>' +
+          '<span class="pk__wdl" role="img" aria-label="' + st.cnt.w + ' перемог, ' + st.cnt.d + ' рибних нічиїх, ' + st.cnt.z + ' безрибних, ' + st.cnt.l + ' поразок">' +
+          ['w', 'd', 'z', 'l'].map(function (c) { return st.cnt[c] ? '<i class="fl-' + c + '" style="flex:' + st.cnt[c] + '"></i>' : ''; }).join('') + '</span>' +
+          '<span class="pk__s d-only">' + st.cnt.w + ' В · ' + st.cnt.d + ' РН · ' + st.cnt.z + ' БН · ' + st.cnt.l + ' П</span></div>' +
+        '<div class="pk"><span class="pk__l">Улов</span><span class="pk__v">' + st.fish + ' <small>' + fishWord(st.fish) + '</small></span>' +
+          '<span class="pk__s">' + (st.avg != null ? fmt1(st.avg) + ' за тур' : '') + '<span class="d-only">' + (st.tAvg != null ? ' · в середньому по турніру ' + fmt1(st.tAvg) : '') + '</span></span></div>' +
+        (st.vsOpp ? '<div class="pk"><span class="pk__l">Проти суперників</span><span class="pk__v pk__v--sm">' + st.vsOpp.mine + ' : ' + st.vsOpp.theirs + '</span>' +
+          '<span class="pk__badge ' + (diff > 0 ? 'is-up' : diff < 0 ? 'is-down' : '') + '">' + (diff > 0 ? '+' : '') + diff + '<span class="d-only"> ' + fishWord(Math.abs(diff)) + '</span></span></div>' : '') +
+        '<div class="pk"><span class="pk__l">Перемоги</span><span class="pk__v pk__v--sm">' + Math.round(st.winRate * 100) + '%</span>' +
+          '<span class="pk__s">' + (st.streak ? '<span class="l-m">серія — ' + st.streak + ' ' + plural(st.streak, 'тур', 'тури', 'турів') + '</span><span class="l-d">найдовша серія — ' + st.streak + ' ' + plural(st.streak, 'тур', 'тури', 'турів') + ' поспіль</span>' : st.cnt.w + ' з ' + st.played) + '</span></div>' +
         '</div>';
     } else {
       h += '<p class="info pc-note">Турнір ще не почався. Тут уже видно жеребкування, а статистика з’явиться після перших турів.</p>';
@@ -827,7 +870,7 @@
         }).join('') + '</section>']);
       }
     }
-    pc.body.innerHTML = h + twoCols(L, R);
+    pc.body.innerHTML = h + twoCols(L, R) + '</div>';
 
     function tile(label, val, unit) {
       return '<div class="pc-tile"><span class="pc-tile__label">' + label + '</span><span class="pc-tile__val">' + esc(val) +
@@ -1172,9 +1215,9 @@
 
   // Графік місця по турах (1 — угорі)
   function placeSvg(places, players) {
-    var n = places.length, W = 320, H = 130, top = 12, bottom = 22, left = 22, right = 8;
+    var n = places.length, W = 320, H = 130, top = 12, bottom = 22, left = 22, right = 8, pad = 10;
     var maxP = Math.max(players, 2);
-    var x = function (i) { return left + (n > 1 ? i * (W - left - right) / (n - 1) : (W - left - right) / 2); };
+    var x = function (i) { return left + pad + (n > 1 ? i * (W - left - right - pad) / (n - 1) : (W - left - right - pad) / 2); };
     var y = function (p) { return top + (p - 1) / (maxP - 1) * (H - top - bottom); };
     var out = '<svg class="pc-chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Місце після кожного туру: ' + places.join(', ') + '">';
     [1, Math.ceil(maxP / 2), maxP].forEach(function (p) {
@@ -1733,6 +1776,25 @@
   reg.open.addEventListener('click', goReg);
   pc.open.addEventListener('click', goCard);
   pc.back.addEventListener('click', goList);
+  pc.body.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-act]');
+    if (!b) return;
+    var act = b.getAttribute('data-act');
+    if (act === 'back') { goList(); return; }
+    if (act === 'prev' || act === 'next') {
+      var nav = cardNav(selectedPlayerName() || ''), to = nav[act];
+      if (!to) return;
+      selectOnly(to.key);
+      renderCard();
+      var h = document.getElementById('pcTitle');
+      if (h) { try { h.focus({ preventScroll: true }); } catch (x) { h.focus(); } }
+      return;
+    }
+    if (act === 'share') {
+      var nm = selectedPlayerName(), dp = nm ? drawPlayer(nm) : null;
+      shareLink(dp ? SHARE_URL + '=p' + dp.n : SHARE_URL, (nm || 'Учасник') + ': картка учасника TROUT MASTER');
+    }
+  });
   ts.open.addEventListener('click', goStats);
   ts.back.addEventListener('click', goList);
   // iOS Safari вмикає стан :active (натиснута кнопка) лише якщо на сторінці є обробник дотику
@@ -2205,29 +2267,45 @@
     clearTimeout(toastT);
     toastT = setTimeout(function () { v2.toast.hidden = true; }, 2600);
   }
-  v2.share.addEventListener('click', function () {
-    var ev = (state.payload && state.payload.event) || {};
-    var title = ev.title || 'TROUT MASTER';
+  function shareLink(url, text) {
     var tg = window.Telegram && window.Telegram.WebApp;
     try {
       if (tg && tg.initData && tg.openTelegramLink) {
-        tg.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(SHARE_URL) + '&text=' + encodeURIComponent(title + ': результати наживо'));
+        tg.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text));
         return;
       }
     } catch (e) { /* */ }
     if (navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
-      navigator.share({ title: title, text: title + ': результати наживо', url: SHARE_URL }).catch(function () {});
+      navigator.share({ title: text, text: text, url: url }).catch(function () {});
       return;
     }
     var done = function () { toast('Посилання скопійовано'); };
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(SHARE_URL).then(done, function () { toast(SHARE_URL); });
-    else toast(SHARE_URL);
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, function () { toast(url); });
+    else toast(url);
+  }
+  v2.share.addEventListener('click', function () {
+    var ev = (state.payload && state.payload.event) || {};
+    shareLink(SHARE_URL, (ev.title || 'TROUT MASTER') + ': результати наживо');
   });
   // Клавіатура: Enter/пробіл на рядку = тап
   el.board.addEventListener('keydown', function (e) {
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.r[data-key]')) { e.preventDefault(); e.target.click(); }
   });
   // ================= /Новий дизайн =================
+
+  // Посилання на картку: t.me/…?startapp=p9 (Telegram) або …/#p9 (браузер) — номер із жеребкування
+  var wantM = /(?:tgWebAppStartParam=|#)p(\d+)(?:&|$)/.exec(location.hash + '&' + location.search.replace(/^\?/, ''));
+  state.wantPlayer = wantM ? +wantM[1] : null;
+  function openWantedPlayer() {
+    if (!state.wantPlayer || !drawData()) return;
+    var dp = drawData().players.find(function (x) { return +x.n === state.wantPlayer; });
+    state.wantPlayer = null;
+    if (!dp || !hasCardData(dp.name)) return;
+    var s = standingsRows(), r = s && s.rows.find(function (x) { return normName(x.name) === normName(dp.name); });
+    selectOnly(r ? r.key : dp.name);
+    renderBoard();
+    goCard();
+  }
 
   // ---------- Start ----------
   var cached = store.get(LS.data, null);
