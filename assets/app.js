@@ -2090,7 +2090,7 @@
     v2.heroStats.hidden = !stats || list;
     v2.heroReg.hidden = !(list && regOpenNow());
     // Меню
-    v2.topnav.hidden = !p;
+    v2.topnav.hidden = !p || !stats;   // одна вкладка «Учасники» нічого не перемикає — не показуємо
     v2.navList.textContent = list ? 'Учасники' : 'Результати';
     v2.navStats.hidden = !stats;
     v2.navList.setAttribute('aria-current', state.view === 'list' ? 'page' : 'false');
