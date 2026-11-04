@@ -1716,3 +1716,6 @@ html, body { background: var(--nav); }
   .tgrid .tr-row:not(.tr-head) { min-height: 40px; }
   .pcard .pc-tour:not(.pc-tour--head) { min-height: 40px; }
 }
+
+/* Курсор у полях введення — чорний, як навбар (на світлому полі білий курсор не видно) */
+input, textarea, select { caret-color: var(--nav); }
