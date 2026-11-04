@@ -1689,3 +1689,22 @@ html, body { background: var(--nav); }
   .view-reg .main { padding-left: 12px; padding-right: 12px; padding-top: 12px; }
 }
 @media (max-width: 979px) { .tg.tg-stuck .view-reg #regForm, .tg.tg-stuck #regForm { position: relative; z-index: 52; } }
+
+/* Картка учасника: коли шапка «Тури» прилипла, у неї заокруглені верхні кути й рамка — як у самої картки */
+.pcard .pc-tour--head { transition: border-radius 0.12s ease; }
+.pcard .pc-tour--head.is-stuck {
+  border-radius: 17px 17px 0 0;
+  border-top-color: transparent;
+  box-shadow: 0 0 0 1px var(--card-line);
+}
+@media (min-width: 980px) { .pcard .pc-tour--head.is-stuck { border-radius: calc(var(--r-card) - 1px) calc(var(--r-card) - 1px) 0 0; } }
+@media (prefers-reduced-motion: reduce) { .pcard .pc-tour--head { transition: none; } }
+/* Telegram на телефоні: прилипла шапка таблиці — з лінією зверху, як верхня рамка таблиці */
+@media (max-width: 979px) {
+  .tg .rk-head, .tg .plist-head, .tg .tgrid-hd { border-top: 1px solid transparent; }
+  .tg .rk-head.is-stuck, .tg .plist-head.is-stuck, .tg .tgrid-hd.is-stuck { border-top-color: var(--card-line); }
+}
+/* Прилиплі шапки таблиць — звичайне заокруглення: супереліпс на них Chrome малює з артефактом (світлий клин) */
+@supports (corner-shape: squircle) {
+  .rk-head, .plist-head, .tgrid-hd, .pc-tour--head { corner-shape: round; }
+}

@@ -1397,6 +1397,22 @@
     } catch (e) { /* */ }
   }
 
+  // ----- Картка учасника: прилипла шапка таблиці «Тури» отримує заокруглені кути, як у картки -----
+  var stuckFrame = 0;
+  function markStuckHeads() {
+    stuckFrame = 0;
+    // Шапка «прилипла», якщо вона нижче свого звичайного місця (одразу після попереднього елемента
+    // або від верху таблиці)
+    [].forEach.call(document.querySelectorAll('.pcard .pc-tour--head, .tg .rk-head, .tg .plist-head, .tg .tgrid-hd'), function (hd) {
+      if (!hd.offsetParent) return;
+      var prev = hd.previousElementSibling, natural;
+      if (prev && prev.offsetParent) natural = prev.getBoundingClientRect().bottom + (parseFloat(getComputedStyle(prev).marginBottom) || 0);
+      else { var par = hd.parentElement; natural = par.getBoundingClientRect().top + (parseFloat(getComputedStyle(par).borderTopWidth) || 0) + (parseFloat(getComputedStyle(par).paddingTop) || 0); }
+      hd.classList.toggle('is-stuck', hd.getBoundingClientRect().top > natural + 0.5);
+    });
+  }
+  window.addEventListener('scroll', function () { if (!stuckFrame) stuckFrame = requestAnimationFrame(markStuckHeads); }, { passive: true });
+
   // ----- Реєстрація на телефоні: при фокусі на першому полі форма піднімається до верху -----
   // Шапка турніру прокручується повністю, лишається лише заокруглення аркуша, а картка форми
   // стоїть на 12 px під ним (у Telegram — під панеллю Telegram), як і від країв екрана.
