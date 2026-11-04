@@ -352,6 +352,7 @@ tr.medal .pn {
   display: inline-block;
   min-width: 30px;
   padding: 2px 7px;
+  text-align: center;
   border-radius: 4px;
   font-size: 12px;
   font-weight: 600;
