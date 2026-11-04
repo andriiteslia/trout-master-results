@@ -12,8 +12,8 @@
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
   <link rel="preload" href="../assets/fonts/fixel-cyrillic-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="../assets/fish.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="assets/style.css?v=b1">
-  <script src="../config.js?v=b1"></script>
+  <link rel="stylesheet" href="assets/style.css?v=b2">
+  <script src="../config.js?v=b2"></script>
   <script>
     // Запитуємо результати одразу, паралельно з завантаженням решти сторінки
     (function () {
@@ -25,7 +25,7 @@
       } catch (e) { window.__tmEarly = null; }
     })();
   </script>
-  <script src="assets/app.js?v=b1" defer></script>
+  <script src="assets/app.js?v=b2" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -46,6 +46,9 @@
   <section class="hero" id="hero">
     <div class="wrap hero__inner">
       <div class="hero__txt">
+        <button type="button" class="hero-back" id="heroBack">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg><span>Назад</span>
+        </button>
         <span class="pill" id="heroPill" hidden></span>
         <h1 class="title" id="title">Результати</h1>
         <p class="meta" id="subtitle" hidden></p>
@@ -94,6 +97,7 @@
             <input type="search" id="search" placeholder="Знайти учасника" autocomplete="off">
           </label>
         </div>
+        <div class="fillcard" id="fillCard" hidden></div>
         <div class="selbar" id="selbar" hidden>
           <span class="selbar__place" id="selPlace" hidden></span>
           <span class="selbar__txt"><small>Вибрано в таблиці</small><b id="selName"></b></span>
@@ -119,6 +123,8 @@
       <h1 class="title" id="regTitle" tabindex="-1">Реєстрація</h1>
       <p class="subtitle" id="regEvent" hidden></p>
 
+      <div class="card2 seats" id="regSeats" hidden></div>
+
       <form class="card form" id="regForm" novalidate>
         <div class="field">
           <label for="fName">Прізвище та ім’я</label>
@@ -130,7 +136,10 @@
           <label for="fPhone">Номер телефону</label>
           <input id="fPhone" name="phone" type="tel" inputmode="numeric" autocomplete="tel"
                  placeholder="+380 XX XXX XX XX" aria-describedby="fPhoneHint fPhoneErr" required>
-          <p class="hint" id="fPhoneHint">Номер бачить лише організатор. На сайті буде тільки прізвище та ім’я.</p>
+          <p class="hint" id="fPhoneHint">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            Номер бачить лише організатор. На сайті буде тільки прізвище та ім’я.
+          </p>
           <p class="err" id="fPhoneErr" hidden></p>
         </div>
         <div class="hp" aria-hidden="true">
@@ -142,6 +151,10 @@
           <span class="btn__text">Підтвердити реєстрацію</span>
         </button>
       </form>
+      <p class="botnote" id="regBotNote" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg>
+        Після реєстрації бот зможе надіслати нагадування перед турніром і ваші результати.
+      </p>
 
       <div class="card done" id="regDone" tabindex="-1" hidden>
         <svg class="done__icon" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22"/><path d="m15 24.5 6 6 12-13"/></svg>

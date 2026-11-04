@@ -1259,14 +1259,13 @@
   }
   function renderTimer() {
     var d = regDeadline();
-    var on = !!d && !reg.live.hidden;
+    var on = !!d && regOpenNow() && (state.view === 'list' || state.view === 'reg');
     reg.timer.hidden = !on;
     if (!on) { clearInterval(timerId); timerId = null; return; }
     var left = d.getTime() - Date.now();
     if (left <= 0) { clearInterval(timerId); timerId = null; renderReg(); return; }   // час вийшов: ховаємо кнопку
     reg.timerTxt.innerHTML = 'до кінця ' + fmtLeft(left).replace(/\d/g, '<span class="dg">$&</span>');
-    var kt = document.getElementById('kTimer');
-    if (kt) kt.innerHTML = kTimerHtml(left);
+    ['kTimer', 'rTimer'].forEach(function (id) { var kt = document.getElementById(id); if (kt) kt.innerHTML = kTimerHtml(left); });
     var sr = 'Реєстрація триває до ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' +
       d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
     if (reg.timerSr.textContent !== sr) reg.timerSr.textContent = sr;
@@ -1836,8 +1835,42 @@
     renderChrome();
   }
 
+  var MONTHS_FULL = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
   function deadlineText(d) {
-    return d.getDate() + ' ' + MONTHS[d.getMonth()] + ', ' + d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+    return d.getDate() + ' ' + MONTHS_FULL[d.getMonth()] + ', ' + d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+  }
+  // Скільки зареєстровано і скільки місць (список учасників)
+  function seatsInfo() {
+    var p = state.payload || {}, m = isListMode() ? state.models[0] : null;
+    if (!m) return null;
+    return { n: m.rows.length, seats: parseInt(p.seats, 10) || 0 };
+  }
+  function seatsBar(si) {
+    var pct = si.seats ? Math.min(100, Math.round(si.n / si.seats * 100)) : 0;
+    return '<span class="sbar" role="img" aria-label="' + si.n + ' з ' + si.seats + ' місць зайнято"><span style="width:' + pct + '%"></span></span>';
+  }
+  function renderFill() {
+    var box = document.getElementById('fillCard'), si = seatsInfo(), d = regDeadline();
+    var on = !!si && si.seats > 0 && state.view === 'list';
+    box.hidden = !on;
+    if (!on) return;
+    box.innerHTML = '<div class="fillcard__row"><b>Заповнено ' + Math.min(si.n, si.seats) + ' з ' + si.seats + ' ' + plural(si.seats, 'місця', 'місць', 'місць') + '</b>' +
+      (d && regOpenNow() ? '<span>до ' + esc(deadlineText(d)) + '</span>' : '') + '</div>' + seatsBar(si);
+  }
+  function renderRegExtras() {
+    var box = document.getElementById('regSeats'), si = seatsInfo(), d = regDeadline(), open = regOpenNow();
+    var on = state.view === 'reg' && !!si && open && !state.regDone;
+    box.hidden = !on;
+    var note = document.getElementById('regBotNote');
+    if (note) note.hidden = !(state.view === 'reg' && IN_TG && open && !state.regDone);
+    if (!on) return;
+    var free = si.seats ? si.seats - si.n : 0;
+    var h = '<div class="seats__row"><b>Зареєстровано ' + si.n + (si.seats ? ' з ' + si.seats : '') + '</b>' +
+      (si.seats ? (free > 0 ? '<span class="ok">ще ' + free + ' ' + plural(free, 'місце', 'місця', 'місць') + '</span>' : '<span class="warn">далі — резерв</span>') : '') + '</div>' +
+      (si.seats ? seatsBar(si) : '');
+    if (d) h += '<div class="seats__timer"><span>До закриття</span><span class="ttiles" id="rTimer"></span></div>';
+    box.innerHTML = h;
+    renderTimer();
   }
 
   // Плашка статусу, плитки, кнопки шапки, меню, бічна панель, смужка вибору
@@ -1861,6 +1894,8 @@
     v2.pill.classList.toggle('is-live', pillOn);
 
     renderKpis();
+    renderFill();
+    renderRegExtras();
 
     // Кнопки шапки (комп'ютер)
     var stats = statsReady();
@@ -2126,7 +2161,7 @@
         '<span class="pt__nm">' + esc(p.name) + '</span>' + (p.i >= newest && p.i > 0 && all.length > 3 ? '<span class="pt__new">нове</span>' : '') + '</li>';
     }
     var vis = main.filter(function (p) { return matchQuery(p.name); });
-    var h = '<ol class="plist">' + vis.map(item).join('');
+    var h = '<div class="plist-head m-only" aria-hidden="true"><span>Учасник</span><span>№</span></div><ol class="plist">' + vis.map(item).join('');
     if (free && !state.query) {
       for (var k = 0; k < free; k++) {
         var j = vis.length + k, nn = all.length + k + 1;
@@ -2146,6 +2181,7 @@
   // ----- Події нового дизайну -----
   v2.search.addEventListener('input', function () { state.query = v2.search.value; renderBoard(); });
   v2.navList.addEventListener('click', function () { goList(); });
+  document.getElementById('heroBack').addEventListener('click', function () { goList(); });
   v2.navStats.addEventListener('click', function () { goStats(); });
   v2.heroStats.addEventListener('click', function () { goStats(); });
   v2.heroReg.addEventListener('click', function () { goReg(); });
