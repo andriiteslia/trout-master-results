@@ -863,7 +863,7 @@ function writeVisitStats_(sh) {
   var cols = ['K', 'L', 'M'];
   function uniq(src) {
     return cols.map(function (c) {
-      return '=IFERROR(COUNTUNIQUE(FILTER(' + C + ',' + A + '>=' + c + '$3' + (src ? ',' + B + '="' + src + '"' : '') + ')),0)';
+      return '=COUNTUNIQUEIFS(' + C + ',' + A + ',">="&' + c + '$3' + (src ? ',' + B + ',"' + src + '"' : '') + ')';
     });
   }
   function count(src) {
@@ -887,12 +887,15 @@ function writeVisitStats_(sh) {
     ['Сайт рахується анонімно за пристроєм. Записи — на прихованому аркуші «' + JOURNAL_SHEET + '».', '', '', '']
   ];
   var c0 = VSTATS_COL;
-  // Текст — через setValues, формули — лише через setFormulas: так вони працюють у будь-якій
-  // локалі таблиці (в українській розділювач «;», і рядок «=…,…» з setValues дав би #ERROR!)
   sh.getRange(1, c0, rows.length, 4).setValues(rows.map(function (r) {
     return r.map(function (v) { return String(v).charAt(0) === '=' ? '' : v; });
   }));
-  sh.getRange(3, c0 + 1, 7, 3).setFormulas(rows.slice(2, 9).map(function (r) { return r.slice(1); }));
+  // Розділювач аргументів залежить від локалі таблиці: в українській «;», в англійській «,».
+  // Google розбирає формули зі скрипта за локаллю, тож перевіряємо пробною формулою.
+  var sep = formulaSep_(sh.getRange(3, c0 + 1));
+  sh.getRange(3, c0 + 1, 7, 3).setFormulas(rows.slice(2, 9).map(function (r) {
+    return r.slice(1).map(function (f) { return f.replace(/,/g, sep); });  // коми в цих формулах — лише розділювачі
+  }));
   sh.getRange(1, c0, rows.length, 1).setHorizontalAlignment('left');
   sh.getRange(1, c0, rows.length, 4).setWrap(false);
   sh.getRange(1, c0).setFontWeight('bold').setFontSize(12);
@@ -906,6 +909,15 @@ function writeVisitStats_(sh) {
   sh.setColumnWidth(c0 - 1, 24);
   sh.setColumnWidth(c0, 190);
   for (var i = 1; i <= 3; i++) sh.setColumnWidth(c0 + i, 90);
+}
+
+/** «,» чи «;» між аргументами формул у цій таблиці. */
+function formulaSep_(cell) {
+  cell.setFormula('=SUM(1,2)');
+  SpreadsheetApp.flush();
+  var ok = cell.getDisplayValue() === '3';
+  cell.setValue('');
+  return ok ? ',' : ';';
 }
 
 /** Можна запустити з редактора, щоб зведення з’явилося одразу (інакше — з першим візитом). */
