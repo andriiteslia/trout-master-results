@@ -1349,7 +1349,7 @@ html, body { background: var(--nav); }
 .pt--free .pt__nm { font-weight: 550; color: var(--muted); }
 .plist-sep { margin: 0; padding: 10px 14px; background: #fffaeb; border-bottom: 1px solid #fedf89; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #93370d; }
 @media (min-width: 980px) {
-  .plist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; padding: 8px 24px 16px; }
+  .plist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(var(--rows, 1), auto); grid-auto-flow: column; column-gap: 24px; padding: 8px 24px 16px; }
   .pt { min-height: 56px; padding: 0 10px; }
   .pt.z1 { background: #fff; }
   .pt.z2 { background: var(--zebra2); }

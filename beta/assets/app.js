@@ -2154,24 +2154,29 @@
     var main = seats ? all.slice(0, seats) : all, reserve = seats ? all.slice(seats) : [];
     var free = seats && all.length < seats ? seats - all.length : 0;
     var newest = all.length - 2;   // останні дві реєстрації — «нове»
+    // На комп'ютері дві колонки: ліва — перша половина списку, права — друга
+    var half = 1;
+    function z2(j) { return (j % half) % 2 ? ' z2' : ''; }
+    function olOpen(count) { half = Math.max(1, Math.ceil(count / 2)); return '<ol class="plist" style="--rows:' + half + '">'; }
     function item(p, j) {
       var sel = state.selected.has(p.key);
-      return '<li class="pt r' + (j % 2 ? ' z1' : '') + (Math.floor(j / 2) % 2 ? ' z2' : '') + (sel ? ' is-sel' : '') + '" data-key="' + esc(p.key) + '">' +
+      return '<li class="pt r' + (j % 2 ? ' z1' : '') + z2(j) + (sel ? ' is-sel' : '') + '" data-key="' + esc(p.key) + '">' +
         '<span class="pt__n">' + esc(p.n) + '</span><span class="av" aria-hidden="true">' + esc(initials(p.name)) + '</span>' +
-        '<span class="pt__nm">' + esc(p.name) + '</span>' + (p.i >= newest && p.i > 0 && all.length > 3 ? '<span class="pt__new">нове</span>' : '') + '</li>';
+        '<span class="pt__nm">' + esc(p.name) + '</span>' + (p.i >= newest && p.i > 0 && all.length > 3 ? '<span class="pt__new">new</span>' : '') + '</li>';
     }
     var vis = main.filter(function (p) { return matchQuery(p.name); });
-    var h = '<div class="plist-head m-only" aria-hidden="true"><span>Учасник</span><span>№</span></div><ol class="plist">' + vis.map(item).join('');
-    if (free && !state.query) {
-      for (var k = 0; k < free; k++) {
+    var nFree = free && !state.query ? free : 0;
+    var h = '<div class="plist-head m-only" aria-hidden="true"><span>Учасник</span><span>№</span></div>' + olOpen(vis.length + nFree) + vis.map(item).join('');
+    if (nFree) {
+      for (var k = 0; k < nFree; k++) {
         var j = vis.length + k, nn = all.length + k + 1;
-        h += '<li class="pt pt--free' + (j % 2 ? ' z1' : '') + (Math.floor(j / 2) % 2 ? ' z2' : '') + '"><span class="pt__n">' + nn + '</span>' +
+        h += '<li class="pt pt--free' + (j % 2 ? ' z1' : '') + z2(j) + '"><span class="pt__n">' + nn + '</span>' +
           '<span class="av av--free" aria-hidden="true"></span><span class="pt__nm">Вільне місце</span></li>';
       }
     }
     h += '</ol>';
     var rv = reserve.filter(function (p) { return matchQuery(p.name); });
-    if (rv.length) h += '<p class="plist-sep">Резерв</p><ol class="plist">' + rv.map(item).join('') + '</ol>';
+    if (rv.length) h += '<p class="plist-sep">Резерв</p>' + olOpen(rv.length) + rv.map(item).join('') + '</ol>';
     if (!vis.length && !rv.length) h = '<div class="empty"><strong>Нікого не знайдено</strong>Спробуйте інше прізвище.</div>';
     return h;
   }
