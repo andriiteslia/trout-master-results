@@ -1708,3 +1708,11 @@ html, body { background: var(--nav); }
 @supports (corner-shape: squircle) {
   .rk-head, .plist-head, .tgrid-hd, .pc-tour--head { corner-shape: round; }
 }
+
+/* Телефон: компактніші рядки таблиць (було: учасники 52, залік 62, по турах 48, тури в картці 44) */
+@media (max-width: 979px) {
+  .plist .pt { min-height: 44px; }
+  .rk-row:not(.rk-head) { min-height: 52px; }
+  .tgrid .tr-row:not(.tr-head) { min-height: 40px; }
+  .pcard .pc-tour:not(.pc-tour--head) { min-height: 40px; }
+}
