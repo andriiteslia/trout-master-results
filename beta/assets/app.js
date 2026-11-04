@@ -2012,7 +2012,8 @@
     var lead = s && s.rows.find(function (r) { return r.place === 1; });
     var started = s && s.rows.some(function (r) { return r.pts > 0; });
     if (lead && started) {
-      h += kpi('k-dark d-only', 'Лідер', 'Лідер', esc(lead.name), '<span class="kpi__s">' + [
+      var finished = t && playedTours(t) >= t.rounds;
+      h += kpi('k-dark d-only', finished ? 'Переможець' : 'Лідер', finished ? 'Переможець' : 'Лідер', esc(lead.name), '<span class="kpi__s">' + [
         lead.pts != null ? lead.pts + ' ' + plural(lead.pts, 'бал', 'бали', 'балів') : '',
         lead.wins != null ? lead.wins + ' ' + plural(lead.wins, 'перемога', 'перемоги', 'перемог') : '',
         lead.fish != null ? lead.fish + ' ' + fishWord(lead.fish) : ''].filter(Boolean).join(' · ') + '</span>');
