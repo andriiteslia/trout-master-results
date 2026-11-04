@@ -657,7 +657,7 @@ tbody tr.reserve-sep th {
 .pc-side { margin-left: 1px; font-weight: 700; color: var(--text-3); }
 .pc-tour--head span:nth-child(2) { text-align: center; }
 
-.pc-tour__n { font-weight: 650; color: var(--text-3); }
+.pc-tour__n { display: flex; align-items: center; }
 .pc-tour__sec { color: var(--text-3); white-space: nowrap; }
 .pc-tour__sec b { color: var(--text); font-weight: 750; }
 .pc-tour__opp { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--text); }

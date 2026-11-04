@@ -799,7 +799,7 @@
             '<span class="pc-score">' + x.fish + (x.oppFish != null ? ' : ' + x.oppFish : '') + '</span>'
           : '<span class="pc-wait">' + (next ? 'наступний' : 'очікується') + '</span>';
         return '<li class="pc-tour' + (x.code ? '' : ' is-wait') + (next ? ' is-next' : '') + '">' +
-          '<span class="pc-tour__n" title="Тур ' + x.n + '">Т' + x.n + '</span>' +
+          '<span class="pc-tour__n"><span class="visually-hidden">Тур </span><span class="hm-sec__b">' + x.n + '</span></span>' +
           '<span class="pc-tour__sec">' + (x.sector ? '<span class="visually-hidden">сектор </span><b>' + x.sector + '</b>' +
             (sideL ? '<span class="pc-side" aria-hidden="true">' + sideL + '</span><span class="visually-hidden">, ' + sideWord + '</span>' : '') : '') + '</span>' +
           '<span class="pc-tour__opp">' + (x.oppName ? '<span class="pc-num">№' + x.oppNum + '</span> ' + esc(x.oppName) : (x.oppNum ? '№' + x.oppNum : '')) + '</span>' +
@@ -843,7 +843,7 @@
         (tRows.length ? '<h3 class="pc-h3">По турніру</h3><dl class="pc-stats">' + tRows.join('') + '</dl>' : '') + '</section>';
 
       // Особисті зустрічі
-      var groups = [['w', 'Обіграв'], ['d', 'Рибна нічия'], ['z', 'Безрибна нічия'], ['l', 'Програв']].filter(function (g) { return st.meet[g[0]].length; });
+      var groups = [['w', 'Обіграно'], ['d', 'Рибна нічия'], ['z', 'Безрибна нічия'], ['l', 'Програно']].filter(function (g) { return st.meet[g[0]].length; });
       if (groups.length) {
         h += '<section class="card pc-block"><h2 class="pc-h2">Особисті зустрічі</h2>' + groups.map(function (g) {
           return '<div class="pc-meet"><span class="pc-meet__k c-' + g[0] + '">' + g[1] + ' (' + st.meet[g[0]].length + ')</span><ul class="pc-chips">' +
