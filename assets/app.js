@@ -2129,7 +2129,16 @@
     el.board.innerHTML = html;
     var sc2 = el.board.querySelector('.tgrid');
     if (sc2) sc2.scrollLeft = x;
+    syncTgridHead();
   }
+  // Прилипла копія шапки «По турах» гортається вбік разом із таблицею
+  function syncTgridHead() {
+    var sc = el.board.querySelector('.tgrid'), hd = el.board.querySelector('.tgrid-hd');
+    if (sc && hd) hd.scrollLeft = sc.scrollLeft;
+  }
+  el.board.addEventListener('scroll', function (e) {
+    if (e.target && e.target.classList && e.target.classList.contains('tgrid')) syncTgridHead();
+  }, true);
 
   function medalCls(place, started) { return started && place >= 1 && place <= 3 ? ' medal-' + place : ''; }
   function moveHtml(mv) {
@@ -2215,7 +2224,9 @@
         '<span class="t-s d-only">' + (st && st.fish != null ? st.fish : '') + '</span></div>';
     }).join('');
     if (!list.length) body = '<div class="empty"><strong>Нікого не знайдено</strong>Спробуйте інше прізвище.</div>';
-    return '<p class="tgrid-hint m-only" aria-hidden="true">гортайте →</p><div class="tgrid" role="region" aria-label="Результати по турах" tabindex="0"><div class="tgrid__in">' + head + body + '</div></div>';
+    // Копія шапки поза горизонтальним скролом: у Telegram на телефоні вона прилипає до верху (див. .tgrid-hd у стилях)
+    return '<p class="tgrid-hint m-only" aria-hidden="true">гортайте →</p><div class="tgrid-hd" aria-hidden="true"><div class="tgrid__in">' + head + '</div></div>' +
+      '<div class="tgrid" role="region" aria-label="Результати по турах" tabindex="0"><div class="tgrid__in">' + head + body + '</div></div>';
   }
 
   // Список учасників під час реєстрації
