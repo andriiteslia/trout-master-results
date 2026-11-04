@@ -621,6 +621,7 @@ function doPost(e) {
     if (data.action === 'register') out = register_(data);
     else if (data.action === 'whoami') out = whoami_(data);
     else if (data.action === 'writeAccess') out = writeAccess_(data);
+    else if (data.action === 'visit') out = visit_(data);
     else out = fail_('bad_request', 'Невідомий запит.');
   } catch (err) {
     out = fail_('server', 'Не вдалося зберегти заявку. Спробуйте ще раз за хвилину.');
@@ -709,6 +710,7 @@ function whoami_(data) {
   var ss = SpreadsheetApp.openById(getSpreadsheetId_());
   var names = regNamesFor_(ss, user.id);
   try { upsertTgUser_(ss, user, { visit: true, canWrite: user.allowsWrite ? true : null, names: names }); } catch (err) { console.error(err); }
+  try { logVisit_(ss, 'Telegram', user.id); } catch (err) { console.error(err); }
   return { ok: true, names: names, canWrite: user.allowsWrite };
 }
 
@@ -773,7 +775,11 @@ function upsertTgUser_(ss, user, opts) {
       else if (!row[VISITS_COL_WRITE - 1]) sh.getRange(r, VISITS_COL_WRITE).setValue('ні');
       return;
     }
-    sh.appendRow([user.id, at, user.name || '', reg, opts.visit ? now : '', opts.visit ? now : '', opts.visit ? 1 : 0, write || 'ні']);
+    // Не appendRow: праворуч стоїть зведення (J:M), і appendRow писав би під ним
+    var lastId = 0;
+    for (var j = 0; j < ids.length; j++) if (String(ids[j][0]).trim()) lastId = j + 1;
+    sh.getRange(lastId + 2, 1, 1, VISITS_HEAD.length).setValues([[user.id, at, user.name || '', reg,
+      opts.visit ? now : '', opts.visit ? now : '', opts.visit ? 1 : 0, write || 'ні']]);
   } finally {
     lock.releaseLock();
   }
@@ -794,7 +800,114 @@ function visitsSheet_(ss) {
   if (head.getDisplayValues()[0].join('|') !== VISITS_HEAD.join('|')) {
     head.setValues([VISITS_HEAD]).setFontWeight('bold').setBackground('#e3f0fa');
   }
+  // Зведення «сьогодні / тиждень / місяць» праворуч (якщо його ще немає або його стерли)
+  if (sh.getRange(1, VSTATS_COL).getDisplayValue() !== VSTATS_TITLE) writeVisitStats_(sh);
   return sh;
+}
+
+// ---------------------------------------------------------------------------
+// Статистика відвідувань: журнал кожного відкриття + зведення на «Відвідуванні»
+// ---------------------------------------------------------------------------
+
+var JOURNAL_SHEET = 'Журнал візитів';  // прихований аркуш: Час | Джерело | ID
+var VISIT_DEDUPE_SEC = 600;            // повторне відкриття тим самим пристроєм/людиною за 10 хв — один візит
+var VSTATS_COL = 10;                   // J — зведення на аркуші «Відвідування»
+var VSTATS_TITLE = 'Статистика відвідувань';
+
+/**
+ * Сайт у звичайному браузері: { action: 'visit', vid: 'випадковий ID пристрою' }.
+ * Без імен і телефонів: лише анонімний ID, який браузер сам згенерував.
+ */
+function visit_(data) {
+  var id = String(data.vid || '').trim().toLowerCase();
+  if (!/^[a-z0-9]{8,40}$/.test(id)) return { ok: true };
+  logVisit_(null, 'Сайт', 'web:' + id);
+  return { ok: true };
+}
+
+/** Один рядок у «Журнал візитів» (з відсіюванням повторів за 10 хв). */
+function logVisit_(ss, source, id) {
+  var cache = CacheService.getScriptCache();
+  var key = 'vis:' + id;
+  if (cache.get(key)) return;
+  cache.put(key, '1', VISIT_DEDUPE_SEC);
+  ss = ss || SpreadsheetApp.openById(getSpreadsheetId_());
+  journalSheet_(ss).appendRow([new Date(), source, String(id)]);
+  visitsSheet_(ss);  // переконатися, що зведення на місці
+}
+
+function journalSheet_(ss) {
+  var sh = ss.getSheetByName(JOURNAL_SHEET);
+  if (sh) return sh;
+  try {
+    sh = ss.insertSheet(JOURNAL_SHEET);
+  } catch (err) {               // два перші візити одночасно: аркуш уже створив інший запит
+    sh = ss.getSheetByName(JOURNAL_SHEET);
+    if (sh) return sh;
+    throw err;
+  }
+  sh.getRange(1, 1, 1, 3).setValues([['Час', 'Джерело', 'ID']]).setFontWeight('bold').setBackground('#e3f0fa');
+  sh.setFrozenRows(1);
+  sh.getRange('A:A').setNumberFormat('dd.MM.yyyy HH:mm:ss');
+  sh.getRange('C:C').setNumberFormat('@');
+  sh.setColumnWidth(1, 150);
+  sh.setColumnWidth(3, 200);
+  try { sh.hideSheet(); } catch (e) { /* не критично */ }
+  return sh;
+}
+
+/** Таблиця формул J1:M13 на «Відвідуванні». Рахує сама, скрипт її лише створює. */
+function writeVisitStats_(sh) {
+  var J = "'" + JOURNAL_SHEET + "'!";
+  var A = J + 'A2:A', B = J + 'B2:B', C = J + 'C2:C';
+  var cols = ['K', 'L', 'M'];
+  function uniq(src) {
+    return cols.map(function (c) {
+      return '=IFERROR(COUNTUNIQUE(FILTER(' + C + ',' + A + '>=' + c + '$3' + (src ? ',' + B + '="' + src + '"' : '') + ')),0)';
+    });
+  }
+  function count(src) {
+    return cols.map(function (c) {
+      return '=COUNTIFS(' + A + ',">="&' + c + '$3' + (src ? ',' + B + ',"' + src + '"' : '') + ')';
+    });
+  }
+  var rows = [
+    [VSTATS_TITLE, '', '', ''],
+    ['', 'Сьогодні', 'Тиждень', 'Місяць'],
+    ['Починаючи з', '=TODAY()', '=TODAY()-WEEKDAY(TODAY(),2)+1', '=DATE(YEAR(TODAY()),MONTH(TODAY()),1)'],
+    ['Унікальні користувачі'].concat(uniq('')),
+    ['   у Telegram'].concat(uniq('Telegram')),
+    ['   на сайті (браузер)'].concat(uniq('Сайт')),
+    ['Відвідування'].concat(count('')),
+    ['   у Telegram'].concat(count('Telegram')),
+    ['   на сайті (браузер)'].concat(count('Сайт')),
+    ['', '', '', ''],
+    ['Тиждень — з понеділка, місяць — з 1-го числа.', '', '', ''],
+    ['Повторне відкриття тією ж людиною чи пристроєм за 10 хв — одне відвідування.', '', '', ''],
+    ['Сайт рахується анонімно за пристроєм. Записи — на прихованому аркуші «' + JOURNAL_SHEET + '».', '', '', '']
+  ];
+  var c0 = VSTATS_COL;
+  sh.getRange(1, c0, rows.length, 4).setValues(rows);
+  sh.getRange(1, c0).setFontWeight('bold').setFontSize(12);
+  sh.getRange(2, c0, 1, 4).setFontWeight('bold').setBackground('#e3f0fa');
+  sh.getRange(3, c0, 1, 4).setFontColor('#667085');
+  sh.getRange(3, c0 + 1, 1, 3).setNumberFormat('dd.MM');
+  sh.getRange(3, c0 + 1, 7, 3).setHorizontalAlignment('center');
+  sh.getRange(4, c0, 1, 4).setFontWeight('bold');
+  sh.getRange(7, c0, 1, 4).setFontWeight('bold');
+  sh.getRange(11, c0, 3, 1).setFontColor('#667085');
+  sh.setColumnWidth(c0 - 1, 24);
+  sh.setColumnWidth(c0, 190);
+  for (var i = 1; i <= 3; i++) sh.setColumnWidth(c0 + i, 90);
+}
+
+/** Можна запустити з редактора, щоб зведення з’явилося одразу (інакше — з першим візитом). */
+function setupVisitStats() {
+  var ss = SpreadsheetApp.openById(getSpreadsheetId_());
+  journalSheet_(ss);
+  var sh = visitsSheet_(ss);
+  writeVisitStats_(sh);
+  Logger.log('Готово: зведення на аркуші «' + VISITS_SHEET + '» (J1:M13), журнал — «' + JOURNAL_SHEET + '».');
 }
 
 // ---------------------------------------------------------------------------

@@ -5,9 +5,9 @@
   // Лише коли сторінку відкрито як міні-застосунок Telegram: на весь екран,
   // без закриття свайпом вниз (закривається тільки кнопкою Telegram).
   // У звичайному браузері нічого не завантажується і не змінюється.
+  var IN_TG = /tgWebApp/.test(location.hash + location.search) || !!window.TelegramWebviewProxy;
   (function initTelegram() {
-    var inTg = /tgWebApp/.test(location.hash + location.search) || !!window.TelegramWebviewProxy;
-    if (!inTg) return;
+    if (!IN_TG) return;
     document.documentElement.classList.add('tg');
     var s = document.createElement('script');
     s.src = 'https://telegram.org/js/telegram-web-app.js';
@@ -1441,6 +1441,35 @@
       .catch(function () { /* не вийшло — нічого страшного */ });
   }
   document.addEventListener('tm-tg-ready', whoAmI);
+
+  // ----- Відвідування в звичайному браузері (для статистики на аркуші «Відвідування») -----
+  // Анонімно: лише випадковий ID пристрою, без імен. У Telegram візит рахує «Хто я?».
+  function webVisit() {
+    if (DEMO || IN_TG) return;
+    var id = store.get('tm:vid', null);
+    if (typeof id !== 'string' || !/^[a-z0-9]{8,40}$/.test(id)) {
+      id = '';
+      try {
+        var b = new Uint8Array(12);
+        crypto.getRandomValues(b);
+        for (var i = 0; i < b.length; i++) id += ('0' + b[i].toString(16)).slice(-2);
+      } catch (e) {
+        while (id.length < 24) id += Math.random().toString(36).slice(2);
+        id = id.slice(0, 24);
+      }
+      store.set('tm:vid', id);
+    }
+    try {
+      fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'visit', vid: id }),
+        keepalive: true
+      }).catch(function () { /* статистика — не критично */ });
+    } catch (e) { /* */ }
+  }
+  // Трохи згодом, щоб не заважати першому завантаженню результатів
+  setTimeout(webVisit, 2500);
 
   // ----- Telegram: дозвіл боту писати (нагадування, результати) -----
   // Пропонуємо після реєстрації: системне вікно Telegram «Дозволити боту надсилати повідомлення?»
