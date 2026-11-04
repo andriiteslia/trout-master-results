@@ -1015,7 +1015,7 @@
     var ev = (state.payload && state.payload.event) || {};
     document.title = 'Статистика | Trout Master';
     if (!S) { ts.body.innerHTML = '<div class="card empty">Статистика з’явиться після перших турів.</div>'; return; }
-    var h = '<header class="pc-head"><div class="pc-head__txt"><h1 class="title" id="tsTitle" tabindex="-1">Статистика турніру</h1>' +
+    var h = '<header class="pc-head"><div class="pc-head__txt"><h1 class="title" id="tsTitle" tabindex="-1">Статистика</h1>' +
       '<p class="subtitle">' + esc([ev.title, S.players + ' ' + plural(S.players, 'учасник', 'учасники', 'учасників'),
         S.played < S.rounds ? 'після ' + S.played + ' з ' + S.rounds + ' турів' : 'усі ' + S.rounds + ' турів'].filter(Boolean).join(' • ')) + '</p></div></header>';
 
