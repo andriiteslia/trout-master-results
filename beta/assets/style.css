@@ -1556,3 +1556,9 @@ html, body { background: var(--nav); }
   .pc-back:hover, .view-reg .hero-back:hover { background: #e4e7ec !important; }
   .pc-ibtn:hover { background: #f2f4f7; }
 }
+
+/* Список учасників: вибраний рядок — заокруглений, з відступом від рамки */
+.plist .pt.is-sel { border-radius: 12px; border-bottom-color: transparent; background: var(--sel-bg); }
+@media (min-width: 980px) {
+  .pt { padding: 0 16px; }
+}
