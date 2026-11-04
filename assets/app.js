@@ -25,6 +25,8 @@
         if (at('6.1')) { tg.setHeaderColor('#080808'); tg.setBackgroundColor('#f4f6f8'); }
         if (at('7.10')) tg.setBottomBarColor('#f4f6f8');
       } catch (e) { /* */ }
+      // Є системна кнопка «Назад» Telegram — свою кнопку «Назад» на телефоні ховаємо (див. .tg-back у стилях)
+      try { if (at('6.1') && tg.BackButton) document.documentElement.classList.add('tg-back'); } catch (e) { /* */ }
       try { document.dispatchEvent(new Event('tm-tg-ready')); } catch (e) { /* */ }
     };
     document.head.appendChild(s);

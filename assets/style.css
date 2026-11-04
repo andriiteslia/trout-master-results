@@ -1610,5 +1610,11 @@ html, body { background: var(--nav); }
   }
   .tg.tg-stuck .tgrid-hd { z-index: 52; }
   .tg .tgrid .tr-head { display: none; }
-  .tg .tgrid-hint { display: none; }
+}
+
+/* Telegram на телефоні: «Назад» — системна кнопка Telegram угорі, тому своєї кнопки «Назад» не показуємо */
+@media (max-width: 979px) {
+  .tg-back .hero-back { display: none !important; }
+  .tg-back .ts-hero .pc-hero__bar { display: none; }
+  .tg-back .pc-hero__acts { margin-left: auto; }
 }
