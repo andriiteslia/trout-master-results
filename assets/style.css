@@ -600,6 +600,21 @@ tbody tr.reserve-sep th {
 .view-stats .intro, .view-stats .notice, .view-stats .tabs, .view-stats .info, .view-stats .board,
 .view-stats .reg-live { display: none !important; }
 .pcard { max-width: 640px; }
+/* Колонки статистики й картки: на телефоні одна (порядок через order), на широкому екрані дві */
+.pc-cols { display: flex; flex-direction: column; }
+.pc-col { display: contents; }
+@media (min-width: 980px) {
+  .pcard { max-width: none; }
+  .pc-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 16px; align-items: start; }
+  .pc-cols.is-single { grid-template-columns: minmax(0, 640px); }
+  .pc-col { display: block; min-width: 0; }
+  .pcard .pc-chart { max-width: none; }
+  /* Плитки статистики в половині ширини: компактніше, щоб підписи не ламалися */
+  .pc-col .pc-tiles { gap: 8px; }
+  .pc-col .pc-tile { padding: 12px 10px; align-content: start; }
+  .pc-col .pc-tile__label { white-space: nowrap; }
+  .tstats .pc-col .pc-tile__val small { font-size: 11px; }
+}
 .pcard .title:focus { outline: none; }
 .pc-head { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
 .pc-head .subtitle { margin-top: 4px; }

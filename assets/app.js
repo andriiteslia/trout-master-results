@@ -787,8 +787,9 @@
       h += '<p class="info pc-note">Турнір ще не почався. Тут уже видно жеребкування, а статистика з’явиться після перших турів.</p>';
     }
 
-    // Тури
-    h += '<section class="card pc-block"><h2 class="pc-h2">Тури</h2>' +
+    // Тури (ліва колонка); на широкому екрані праворуч графіки й статистика
+    var L = [], R = [];
+    L.push([1, '<section class="card pc-block"><h2 class="pc-h2">Тури</h2>' +
       '<div class="pc-tour pc-tour--head" aria-hidden="true"><span>Тур</span><span>Сектор</span><span>Суперник</span><span class="pc-tour__res">Результат</span></div>' +
       '<ol class="pc-tours">' +
       st.tours.map(function (x) {
@@ -807,19 +808,19 @@
           (x.code ? '<span class="visually-hidden">, ' + RES_TEXT[x.code] + ', ' + x.fish + ' ' + fishWord(x.fish) +
             (x.oppFish != null ? ' проти ' + x.oppFish : '') + '</span>' : '') +
           '</li>';
-      }).join('') + '</ol></section>';
+      }).join('') + '</ol></section>']);
 
     if (started) {
       // Графік улову по турах
-      h += '<section class="card pc-block"><h2 class="pc-h2">Улов по турах</h2>' + chartSvg(st) +
-        '<p class="pc-legend"><span class="lg-bar"></span>улов учасника <span class="lg-line"></span>середній улов у турі</p></section>';
+      R.push([2, '<section class="card pc-block"><h2 class="pc-h2">Улов по турах</h2>' + chartSvg(st) +
+        '<p class="pc-legend"><span class="lg-bar"></span>улов учасника <span class="lg-line"></span>середній улов у турі</p></section>']);
 
       // Місце по турах
       var stand = standings(), myPlaces = stand && stand.byName[normName(st.name)];
       if (myPlaces && myPlaces.length > 1) {
         var tCount = Object.keys(toursData().byName).length;
-        h += '<section class="card pc-block"><h2 class="pc-h2">Місце по турах</h2>' + placeSvg(myPlaces, tCount) +
-          '<p class="pc-legend">Місце після кожного туру: бали (В 3, РН 2, БН 1, П 0), при рівних — більше перемог, далі більше риби</p></section>';
+        R.push([3, '<section class="card pc-block"><h2 class="pc-h2">Місце по турах</h2>' + placeSvg(myPlaces, tCount) +
+          '<p class="pc-legend">Місце після кожного туру: бали (В 3, РН 2, БН 1, П 0), при рівних — більше перемог, далі більше риби</p></section>']);
       }
 
       // Статистика
@@ -839,20 +840,20 @@
         tRows.push(stat('Найуловистіший сектор турніру', 'Сектор ' + tb.sector, [tSecText(tb), mySecText(tb.sector)]));
         tRows.push(stat('Найслабший сектор турніру', 'Сектор ' + tw.sector, [tSecText(tw), mySecText(tw.sector)]));
       }
-      h += '<section class="card pc-block"><h2 class="pc-h2">Статистика</h2><dl class="pc-stats">' + rows.join('') + '</dl>' +
-        (tRows.length ? '<h3 class="pc-h3">По турніру</h3><dl class="pc-stats">' + tRows.join('') + '</dl>' : '') + '</section>';
+      R.push([4, '<section class="card pc-block"><h2 class="pc-h2">Статистика</h2><dl class="pc-stats">' + rows.join('') + '</dl>' +
+        (tRows.length ? '<h3 class="pc-h3">По турніру</h3><dl class="pc-stats">' + tRows.join('') + '</dl>' : '') + '</section>']);
 
       // Особисті зустрічі
       var groups = [['w', 'Обіграно'], ['d', 'Рибна нічия'], ['z', 'Безрибна нічия'], ['l', 'Програно']].filter(function (g) { return st.meet[g[0]].length; });
       if (groups.length) {
-        h += '<section class="card pc-block"><h2 class="pc-h2">Особисті зустрічі</h2>' + groups.map(function (g) {
+        L.push([5, '<section class="card pc-block"><h2 class="pc-h2">Особисті зустрічі</h2>' + groups.map(function (g) {
           return '<div class="pc-meet"><span class="pc-meet__k c-' + g[0] + '">' + g[1] + ' (' + st.meet[g[0]].length + ')</span><ul class="pc-chips">' +
             st.meet[g[0]].map(function (x) { return '<li>' + esc(x.oppName) + ' <span>' + x.fish + ':' + (x.oppFish != null ? x.oppFish : '?') + '</span></li>'; }).join('') +
             '</ul></div>';
-        }).join('') + '</section>';
+        }).join('') + '</section>']);
       }
     }
-    pc.body.innerHTML = h;
+    pc.body.innerHTML = h + twoCols(L, R);
 
     function tile(label, val, unit) {
       return '<div class="pc-tile"><span class="pc-tile__label">' + label + '</span><span class="pc-tile__val">' + esc(val) +
@@ -997,6 +998,14 @@
     tsCache = { payload: state.payload, data: data };
     return data;
   }
+  // Дві колонки (ліва L, права R) — на широкому екрані; на вузькому одна, порядок за номером o
+  function twoCols(L, R) {
+    function col(items) {
+      return '<div class="pc-col">' + items.map(function (x) { return '<div class="pc-cell" style="order:' + x[0] + '">' + x[1] + '</div>'; }).join('') + '</div>';
+    }
+    return '<div class="pc-cols' + (R.length ? '' : ' is-single') + '">' + col(L) + col(R) + '</div>';
+  }
+
   function statsReady() { return !!tournamentStats(); }
 
   var ts = { root: $('tstats'), body: $('tsBody'), back: $('tsBack'), open: $('statsOpen') };
@@ -1010,18 +1019,23 @@
       '<p class="subtitle">' + esc([ev.title, S.players + ' ' + plural(S.players, 'учасник', 'учасники', 'учасників'),
         S.played < S.rounds ? 'після ' + S.played + ' з ' + S.rounds + ' турів' : 'усі ' + S.rounds + ' турів'].filter(Boolean).join(' • ')) + '</p></div></header>';
 
-    h += '<div class="pc-tiles">' +
+    // На широкому екрані — дві колонки; на телефоні — одна, у порядку o (CSS order)
+    var L = [], R = [];
+    L.push([1, '<div class="pc-tiles">' +
       tsTile('Турів зіграно', S.played + ' <small>з ' + S.rounds + '</small>') +
       tsTile('Батлів зіграно', S.battles + ' <small>з ' + S.battlesPlanned + '</small>') +
       tsTile('Усього риби', S.totalFish) +
-      tsTile('Середній улов', fmt1(S.avg) + ' <small>на учасника за тур</small>') + '</div>';
+      tsTile('Середній улов', fmt1(S.avg) + ' <small>на учасника за тур</small>') + '</div>']);
 
     // Улов по турах
-    h += '<section class="card pc-block"><h2 class="pc-h2">Улов по турах</h2>' + tourBars(S) +
-      '<p class="pc-legend">Скільки риби спіймали всі учасники за тур</p></section>';
+    L.push([2, '<section class="card pc-block"><h2 class="pc-h2">Улов по турах</h2>' + tourBars(S) +
+      '<p class="pc-legend">Скільки риби спіймали всі учасники за тур</p></section>']);
 
     // Карта водойми і карта секторів
-    if (S.heat && S.heat.rows.length) h += '<div id="pondWrap">' + pondHtml(S) + '</div>' + heatHtml(S);
+    if (S.heat && S.heat.rows.length) {
+      L.push([3, '<div id="pondWrap">' + pondHtml(S) + '</div>']);
+      R.push([4, heatHtml(S)]);
+    }
 
     // Рекорди
     var rec = [];
@@ -1031,28 +1045,28 @@
       S.streak.who.map(function (n) { return [n, '']; })));
     if (S.dry) rec.push(recRow('Найбільше «сухих» перемог', S.dry.n + ' ' + plural(S.dry.n, 'перемога', 'перемоги', 'перемог'),
       S.dry.who.map(function (n) { return [n, '']; }), 'суперник не спіймав жодної риби'));
-    if (rec.length) h += '<section class="card pc-block"><h2 class="pc-h2">Рекорди</h2><dl class="pc-stats">' + rec.join('') + '</dl></section>';
+    if (rec.length) R.push([5, '<section class="card pc-block"><h2 class="pc-h2">Рекорди</h2><dl class="pc-stats">' + rec.join('') + '</dl></section>']);
 
     // Топ за уловом
-    h += '<section class="card pc-block"><h2 class="pc-h2">Топ за уловом</h2><ol class="ts-top">' +
+    L.push([6, '<section class="card pc-block"><h2 class="pc-h2">Топ за уловом</h2><ol class="ts-top">' +
       S.fishTop.map(function (x, i) {
         return '<li><span class="ts-top__n">' + (i + 1) + '</span><span class="ts-top__name">' + esc(x.name) + '</span>' +
           '<span class="ts-top__fish">' + x.fish + ' <small>' + fishWord(x.fish) + '</small></span>' +
           (x.place ? '<span class="ts-top__place">' + x.place + ' місце</span>' : '') + '</li>';
-      }).join('') + '</ol><p class="pc-legend">Поруч — місце за балами</p></section>';
+      }).join('') + '</ol><p class="pc-legend">Поруч — місце за балами</p></section>']);
 
     // Частки результатів
     var parts = [['w', 'Перемоги'], ['l', 'Поразки'], ['d', 'Рибні нічиї'], ['z', 'Безрибні нічиї']];
-    h += '<section class="card pc-block"><h2 class="pc-h2">Результати турів</h2>' +
+    R.push([7, '<section class="card pc-block"><h2 class="pc-h2">Результати турів</h2>' +
       '<p class="pc-legend ts-share__note">' + S.battles + ' ' + plural(S.battles, 'батл', 'батли', 'батлів') + ': у кожному один учасник виграє, а другий програє, або обидва грають унічию</p>' +
       '<div class="ts-share" role="img" aria-label="' +
       parts.map(function (p) { return p[1] + ' ' + pct(S.cnt[p[0]]); }).join(', ') + '">' +
       parts.map(function (p) { return S.cnt[p[0]] ? '<span class="ts-share__seg seg-' + p[0] + '" style="flex:' + S.cnt[p[0]] + '"></span>' : ''; }).join('') +
       '</div><ul class="ts-share__legend">' +
       parts.map(function (p) { return '<li><span class="sw seg-' + p[0] + '"></span>' + p[1] + ' <b>' + pct(S.cnt[p[0]]) + '</b> <small>(' + S.cnt[p[0]] + ')</small></li>'; }).join('') +
-      '</ul></section>';
+      '</ul></section>']);
 
-    ts.body.innerHTML = h;
+    ts.body.innerHTML = h + twoCols(L, R);
 
     function pct(n) { return S.entries ? Math.round(n / S.entries * 100) + '%' : '—'; }
     function tsTile(label, valHtml) {
