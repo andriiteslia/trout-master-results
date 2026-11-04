@@ -1180,7 +1180,7 @@ html, body { background: var(--nav); }
 .search { display: none; }
 .btools .tabs:empty { display: none; }
 
-.board.v2 { background: #fff; border: 1px solid var(--card-line); border-radius: 18px; box-shadow: none; overflow: hidden; }
+.board.v2 { background: #fff; border: 1px solid var(--card-line); border-radius: 18px; box-shadow: none; overflow: hidden; overflow: clip; }
 .selbar { display: none !important; }
 
 @media (min-width: 980px) {
@@ -1567,4 +1567,30 @@ html, body { background: var(--nav); }
 @media (max-width: 979px) {
   .bcard:has(.tabs:empty) > .btools { display: none; }
   .bcard:has(.tabs:empty) > #selbar[hidden] + .board { margin-top: -4px; }
+}
+
+/* Telegram на телефоні: при прокручуванні заокруглений верх аркуша лишається під панеллю Telegram,
+   а шапка таблиці прилипає на 12 px нижче (як відступ таблиці від країв екрана) */
+@media (max-width: 979px) {
+  .tg .rk-head, .tg .plist-head {
+    position: sticky;
+    top: calc(var(--tg-top) + 12px);
+    z-index: 6;
+    border-radius: 17px 17px 0 0;
+  }
+  .tg.tg-stuck:not(.view-card):not(.view-stats):not(.view-reg) body::before { height: calc(var(--tg-top) + 24px); }
+  .tg.tg-stuck:not(.view-card):not(.view-stats):not(.view-reg) body::after {
+    content: "";
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: var(--tg-top);
+    height: 24px;
+    background: var(--page);
+    border-radius: 24px 24px 0 0;
+    z-index: 51;
+    pointer-events: none;
+  }
+  /* шапка таблиці — над «кришкою» аркуша */
+  .tg.tg-stuck .rk-head, .tg.tg-stuck .plist-head { z-index: 52; }
 }
