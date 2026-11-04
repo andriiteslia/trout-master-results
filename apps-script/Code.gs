@@ -73,6 +73,7 @@ var CELL_SEATS = 'B10';         // кількість місць; хто зар�
 var CELL_DEADLINE = 'B11';      // дата завершення реєстрації (порожньо — без обмеження)
 var CELL_DEADLINE_TIME = 'C11'; // час завершення, напр. 20:00 (порожньо — час із B11 або 00:00)
 var CELL_CARD = 'B12';          // «Картка учасника» на сайті: показувати чи ні
+var CELL_SECTORS = 'B13';       // скільки секторів на водоймі (по половині на кожному березі)
 var CARD_ON = 'Показувати';
 var CARD_OFF = 'Приховати';
 
@@ -86,11 +87,11 @@ var REG_COL_TG_ID = 7;   // G — Telegram ID (якщо реєструвалис
 var REG_COL_TG_USER = 8; // H — @username у Telegram
 
 /**
- * Діапазони, які можна змінювати прямо на аркуші «Сайт» (блок «Діапазони…», B15:B17).
+ * Діапазони, які можна змінювати прямо на аркуші «Сайт» (блок «Діапазони…», B16:B18).
  * Формат: A1:B50, A1:AK (без номера рядка — до останнього заповненого)
  * або з назвою аркуша: Results!A1:AK. Порожня клітинка — діапазон із коду.
  */
-var RANGE_ROW_FIRST = 15;     // якщо блок зсунуто, рядок шукається за заголовком «Діапазони…»
+var RANGE_ROW_FIRST = 16;     // якщо блок зсунуто, рядок шукається за заголовком «Діапазони…»
 var RANGES_TITLE = 'Діапазони (звідки брати дані)';
 
 /** Перший рядок блоку діапазонів (під заголовком «Діапазони…»). */
@@ -169,19 +170,22 @@ function setupSync() {
   }
   // Макет до «Картки учасника» (підказка в рядку 12): звільняємо рядок 12 під перемикач
   if (String(sh.getRange('A12').getDisplayValue()).indexOf('B5') === 0) sh.insertRowsAfter(11, 1);
-  sh.getRange('A9:B12').breakApart();
-  sh.getRange('A3:A12').setValues([['Дія'], ['Остання публікація'], ['Що показувати'], ['Заголовок'], ['Підзаголовок'],
-    ['Реєстрація'], ['Стрілки ▲▼ місць'], ['Кількість місць'], ['Реєстрація до'], ['Картка учасника']]);
-  sh.getRange('A3:A12').setFontWeight('bold');
-  sh.getRange('A13:B13').merge().setWrap(true);
-  sh.getRange('A13').setValue('B5 — що бачать глядачі: «' + MODE_REG + '» (аркуш «Учасники») або «' + MODE_RES +
-    '» (вкладки «Результат» і «Тури»). Зміна режиму одразу публікує дані. Щоб оновити дані на сайті, у B3 виберіть «' +
-    ACTION_PUBLISH + '». Заголовок і підзаголовок теж оновлюються при публікації. B8 — «' + REG_OPEN +
-    '» показує на сайті кнопку «Зареєструватися» (заявки йдуть в аркуш «' + REG_SHEET + '», телефон у колонку E). B9 — показувати чи ні стрілки ▲▼, на скільки місць змістився учасник після оновлення. ' +
-    'B10 — кількість місць: хто зареєструвався понад неї, стоїть у списку під лінією «Резерв» (порожньо — без обмеження). ' +
-    'B11 — дата завершення реєстрації (подвійний клік відкриває календар), C11 — час (зі списку або свій, напр. 20:15): сайт показує зворотний відлік, а в цей момент реєстрація закривається сама. ' +
-    'B12 — чи показувати на сайті кнопку «Картка учасника».');
-  sh.getRange('A13').setFontColor('#475467');
+  // Макет до «Секторів на водоймі» (підказка в рядку 13): звільняємо рядок 13
+  if (String(sh.getRange('A13').getDisplayValue()).indexOf('B5') === 0) sh.insertRowsAfter(12, 1);
+  sh.getRange('A9:B13').breakApart();
+  sh.getRange('A3:A13').setValues([['Дія'], ['Остання публікація'], ['Що показувати'], ['Заголовок'], ['Підзаголовок'],
+    ['Реєстрація'], ['Стрілки ▲▼ місць'], ['Кількість місць'], ['Реєстрація до'], ['Картка учасника'], ['Секторів на водоймі']]);
+  sh.getRange('A3:A13').setFontWeight('bold');
+  sh.getRange('A14:B14').merge().setWrap(true);
+  sh.getRange('A14').setValue('B5 — що бачать глядачі: «' + MODE_REG + '» (аркуш «Учасники») або «' + MODE_RES +
+    '» (вкладки «Результат» і «Тури»). \nЗміна режиму одразу публікує дані. Щоб оновити дані на сайті, у B3 виберіть «' +
+    ACTION_PUBLISH + '». Заголовок і підзаголовок теж оновлюються при публікації. \nB8 — «' + REG_OPEN +
+    '» показує на сайті кнопку «Зареєструватися» (заявки йдуть в аркуш «' + REG_SHEET + '», телефон у колонку E). \nB9 — показувати чи ні стрілки ▲▼, на скільки місць змістився учасник після оновлення. ' +
+    '\nB10 — кількість місць: хто зареєструвався понад неї, стоїть у списку під лінією «Резерв» (порожньо — без обмеження). ' +
+    '\nB11 — дата завершення реєстрації (подвійний клік — календар), C11 — час (зі списку або свій, напр. 20:15). Сайт показує зворотний відлік, а в цей момент реєстрація закривається сама. ' +
+    '\nB12 — чи показувати на сайті кнопку «Картка учасника» (тап по учаснику → кнопка внизу). ' +
+    '\nB13 — скільки секторів на водоймі, напр. 14: по 7 на кожному березі. За цим числом малюються карта водойми й карта секторів у статистиці (порожньо — за найбільшим номером сектора в жеребкуванні).');
+  sh.getRange('A14').setFontColor('#475467');
   sh.setColumnWidth(1, 180);
   sh.setColumnWidth(2, 420);
 
@@ -235,6 +239,21 @@ function setupSync() {
     .build());
   if (currentMoves !== MOVES_ON && currentMoves !== MOVES_OFF) movesCell.setValue(MOVES_ON);
   movesCell.setFontWeight('bold').setBackground('#e3f0fa');
+
+  // Скільки секторів на водоймі: якщо порожньо — підставляємо найбільший номер сектора з жеребкування
+  var secCell = sh.getRange(CELL_SECTORS);
+  secCell.clearDataValidations();
+  secCell.setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireNumberBetween(2, 200).setAllowInvalid(false)
+    .setHelpText('Скільки секторів на водоймі, напр. 14 — по 7 на кожному березі.').build());
+  secCell.setFontWeight('bold').setBackground('#e3f0fa').setHorizontalAlignment('left');
+  if (!String(secCell.getDisplayValue()).trim()) {
+    try {
+      var dr = readDraw_(ss), maxSec = 0;
+      if (dr) dr.players.forEach(function (pl) { pl.t.forEach(function (x) { if (x[0] > maxSec) maxSec = x[0]; }); });
+      if (maxSec) secCell.setValue(maxSec % 2 ? maxSec + 1 : maxSec);
+    } catch (err) { console.error(err); }
+  }
 
   // Кількість місць і дата завершення реєстрації
   var seatsCell = sh.getRange(CELL_SEATS);
@@ -316,10 +335,11 @@ function handleSiteSync(e) {
   var isMoves = a1 === CELL_MOVES && (v === MOVES_ON || v === MOVES_OFF);
   var isRegSetting = a1 === CELL_SEATS || a1 === CELL_DEADLINE || a1 === CELL_DEADLINE_TIME;
   var isCard = a1 === CELL_CARD && (v === CARD_ON || v === CARD_OFF);
+  var isSectors = a1 === CELL_SECTORS;
   var row = e.range.getRow();
   var isRange = e.range.getColumn() === 2 && e.range.getNumRows() === 1 &&
     row >= rangeRowFirst_(sh) && row < rangeRowFirst_(sh) + RANGE_KEYS.length;
-  if (!isPublish && !isMode && !isReg && !isMoves && !isRegSetting && !isCard && !isRange) return;
+  if (!isPublish && !isMode && !isReg && !isMoves && !isRegSetting && !isCard && !isSectors && !isRange) return;
 
   sh.getRange(CELL_STATUS).setValue('⏳ Публікуємо…');
   SpreadsheetApp.flush();
@@ -472,6 +492,13 @@ function viewsWithRanges_(sh, views) {
   });
 }
 
+/** Скільки секторів на водоймі (B13 на аркуші «Сайт»); null — не вказано. */
+function sectors_(sh) {
+  if (!sh) return null;
+  var n = parseInt(String(sh.getRange(CELL_SECTORS).getDisplayValue()).replace(/\s/g, ''), 10);
+  return n >= 2 ? n : null;
+}
+
 function publish_(ss) {
   var sh = ss.getSheetByName(SYNC_SHEET);
   var mode = currentMode_(sh);
@@ -488,8 +515,9 @@ function publish_(ss) {
   var regDeadline = registration && deadline ? deadline.toISOString() : null;
   var seats = seats_(sh);
   var showMoves = !sh || String(sh.getRange(CELL_MOVES).getDisplayValue()).trim() !== MOVES_OFF;
+  var sectors = sectors_(sh);
   var now = new Date().toISOString();
-  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw, showCard]);
+  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw, showCard, sectors]);
   var hash = Utilities.base64EncodeWebSafe(
     Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, body, Utilities.Charset.UTF_8));
 
@@ -504,6 +532,7 @@ function publish_(ss) {
     showMoves: showMoves,
     draw: draw,
     showCard: showCard,
+    sectors: sectors,
     hash: hash,
     changedAt: now,
     generatedAt: now,

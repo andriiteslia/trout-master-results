@@ -1005,6 +1005,10 @@
               }
             });
           });
+          // Скільки секторів на водоймі — з аркуша «Сайт» (B13); якщо не вказано — найбільший номер із жеребкування.
+          // Сектори без жодного туру теж показуємо (порожні), щоб карта відповідала водоймі.
+          var secN = +(state.payload && state.payload.sectors) || 0;
+          for (var sk = 1; sk <= secN; sk++) if (!sectors[sk]) sectors[sk] = { sector: sk, cells: [], fish: 0, n: 0 };
           var list = Object.keys(sectors).map(function (k) { var r = sectors[k]; r.avg = r.n ? r.fish / r.n : null; return r; });
           list.sort(function (a, b) { return a.sector - b.sector; });
           var max = 0;
@@ -1170,7 +1174,8 @@
   function pondHtml(S) {
     var rows = S.heat.rows, bySec = {};
     rows.forEach(function (r) { bySec[r.sector] = r; });
-    var N = rows.reduce(function (m, r) { return Math.max(m, r.sector); }, 0);
+    // Секторів на водоймі: з аркуша «Сайт» або найбільший номер у жеребкуванні; на кожному березі — половина
+    var N = Math.max(+(state.payload && state.payload.sectors) || 0, rows.reduce(function (m, r) { return Math.max(m, r.sector); }, 0));
     var half = Math.ceil(N / 2);
     var tour = state.pondTour;
     if (tour !== 'all' && !S.totals[tour]) tour = state.pondTour = 'all';
