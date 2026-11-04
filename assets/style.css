@@ -947,13 +947,19 @@ tbody tr.reserve-sep th {
   .btn.is-loading .spinner { animation-duration: 1.6s; }   /* спінер крутиться й тут, бо показує процес */
 }
 
-/* Супереліпс (squircle) для всіх заокруглень. Підтримують браузери на Chromium
-   (Chrome, Edge, Android); в інших лишаються звичайні заокруглення. */
+/* Супереліпс (squircle, як «згладжування кутів» в iOS) для ВСІХ заокруглень.
+   Підтримують браузери на Chromium (Chrome, Edge, Android, Telegram на Android);
+   в інших (Safari, Telegram на iPhone) лишаються звичайні заокруглення.
+   Кружечки й «пігулки» (радіус 50% / 999px) лишаються круглими, як і в iOS. */
 @supports (corner-shape: squircle) {
-  .status, .notice, .notice code, .tabs, .tab, .board, .bh, .bs, .info, .code,
-  .back, .card, .field input, .form-alert,
-  :focus-visible, .tg .main, .tg.tg-stuck body::after {
-    corner-shape: superellipse(1.5);
+  *, *::before, *::after { corner-shape: superellipse(1.5); }
+  .av, .btn, .btn.is-loading .spinner, .btn2, .btn:focus-visible, .chip, .err::before, .hm-sec__b,
+  .pc, .pc-back, .pc-chips li, .pc-hero .pc-place, .pc-ibtn, .pc-place, .pc-share, .pc-share--m,
+  .pcard .pc-chips li, .pcard .pc-tour__n .hm-sec__b, .pill, .pill i, .pk__badge, .pond-chip,
+  .pond-water span, .pt__new, .reg-live, .reg-live__dot, .reg-live__dot::after, .selbar__place,
+  .selbar__x, .status, .status__dot, .swipe-back, .toast, .topnav, .topnav button, .tr-head .t-c b,
+  .view-reg .hero-back {
+    corner-shape: round;
   }
 }
 
@@ -1664,12 +1670,17 @@ html, body { background: var(--nav); }
    «Кришка» аркуша сама малює чорні кути (без прозорих місць), тож смуга потрібна лише до --tg-top. */
 @media (max-width: 979px) {
   .tg.tg-stuck body::before { height: var(--tg-top); z-index: 60; }
-  .tg.tg-stuck body::after {
-    border-radius: 0;
-    background:
-      radial-gradient(circle at 100% 100%, var(--page) 23.5px, var(--nav) 24px) left top / 24px 24px no-repeat,
-      radial-gradient(circle at 0 100%, var(--page) 23.5px, var(--nav) 24px) right top / 24px 24px no-repeat,
-      var(--page);
+  /* чорна підкладка під кути «кришки» (сама кришка — body::after із заокругленням-супереліпсом) */
+  .tg.tg-stuck::before {
+    content: "";
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: var(--tg-top);
+    height: 24px;
+    background: var(--nav);
+    z-index: 51;
+    pointer-events: none;
   }
 }
 
