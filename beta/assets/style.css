@@ -1530,3 +1530,29 @@ html, body { background: var(--nav); }
 @media (min-width: 980px) { .bcard .board { border-radius: 0; border: 0; } }
 .notice { border-radius: 14px; border-color: var(--card-line); }
 .board .empty strong { font-size: 16px; }
+
+/* Відступ від навбару в картці й статистиці — як на головній */
+@media (min-width: 980px) {
+  .view-card .main, .view-stats .main { padding-top: 0; }
+  .view-card .pc-hero { padding-top: 32px; }
+  .view-stats .ts-hero { padding-top: 36px; }
+  .view-reg .main { padding-top: 24px; }
+  .pc-k { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+}
+/* Кнопки «Назад»: кругле підсвічування при наведенні */
+.pc-back, .view-reg .hero-back { transition: background-color 0.15s ease; }
+@media (hover: hover) {
+  .pc-back:hover, .view-reg .hero-back:hover { background: #2b2b2b; }
+  .pc-ibtn:hover { background: #2b2b2b; }
+  .pc-share:hover { background: #2b2b2b; }
+}
+@media (min-width: 980px) {
+  .pc-back, .view-reg .hero-back {
+    height: 36px !important; padding: 0 14px 0 8px !important; margin-left: -8px !important; border-radius: 999px !important;
+  }
+  .view-reg .hero-back { background: transparent; color: #344054; }
+}
+@media (min-width: 980px) and (hover: hover) {
+  .pc-back:hover, .view-reg .hero-back:hover { background: #e4e7ec !important; }
+  .pc-ibtn:hover { background: #f2f4f7; }
+}
