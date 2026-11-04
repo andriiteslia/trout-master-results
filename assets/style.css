@@ -1672,3 +1672,9 @@ html, body { background: var(--nav); }
       var(--page);
   }
 }
+
+/* Реєстрація на телефоні: картки на 12 px від країв і від верху аркуша, як таблиця на головній */
+@media (max-width: 979px) {
+  .view-reg .main { padding-left: 12px; padding-right: 12px; padding-top: 12px; }
+}
+@media (max-width: 979px) { .tg.tg-stuck .view-reg #regForm, .tg.tg-stuck #regForm { position: relative; z-index: 52; } }

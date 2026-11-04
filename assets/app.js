@@ -1397,9 +1397,39 @@
     } catch (e) { /* */ }
   }
 
+  // ----- Реєстрація на телефоні: при фокусі на першому полі форма піднімається до верху -----
+  // Шапка турніру прокручується повністю, лишається лише заокруглення аркуша, а картка форми
+  // стоїть на 12 px під ним (у Telegram — під панеллю Telegram), як і від країв екрана.
+  var formLift = { spacer: 0 };
+  function setFormSpacer(px) {
+    formLift.spacer = Math.max(0, Math.ceil(px));
+    var m = document.querySelector('.main');
+    if (m) m.style.paddingBottom = formLift.spacer ? 'calc(' + formLift.spacer + 'px + 112px)' : '';
+  }
+  function liftForm() {
+    if (state.view !== 'reg' || window.innerWidth >= 980 || reg.form.hidden || !reg.form.offsetParent) return;
+    var tgTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tg-top')) || 0;
+    if (IN_TG) {
+      // --tg-top — це calc() зі змінних Telegram; беремо готове значення з відступу шапки
+      var tb = document.querySelector('.topbar');
+      tgTop = tb ? parseFloat(getComputedStyle(tb).paddingTop) || 0 : 0;
+    }
+    var target = reg.form.getBoundingClientRect().top + window.scrollY - (tgTop + 12);
+    var room = document.documentElement.scrollHeight - window.innerHeight;
+    if (target > room) setFormSpacer(formLift.spacer + target - room);
+    var smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    try { window.scrollTo({ top: target, behavior: smooth ? 'smooth' : 'auto' }); } catch (e) { window.scrollTo(0, target); }
+  }
+  reg.name.addEventListener('focus', function () {
+    liftForm();
+    // iOS сам прокручує до поля, коли виїжджає клавіатура, — вирівнюємо ще раз після цього
+    setTimeout(liftForm, 350);
+  });
+
   function setView(v) {
     if (state.view === v) return;
     state.view = v;
+    if (formLift.spacer) setFormSpacer(0);
     renderReg();
     tgBack(v !== 'list');
     window.scrollTo(0, 0);
