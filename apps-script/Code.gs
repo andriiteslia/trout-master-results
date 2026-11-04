@@ -887,7 +887,14 @@ function writeVisitStats_(sh) {
     ['Сайт рахується анонімно за пристроєм. Записи — на прихованому аркуші «' + JOURNAL_SHEET + '».', '', '', '']
   ];
   var c0 = VSTATS_COL;
-  sh.getRange(1, c0, rows.length, 4).setValues(rows);
+  // Текст — через setValues, формули — лише через setFormulas: так вони працюють у будь-якій
+  // локалі таблиці (в українській розділювач «;», і рядок «=…,…» з setValues дав би #ERROR!)
+  sh.getRange(1, c0, rows.length, 4).setValues(rows.map(function (r) {
+    return r.map(function (v) { return String(v).charAt(0) === '=' ? '' : v; });
+  }));
+  sh.getRange(3, c0 + 1, 7, 3).setFormulas(rows.slice(2, 9).map(function (r) { return r.slice(1); }));
+  sh.getRange(1, c0, rows.length, 1).setHorizontalAlignment('left');
+  sh.getRange(1, c0, rows.length, 4).setWrap(false);
   sh.getRange(1, c0).setFontWeight('bold').setFontSize(12);
   sh.getRange(2, c0, 1, 4).setFontWeight('bold').setBackground('#e3f0fa');
   sh.getRange(3, c0, 1, 4).setFontColor('#667085');
