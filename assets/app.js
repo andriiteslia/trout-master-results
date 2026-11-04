@@ -779,7 +779,7 @@
       '<span class="pc-hero__acts">' +
         (nav.prev ? '<button type="button" class="pc-ibtn d-only" data-act="prev" aria-label="Попередній учасник: ' + esc(nav.prev.name) + '">' + I_BACK + '</button>' : '') +
         (nav.next ? '<button type="button" class="pc-ibtn d-only" data-act="next" aria-label="Наступний учасник: ' + esc(nav.next.name) + '">' + I_NEXT + '</button>' : '') +
-        '<button type="button" class="pc-share" data-act="share" aria-label="Поділитися карткою">' + I_SHARE + '<span class="d-only">Поділитися карткою</span></button>' +
+        '<button type="button" class="pc-share d-only" data-act="share" aria-label="Поділитися карткою">' + I_SHARE + '<span>Поділитися карткою</span></button>' +
       '</span></div>' +
       '<div class="pc-hero__main">' +
       (started && st.place ? '<div class="pc-place' + medal + '" aria-hidden="true">' + st.place + '</div>' : '') +
@@ -788,7 +788,10 @@
       '<p class="pc-chips d-only">' + chips.map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('') +
         (placeTxt ? '<span class="chip chip-place' + medal + '">' + esc(placeTxt) + '</span>' : '') +
         (ev.title ? '<span class="chip chip-plain">' + esc(ev.title) + '</span>' : '') + '</p>' +
-      '</div></div></header><div class="pc-sheet">';
+      '</div>' +
+      // На телефоні «Поділитися» — іконка праворуч від імені
+      '<button type="button" class="pc-share pc-share--m m-only" data-act="share" aria-label="Поділитися карткою">' + I_SHARE + '</button>' +
+      '</div></header><div class="pc-sheet">';
 
     // Плитки
     if (started) {
