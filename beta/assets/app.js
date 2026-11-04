@@ -1032,17 +1032,27 @@
     var ev = (state.payload && state.payload.event) || {};
     document.title = 'Статистика | Trout Master';
     if (!S) { ts.body.innerHTML = '<div class="card empty">Статистика з’явиться після перших турів.</div>'; return; }
-    var h = '<header class="pc-head"><div class="pc-head__txt"><h1 class="title" id="tsTitle" tabindex="-1">Статистика</h1>' +
-      '<p class="subtitle">' + esc([ev.title, S.players + ' ' + plural(S.players, 'учасник', 'учасники', 'учасників'),
-        S.played < S.rounds ? 'після ' + S.played + ' з ' + S.rounds + ' турів' : 'усі ' + S.rounds + ' турів'].filter(Boolean).join(' • ')) + '</p></div></header>';
+    var sub = [S.players + ' ' + plural(S.players, 'учасник', 'учасники', 'учасників'),
+      S.played < S.rounds ? 'після ' + S.played + ' з ' + S.rounds + ' турів' : 'усі ' + S.rounds + ' турів'];
+    var best = null;
+    (S.totals || []).forEach(function (x, i) { if (x && (!best || x.fish > best.fish)) best = { n: i + 1, fish: x.fish }; });
+    var I_BACK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
+    var I_TABLE = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M3 14.5h18M9 9.5V20"/></svg>';
+    var h = '<header class="pc-hero ts-hero"><div class="pc-hero__bar m-only">' +
+      '<button type="button" class="hero-back pc-back" data-act="back">' + I_BACK + '<span>' + (isListMode() ? 'Учасники' : 'Залік') + '</span></button></div>' +
+      '<div class="ts-hero__main"><div class="pc-head__txt"><h1 class="title" id="tsTitle" tabindex="-1">Статистика</h1>' +
+      '<p class="pc-sub">' + esc([ev.title].concat(sub).filter(Boolean).join(' · ')) + '</p></div>' +
+      '<button type="button" class="btn2 btn2-dark d-only" data-act="back">' + I_TABLE + '<span>Результати</span></button></div>' +
+      '<div class="kpis kpis--2">' +
+        kpi('d-only', 'Турів зіграно', 'Турів', S.played + ' <small>/ ' + S.rounds + '</small>') +
+        kpi('', 'Батлів зіграно', 'Батлів', S.battles + ' <small>/ ' + S.battlesPlanned + '</small>') +
+        kpi('', 'Усього риби', 'Усього риби', fmtInt(S.totalFish)) +
+        kpi('', 'Середній улов', 'Середній улов', fmt1(S.avg) + ' <small class="l-d">на учасника за тур</small>') +
+        (best ? kpi('m-only', 'Найкращий тур', 'Найкращий тур', best.n + ' <small>· ' + best.fish + ' ' + fishWord(best.fish) + '</small>') : '') +
+      '</div></header><div class="pc-sheet">';
 
     // На широкому екрані — дві колонки; на телефоні — одна, у порядку o (CSS order)
     var L = [], R = [];
-    L.push([1, '<div class="pc-tiles">' +
-      tsTile('Турів зіграно', S.played + ' <small>з ' + S.rounds + '</small>') +
-      tsTile('Батлів зіграно', S.battles + ' <small>з ' + S.battlesPlanned + '</small>') +
-      tsTile('Усього риби', S.totalFish) +
-      tsTile('Середній улов', fmt1(S.avg) + ' <small>на учасника за тур</small>') + '</div>']);
 
     // Улов по турах
     L.push([2, '<section class="card pc-block"><h2 class="pc-h2">Улов по турах</h2>' + tourBars(S) +
@@ -1083,7 +1093,7 @@
       parts.map(function (p) { return '<li><span class="sw seg-' + p[0] + '"></span>' + p[1] + ' <b>' + pct(S.cnt[p[0]]) + '</b> <small>(' + S.cnt[p[0]] + ')</small></li>'; }).join('') +
       '</ul></section>']);
 
-    ts.body.innerHTML = h + twoCols(L, R);
+    ts.body.innerHTML = h + twoCols(L, R) + '</div>';
 
     function pct(n) { return S.entries ? Math.round(n / S.entries * 100) + '%' : '—'; }
     function tsTile(label, valHtml) {
@@ -1797,6 +1807,7 @@
   });
   ts.open.addEventListener('click', goStats);
   ts.back.addEventListener('click', goList);
+  ts.body.addEventListener('click', function (e) { if (e.target.closest('[data-act="back"]')) goList(); });
   // iOS Safari вмикає стан :active (натиснута кнопка) лише якщо на сторінці є обробник дотику
   document.addEventListener('touchstart', function () {}, { passive: true });
   reg.back.addEventListener('click', goList);

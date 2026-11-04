@@ -1495,3 +1495,38 @@ html, body { background: var(--nav); }
 .pcard .pc-stat dd b { font-size: 18px; font-stretch: 100%; }
 .pcard .pc-stats { gap: 10px; }
 .pcard .pc-chips li { border-radius: 999px; border-color: var(--card-line); }
+
+/* =====================================================================
+   НОВИЙ ДИЗАЙН: статистика
+   ===================================================================== */
+#tsBack { display: none !important; }
+@media (max-width: 979px) {
+  .view-stats .main { background: var(--nav); padding: 0; border-radius: 0; }
+}
+.ts-hero__main { display: flex; flex-direction: column; gap: 4px; }
+.ts-hero .title { font-size: 30px; }
+.kpis--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 18px; }
+.kpis--2 .kpi { padding: 12px; }
+.kpis--2 .kpi__v { font-size: 22px; }
+@media (min-width: 980px) {
+  .ts-hero { padding-top: 36px; }
+  .ts-hero__main { flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 20px; }
+  .ts-hero .title { font-size: 44px; line-height: 1.05; letter-spacing: -0.025em; }
+  .ts-hero .pc-sub { font-size: 15px; color: #475467; margin-top: 8px; }
+  .kpis--2 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 24px; }
+  .kpis--2 .kpi { padding: 18px 20px; }
+  .kpis--2 .kpi__v { font-size: 30px; }
+  .kpis--2 .kpi__v small { font-size: 15px; color: var(--muted); }
+}
+/* Топ за уловом: зебра */
+.tstats .ts-top li { margin: 0 -16px; padding: 0 16px; border-top-color: var(--row-line); }
+.tstats .ts-top li:nth-child(even) { background: var(--zebra2); }
+@media (min-width: 980px) { .tstats .ts-top li { margin: 0 -24px; padding: 0 24px; } }
+.tstats .ts-who li { font-size: 13px; }
+.tstats .ts-share { height: 12px; border-radius: 6px; }
+
+/* Завантаження, помилка, повідомлення — у тому ж стилі */
+.board { border-radius: 18px; border-color: var(--card-line); box-shadow: none; }
+@media (min-width: 980px) { .bcard .board { border-radius: 0; border: 0; } }
+.notice { border-radius: 14px; border-color: var(--card-line); }
+.board .empty strong { font-size: 16px; }
