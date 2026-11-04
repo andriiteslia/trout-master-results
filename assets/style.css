@@ -1658,3 +1658,17 @@ html, body { background: var(--nav); }
 }
 .tg .pcard .pc-tour--head { top: calc(var(--tg-top) + 12px); }
 .tg.tg-stuck .pcard .pc-tour--head { z-index: 52; }
+
+/* Telegram на телефоні: чорна смуга під панеллю Telegram — найвищий шар, тому прилиплі шапки таблиць,
+   коли таблиця закінчується і вони їдуть угору, ховаються під неї, а не налазять на кнопки Telegram.
+   «Кришка» аркуша сама малює чорні кути (без прозорих місць), тож смуга потрібна лише до --tg-top. */
+@media (max-width: 979px) {
+  .tg.tg-stuck body::before { height: var(--tg-top); z-index: 60; }
+  .tg.tg-stuck body::after {
+    border-radius: 0;
+    background:
+      radial-gradient(circle at 100% 100%, var(--page) 23.5px, var(--nav) 24px) left top / 24px 24px no-repeat,
+      radial-gradient(circle at 0 100%, var(--page) 23.5px, var(--nav) 24px) right top / 24px 24px no-repeat,
+      var(--page);
+  }
+}
