@@ -1578,8 +1578,8 @@ html, body { background: var(--nav); }
     z-index: 6;
     border-radius: 17px 17px 0 0;
   }
-  .tg.tg-stuck:not(.view-card):not(.view-stats):not(.view-reg) body::before { height: calc(var(--tg-top) + 24px); }
-  .tg.tg-stuck:not(.view-card):not(.view-stats):not(.view-reg) body::after {
+  .tg.tg-stuck body::before { height: calc(var(--tg-top) + 24px); }
+  .tg.tg-stuck body::after {
     content: "";
     position: fixed;
     left: 0;

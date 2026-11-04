@@ -36,7 +36,10 @@
     function updateStuck() {
       frame = 0;
       var tb = document.querySelector('.topbar');
-      var main = document.querySelector('.main');
+      // Світлий «аркуш»: у картці й статистиці це .pc-sheet під темною шапкою, на інших екранах — .main
+      var main = null;
+      [].some.call(document.querySelectorAll('.pc-sheet'), function (x) { if (x.getClientRects().length) { main = x; return true; } return false; });
+      main = main || document.querySelector('.main');
       if (!tb || !main) return;
       var top = parseFloat(getComputedStyle(tb).paddingTop) || 0;
       document.documentElement.classList.toggle('tg-stuck', main.getBoundingClientRect().top <= top + 0.5);
