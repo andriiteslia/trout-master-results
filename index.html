@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Trout Master: результати</title>
   <meta name="description" content="Онлайн-результати Trout Master. Оновлюються автоматично під час змагань.">
-  <meta name="theme-color" content="#080808">
+  <meta name="theme-color" content="#0a0a0a">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23101828'/%3E%3Cpath d='M15 17h34v9H37v23H27V26H15z' fill='%23fff'/%3E%3Crect x='15' y='53' width='34' height='4' rx='2' fill='%2376b11d'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://script.google.com" crossorigin>
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
   <link rel="preload" href="assets/fonts/fixel-cyrillic-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fish.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="assets/style.css?v=20261104w">
-  <script src="config.js?v=20261104w"></script>
+  <link rel="stylesheet" href="assets/style.css?v=20261104x">
+  <script src="config.js?v=20261104x"></script>
   <script>
     // Запитуємо результати одразу, паралельно з завантаженням решти сторінки
     (function () {
@@ -24,12 +24,16 @@
       } catch (e) { window.__tmEarly = null; }
     })();
   </script>
-  <script src="assets/app.js?v=20261104w" defer></script>
+  <script src="assets/app.js?v=20261104x" defer></script>
 </head>
 <body>
   <header class="topbar">
     <div class="wrap topbar__inner">
       <img class="logo" src="assets/logo.svg" width="962" height="271" alt="Trout Master">
+      <nav class="topnav" id="topnav" aria-label="Розділи" hidden>
+        <button type="button" data-nav="list" id="navList">Результати</button>
+        <button type="button" data-nav="stats" id="navStats">Статистика</button>
+      </nav>
       <span class="status" id="status" data-state="load" role="status" aria-live="polite">
         <span class="status__dot" aria-hidden="true"></span>
         <span id="statusText">Завантаження…</span>
@@ -37,31 +41,77 @@
     </div>
   </header>
 
-  <main class="wrap main">
-    <div class="intro">
-      <h1 class="title" id="title">Результати</h1>
-      <p class="subtitle" id="subtitle" hidden></p>
+  <!-- Шапка турніру: на телефоні темна, на комп'ютері світла -->
+  <section class="hero" id="hero">
+    <div class="wrap hero__inner">
+      <div class="hero__txt">
+        <button type="button" class="hero-back" id="heroBack">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg><span>Назад</span>
+        </button>
+        <span class="pill" id="heroPill" hidden></span>
+        <h1 class="title" id="title">Результати</h1>
+        <p class="meta" id="subtitle" hidden></p>
+      </div>
+      <div class="hero__actions" id="heroActions">
+        <button type="button" class="btn2 btn2-light" id="shareBtn">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
+          <span>Поділитися</span>
+        </button>
+        <button type="button" class="btn2 btn2-dark" id="heroStats" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+          <span>Статистика</span>
+        </button>
+        <button type="button" class="btn2 btn2-dark" id="heroReg" hidden><span>Зареєструватися</span></button>
+      </div>
+      <div class="kpis" id="kpis" aria-label="Підсумки"></div>
     </div>
+  </section>
 
+  <main class="wrap main">
     <div class="notice" id="notice" role="note" hidden></div>
 
-    <div class="tabs" id="tabs" role="tablist" aria-label="Таблиці"></div>
-
+    <!-- Старі елементи, на які спирається логіка (у новому дизайні не показуються) -->
     <p class="reg-live" id="regLive" hidden>
-      <span class="reg-live__dot" aria-hidden="true"></span>
-      <span>Триває реєстрація</span>
       <span class="reg-live__timer" id="regTimer" hidden>
         <span class="visually-hidden" id="regTimerSr"></span>
         <span aria-hidden="true" id="regTimerTxt"></span>
       </span>
     </p>
+    <p class="info" id="info" hidden></p>
 
-    <p class="info" id="info" hidden>
-      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.25"/><path d="M10 9v5"/><circle cx="10" cy="6.25" r="0.6" class="dot"/></svg>
-      <span>Торкніться рядка, щоб виділити учасника. Результати оновлюються автоматично.</span>
-    </p>
-
-    <section class="board" id="board" role="tabpanel" aria-label="Таблиця результатів"></section>
+    <div class="layout" id="layout">
+      <section class="bcard" id="bcard" aria-labelledby="boardTitle">
+        <div class="btools">
+          <div class="btools__title">
+            <h2 id="boardTitle">Загальний залік</h2>
+            <span id="boardSub"></span>
+          </div>
+          <div class="legend" id="legend" hidden>
+            <span><i class="lg-w"></i>В</span><span><i class="lg-d"></i>РН</span><span><i class="lg-z"></i>БН</span><span><i class="lg-l"></i>П</span>
+          </div>
+          <div class="tabs" id="tabs" role="tablist" aria-label="Вигляд"></div>
+          <label class="search" id="searchBox">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+            <span class="visually-hidden">Знайти учасника</span>
+            <input type="search" id="search" placeholder="Знайти учасника" autocomplete="off">
+          </label>
+        </div>
+        <div class="fillcard" id="fillCard" hidden></div>
+        <div class="selbar" id="selbar" hidden>
+          <span class="selbar__place" id="selPlace" hidden></span>
+          <span class="selbar__txt"><small>Вибрано в таблиці</small><b id="selName"></b></span>
+          <button type="button" class="btn2 btn2-white" id="selCard">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6"/></svg>
+            <span>Картка учасника</span>
+          </button>
+          <button type="button" class="selbar__x" id="selClear" aria-label="Зняти вибір">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <section class="board" id="board" role="tabpanel" aria-label="Таблиця результатів"></section>
+      </section>
+      <aside class="side" id="side" hidden></aside>
+    </div>
 
     <!-- Реєстрація: показується замість таблиці -->
     <section class="reg" id="reg" aria-labelledby="regTitle" hidden>
@@ -71,6 +121,8 @@
       </button>
       <h1 class="title" id="regTitle" tabindex="-1">Реєстрація</h1>
       <p class="subtitle" id="regEvent" hidden></p>
+
+      <div class="card2 seats" id="regSeats" hidden></div>
 
       <form class="card form" id="regForm" novalidate>
         <div class="field">
@@ -83,7 +135,10 @@
           <label for="fPhone">Номер телефону</label>
           <input id="fPhone" name="phone" type="tel" inputmode="numeric" autocomplete="tel"
                  placeholder="+380 XX XXX XX XX" aria-describedby="fPhoneHint fPhoneErr" required>
-          <p class="hint" id="fPhoneHint">Номер бачить лише організатор. На сайті буде тільки прізвище та ім’я.</p>
+          <p class="hint" id="fPhoneHint">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            Номер бачить лише організатор. На сайті буде тільки прізвище та ім’я.
+          </p>
           <p class="err" id="fPhoneErr" hidden></p>
         </div>
         <div class="hp" aria-hidden="true">
@@ -95,6 +150,10 @@
           <span class="btn__text">Підтвердити реєстрацію</span>
         </button>
       </form>
+      <p class="botnote" id="regBotNote" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg>
+        Після реєстрації бот зможе надіслати нагадування перед турніром і ваші результати.
+      </p>
 
       <div class="card done" id="regDone" tabindex="-1" hidden>
         <svg class="done__icon" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22"/><path d="m15 24.5 6 6 12-13"/></svg>
@@ -150,5 +209,6 @@
     </button>
   </div>
 
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 </body>
 </html>

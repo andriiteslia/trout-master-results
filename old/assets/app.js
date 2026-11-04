@@ -239,7 +239,27 @@
     return state.models.find(function (x) { return x.name === state.tab; }) || state.models[0];
   }
 
+  function renderHeader() {
+    var p = state.payload;
+    var ev = (p && p.event) || {};
+    var title = ev.title || (p && p.title) || 'Результати';
+    el.title.textContent = title;
+    el.subtitle.textContent = ev.subtitle || '';
+    el.subtitle.hidden = !ev.subtitle;
+    document.title = title + ' | Trout Master';
+  }
 
+  function renderTabs() {
+    if (state.models.length < 2) { el.tabs.innerHTML = ''; return; }
+    var cur = currentModel();
+    el.tabs.innerHTML = state.models.map(function (m, i) {
+      var sel = m === cur;
+      return '<button type="button" class="tab" role="tab" id="tab-' + i + '" data-tab="' + esc(m.name) +
+        '" aria-selected="' + sel + '" tabindex="' + (sel ? 0 : -1) + '">' + esc(m.name) + '</button>';
+    }).join('');
+    var i = state.models.indexOf(cur);
+    el.board.setAttribute('aria-labelledby', 'tab-' + i);
+  }
 
   function cellHtml(k, row, opts) {
     var v = row.cells[k.c] || '';
@@ -268,7 +288,7 @@
     return '<td class="' + cls.join(' ') + '">' + inner + '</td>';
   }
 
-  function renderTable() {
+  function renderBoard() {
     var m = currentModel();
     var prevScroller = el.board.querySelector('.bs');
     var scrollX = prevScroller ? prevScroller.scrollLeft : 0;
@@ -400,6 +420,13 @@
   }
 
   // Підказка про виділення рядка потрібна лише для результатів, не для списку учасників
+  function renderInfo() {
+    if (!el.info) return;
+    var p = state.payload;
+    var isReg = !!p && (p.mode === 'Список учасників' ||
+      (!p.mode && (p.sheets || []).length === 1 && /учасник/i.test(p.sheets[0].name || '')));
+    el.info.hidden = !p || isReg;
+  }
 
   function renderAll() {
     renderInfo();
@@ -466,7 +493,6 @@
         var changed = applyPayload(p);
         state.error = null;
         if (changed) renderAll();
-        openWantedPlayer();
         renderStatus(true);
       })
       .catch(function (err) {
@@ -516,15 +542,14 @@
 
   // Тап по рядку: виділити цього гравця (інших — зняти) / повторний тап — зняти виділення
   el.board.addEventListener('click', function (e) {
-    var tr = e.target.closest('.r[data-key], tbody tr[data-key]');
+    var tr = e.target.closest('tbody tr[data-key]');
     if (!tr) return;
     var key = tr.getAttribute('data-key');
     selectOnly(state.selected.has(key) ? null : key);
-    Array.prototype.forEach.call(el.board.querySelectorAll('[data-key]'), function (row) {
+    Array.prototype.forEach.call(el.board.querySelectorAll('tbody tr[data-key]'), function (row) {
       var on = state.selected.has(row.getAttribute('data-key'));
       row.classList.toggle('is-sel', on);
-      if (row.hasAttribute('aria-selected')) row.setAttribute('aria-selected', String(on));
-      var btn = row.querySelector('button.nm');
+      var btn = row.querySelector('.nm');
       if (btn) btn.setAttribute('aria-pressed', String(on));
     });
   });
@@ -730,24 +755,6 @@
     };
   }
 
-  // Сусіди в заліку для кнопок «‹ ›» у картці
-  function cardOrder() {
-    var s = standingsRows();
-    var list = s ? s.rows.map(function (r) { return { key: r.key, name: r.name }; }) : [];
-    if (!list.length) { var t = toursData(); if (t) list = Object.keys(t.byName).map(function (k) { return { key: t.byName[k].name, name: t.byName[k].name }; }); }
-    return list.filter(function (x) { return hasCardData(x.name); });
-  }
-  function cardNav(name) {
-    var list = cardOrder(), i = -1;
-    list.forEach(function (x, j) { if (normName(x.name) === normName(name)) i = j; });
-    return { prev: i > 0 ? list[i - 1] : null, next: i >= 0 && i < list.length - 1 ? list[i + 1] : null };
-  }
-  function cardPlayersCount() {
-    var s = standingsRows();
-    if (s) return s.rows.length;
-    var t = toursData();
-    return t ? Object.keys(t.byName).length : 0;
-  }
   function renderCard() {
     var name = selectedPlayerName();
     if (!name || !hasCardData(name)) { pc.body.innerHTML = '<div class="card empty">Виберіть учасника в таблиці.</div>'; return; }
@@ -761,44 +768,20 @@
     var medal = started && st.place >= 1 && st.place <= 3 ? ' medal-' + st.place : '';
     var h = '';
 
-    // Шапка: на телефоні темна, на комп'ютері світла
-    var nav = cardNav(name);
-    var total = cardPlayersCount();
-    var placeTxt = started && st.place ? st.place + ' місце' + (total ? ' з ' + total : '') : '';
-    var chips = [st.num ? '№ ' + st.num : '', sideWord ? sideWord.charAt(0).toUpperCase() + sideWord.slice(1) + ' берег' : ''].filter(Boolean);
-    var I_BACK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
-    var I_NEXT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
-    var I_SHARE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>';
-    h += '<header class="pc-hero"><div class="pc-hero__bar">' +
-      '<button type="button" class="hero-back pc-back" data-act="back">' + I_BACK + '<span class="l-m">Назад</span><span class="l-d">До заліку</span></button>' +
-      '<span class="pc-hero__acts">' +
-        (nav.prev ? '<button type="button" class="pc-ibtn d-only" data-act="prev" aria-label="Попередній учасник: ' + esc(nav.prev.name) + '">' + I_BACK + '</button>' : '') +
-        (nav.next ? '<button type="button" class="pc-ibtn d-only" data-act="next" aria-label="Наступний учасник: ' + esc(nav.next.name) + '">' + I_NEXT + '</button>' : '') +
-        '<button type="button" class="pc-share" data-act="share" aria-label="Поділитися карткою">' + I_SHARE + '<span class="d-only">Поділитися карткою</span></button>' +
-      '</span></div>' +
-      '<div class="pc-hero__main">' +
+    // Шапка
+    h += '<header class="pc-head">' +
       (started && st.place ? '<div class="pc-place' + medal + '" aria-hidden="true">' + st.place + '</div>' : '') +
       '<div class="pc-head__txt"><h1 class="title" id="pcTitle" tabindex="-1">' + esc(st.name) + '</h1>' +
-      '<p class="pc-sub m-only">' + esc([st.num ? '№ ' + st.num : '', sideWord ? sideWord + ' берег' : '', placeTxt].filter(Boolean).join(' · ')) + '</p>' +
-      '<p class="pc-chips d-only">' + chips.map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('') +
-        (placeTxt ? '<span class="chip chip-place' + medal + '">' + esc(placeTxt) + '</span>' : '') +
-        (ev.title ? '<span class="chip chip-plain">' + esc(ev.title) + '</span>' : '') + '</p>' +
-      '</div></div></header><div class="pc-sheet">';
+      '<p class="subtitle">' + [st.num ? '№ ' + st.num : '', ev.title || ''].filter(Boolean).map(esc).join(' • ') + '</p></div></header>';
 
     // Плитки
     if (started) {
-      var diff = st.vsOpp ? st.vsOpp.mine - st.vsOpp.theirs : null;
-      h += '<div class="pc-k">' +
-        '<div class="pk"><span class="pk__l">Бали</span><span class="pk__v">' + (st.points != null ? st.points : '—') + '</span>' +
-          '<span class="pk__wdl" role="img" aria-label="' + st.cnt.w + ' перемог, ' + st.cnt.d + ' рибних нічиїх, ' + st.cnt.z + ' безрибних, ' + st.cnt.l + ' поразок">' +
-          ['w', 'd', 'z', 'l'].map(function (c) { return st.cnt[c] ? '<i class="fl-' + c + '" style="flex:' + st.cnt[c] + '"></i>' : ''; }).join('') + '</span>' +
-          '<span class="pk__s d-only">' + st.cnt.w + ' В · ' + st.cnt.d + ' РН · ' + st.cnt.z + ' БН · ' + st.cnt.l + ' П</span></div>' +
-        '<div class="pk"><span class="pk__l">Улов</span><span class="pk__v">' + st.fish + ' <small>' + fishWord(st.fish) + '</small></span>' +
-          '<span class="pk__s">' + (st.avg != null ? fmt1(st.avg) + ' за тур' : '') + '<span class="d-only">' + (st.tAvg != null ? ' · в середньому по турніру ' + fmt1(st.tAvg) : '') + '</span></span></div>' +
-        (st.vsOpp ? '<div class="pk"><span class="pk__l">Проти суперників</span><span class="pk__v pk__v--sm">' + st.vsOpp.mine + ' : ' + st.vsOpp.theirs + '</span>' +
-          '<span class="pk__badge ' + (diff > 0 ? 'is-up' : diff < 0 ? 'is-down' : '') + '">' + (diff > 0 ? '+' : '') + diff + '<span class="d-only"> ' + fishWord(Math.abs(diff)) + '</span></span></div>' : '') +
-        '<div class="pk"><span class="pk__l">Перемоги</span><span class="pk__v pk__v--sm">' + Math.round(st.winRate * 100) + '%</span>' +
-          '<span class="pk__s">' + (st.streak ? '<span class="l-m">серія — ' + st.streak + ' ' + plural(st.streak, 'тур', 'тури', 'турів') + '</span><span class="l-d">найдовша серія — ' + st.streak + ' ' + plural(st.streak, 'тур', 'тури', 'турів') + ' поспіль</span>' : st.cnt.w + ' з ' + st.played) + '</span></div>' +
+      h += '<div class="pc-tiles">' +
+        tile('Місце', st.place != null ? st.place : '—') +
+        tile('Бали', st.points != null ? st.points : '—') +
+        tile('Улов', st.fish, fishWord(st.fish)) +
+        '<div class="pc-tile pc-tile--wdl"><span class="pc-tile__label">В · РН · БН · П</span><span class="pc-tile__val">' +
+          '<b class="c-w">' + st.cnt.w + '</b><i>·</i><b class="c-d">' + st.cnt.d + '</b><i>·</i><b class="c-z">' + st.cnt.z + '</b><i>·</i><b class="c-l">' + st.cnt.l + '</b></span></div>' +
         '</div>';
     } else {
       h += '<p class="info pc-note">Турнір ще не почався. Тут уже видно жеребкування, а статистика з’явиться після перших турів.</p>';
@@ -870,7 +853,7 @@
         }).join('') + '</section>']);
       }
     }
-    pc.body.innerHTML = h + twoCols(L, R) + '</div>';
+    pc.body.innerHTML = h + twoCols(L, R);
 
     function tile(label, val, unit) {
       return '<div class="pc-tile"><span class="pc-tile__label">' + label + '</span><span class="pc-tile__val">' + esc(val) +
@@ -1032,27 +1015,17 @@
     var ev = (state.payload && state.payload.event) || {};
     document.title = 'Статистика | Trout Master';
     if (!S) { ts.body.innerHTML = '<div class="card empty">Статистика з’явиться після перших турів.</div>'; return; }
-    var sub = [S.players + ' ' + plural(S.players, 'учасник', 'учасники', 'учасників'),
-      S.played < S.rounds ? 'після ' + S.played + ' з ' + S.rounds + ' турів' : 'усі ' + S.rounds + ' турів'];
-    var best = null;
-    (S.totals || []).forEach(function (x, i) { if (x && (!best || x.fish > best.fish)) best = { n: i + 1, fish: x.fish }; });
-    var I_BACK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
-    var I_TABLE = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M3 14.5h18M9 9.5V20"/></svg>';
-    var h = '<header class="pc-hero ts-hero"><div class="pc-hero__bar m-only">' +
-      '<button type="button" class="hero-back pc-back" data-act="back">' + I_BACK + '<span>' + (isListMode() ? 'Учасники' : 'Залік') + '</span></button></div>' +
-      '<div class="ts-hero__main"><div class="pc-head__txt"><h1 class="title" id="tsTitle" tabindex="-1">Статистика</h1>' +
-      '<p class="pc-sub">' + esc([ev.title].concat(sub).filter(Boolean).join(' · ')) + '</p></div>' +
-      '<button type="button" class="btn2 btn2-dark d-only" data-act="back">' + I_TABLE + '<span>Результати</span></button></div>' +
-      '<div class="kpis kpis--2">' +
-        kpi('d-only', 'Турів зіграно', 'Турів', S.played + ' <small>/ ' + S.rounds + '</small>') +
-        kpi('', 'Батлів зіграно', 'Батлів', S.battles + ' <small>/ ' + S.battlesPlanned + '</small>') +
-        kpi('', 'Усього риби', 'Усього риби', fmtInt(S.totalFish)) +
-        kpi('', 'Середній улов', 'Середній улов', fmt1(S.avg) + ' <small class="l-d">на учасника за тур</small>') +
-        (best ? kpi('m-only', 'Найкращий тур', 'Найкращий тур', best.n + ' <small>· ' + best.fish + ' ' + fishWord(best.fish) + '</small>') : '') +
-      '</div></header><div class="pc-sheet">';
+    var h = '<header class="pc-head"><div class="pc-head__txt"><h1 class="title" id="tsTitle" tabindex="-1">Статистика</h1>' +
+      '<p class="subtitle">' + esc([ev.title, S.players + ' ' + plural(S.players, 'учасник', 'учасники', 'учасників'),
+        S.played < S.rounds ? 'після ' + S.played + ' з ' + S.rounds + ' турів' : 'усі ' + S.rounds + ' турів'].filter(Boolean).join(' • ')) + '</p></div></header>';
 
     // На широкому екрані — дві колонки; на телефоні — одна, у порядку o (CSS order)
     var L = [], R = [];
+    L.push([1, '<div class="pc-tiles">' +
+      tsTile('Турів зіграно', S.played + ' <small>з ' + S.rounds + '</small>') +
+      tsTile('Батлів зіграно', S.battles + ' <small>з ' + S.battlesPlanned + '</small>') +
+      tsTile('Усього риби', S.totalFish) +
+      tsTile('Середній улов', fmt1(S.avg) + ' <small>на учасника за тур</small>') + '</div>']);
 
     // Улов по турах
     L.push([2, '<section class="card pc-block"><h2 class="pc-h2">Улов по турах</h2>' + tourBars(S) +
@@ -1093,7 +1066,7 @@
       parts.map(function (p) { return '<li><span class="sw seg-' + p[0] + '"></span>' + p[1] + ' <b>' + pct(S.cnt[p[0]]) + '</b> <small>(' + S.cnt[p[0]] + ')</small></li>'; }).join('') +
       '</ul></section>']);
 
-    ts.body.innerHTML = h + twoCols(L, R) + '</div>';
+    ts.body.innerHTML = h + twoCols(L, R);
 
     function pct(n) { return S.entries ? Math.round(n / S.entries * 100) + '%' : '—'; }
     function tsTile(label, valHtml) {
@@ -1225,9 +1198,9 @@
 
   // Графік місця по турах (1 — угорі)
   function placeSvg(places, players) {
-    var n = places.length, W = 320, H = 130, top = 12, bottom = 22, left = 22, right = 8, pad = 10;
+    var n = places.length, W = 320, H = 130, top = 12, bottom = 22, left = 22, right = 8;
     var maxP = Math.max(players, 2);
-    var x = function (i) { return left + pad + (n > 1 ? i * (W - left - right - pad) / (n - 1) : (W - left - right - pad) / 2); };
+    var x = function (i) { return left + (n > 1 ? i * (W - left - right) / (n - 1) : (W - left - right) / 2); };
     var y = function (p) { return top + (p - 1) / (maxP - 1) * (H - top - bottom); };
     var out = '<svg class="pc-chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Місце після кожного туру: ' + places.join(', ') + '">';
     [1, Math.ceil(maxP / 2), maxP].forEach(function (p) {
@@ -1302,23 +1275,14 @@
     return (d ? d + ' д ' : '') + pad2(h) + ':' + pad2(m) + ':' + pad2(sec);
   }
   var timerId = null;
-  function kTimerHtml(ms) {
-    var t = Math.max(0, Math.floor(ms / 1000));
-    var d = Math.floor(t / 86400), h = Math.floor(t % 86400 / 3600), m = Math.floor(t % 3600 / 60), sec = t % 60;
-    var parts = d ? [[d, 'д', 'д'], [h, 'год', 'г'], [pad2(m), 'хв', 'хв']] : [[h, 'год', 'г'], [pad2(m), 'хв', 'хв'], [pad2(sec), 'с', 'с']];
-    return '<span class="visually-hidden">' + (d ? d + ' д ' : '') + h + ' год ' + m + ' хв</span>' + parts.map(function (x, i) {
-      return '<span class="tt' + (i === 2 ? ' tt-3' : '') + '" aria-hidden="true"><b>' + x[0] + '</b><span class="l-d">' + x[1] + '</span><span class="l-m">' + x[2] + '</span></span>';
-    }).join('');
-  }
   function renderTimer() {
     var d = regDeadline();
-    var on = !!d && regOpenNow() && (state.view === 'list' || state.view === 'reg');
+    var on = !!d && !reg.live.hidden;
     reg.timer.hidden = !on;
     if (!on) { clearInterval(timerId); timerId = null; return; }
     var left = d.getTime() - Date.now();
     if (left <= 0) { clearInterval(timerId); timerId = null; renderReg(); return; }   // час вийшов: ховаємо кнопку
     reg.timerTxt.innerHTML = 'до кінця ' + fmtLeft(left).replace(/\d/g, '<span class="dg">$&</span>');
-    ['kTimer', 'rTimer'].forEach(function (id) { var kt = document.getElementById(id); if (kt) kt.innerHTML = kTimerHtml(left); });
     var sr = 'Реєстрація триває до ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' +
       d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
     if (reg.timerSr.textContent !== sr) reg.timerSr.textContent = sr;
@@ -1360,7 +1324,6 @@
     reg.live.hidden = !showReg;   // плашка «Триває реєстрація» над таблицею
     renderTimer();
     html.classList.toggle('has-regbar', showBar);
-    if (typeof v2 !== 'undefined' && v2) renderChrome();
     if (!isReg) return;
 
     var ev = (state.payload && state.payload.event) || {};
@@ -1578,7 +1541,7 @@
   // Після реєстрації: прокрутити до свого рядка у списку
   function revealFocusRow() {
     if (!state.focusKey || state.view !== 'list') return;
-    var rows = el.board.querySelectorAll('[data-key]');
+    var rows = el.board.querySelectorAll('tbody tr[data-key]');
     for (var i = 0; i < rows.length; i++) {
       if (rows[i].getAttribute('data-key') === state.focusKey) {
         rows[i].scrollIntoView({ block: 'center' });
@@ -1786,28 +1749,8 @@
   reg.open.addEventListener('click', goReg);
   pc.open.addEventListener('click', goCard);
   pc.back.addEventListener('click', goList);
-  pc.body.addEventListener('click', function (e) {
-    var b = e.target.closest('[data-act]');
-    if (!b) return;
-    var act = b.getAttribute('data-act');
-    if (act === 'back') { goList(); return; }
-    if (act === 'prev' || act === 'next') {
-      var nav = cardNav(selectedPlayerName() || ''), to = nav[act];
-      if (!to) return;
-      selectOnly(to.key);
-      renderCard();
-      var h = document.getElementById('pcTitle');
-      if (h) { try { h.focus({ preventScroll: true }); } catch (x) { h.focus(); } }
-      return;
-    }
-    if (act === 'share') {
-      var nm = selectedPlayerName(), dp = nm ? drawPlayer(nm) : null;
-      shareLink(dp ? SHARE_URL + '=p' + dp.n : SHARE_URL, (nm || 'Учасник') + ': картка учасника TROUT MASTER');
-    }
-  });
   ts.open.addEventListener('click', goStats);
   ts.back.addEventListener('click', goList);
-  ts.body.addEventListener('click', function (e) { if (e.target.closest('[data-act="back"]')) goList(); });
   // iOS Safari вмикає стан :active (натиснута кнопка) лише якщо на сторінці є обробник дотику
   document.addEventListener('touchstart', function () {}, { passive: true });
   reg.back.addEventListener('click', goList);
@@ -1819,505 +1762,6 @@
     try { history.replaceState({ tmView: 'list' }, '', location.pathname + location.search); } catch (e) { /* */ }
   }
   var wantReg = /^#register$/.test(location.hash) || /tgWebAppStartParam=register(&|$)/.test(location.hash + location.search);
-
-  // ================= Новий дизайн: шапка, плитки, таблиці =================
-  var v2 = {
-    hero: $('hero'), pill: $('heroPill'), kpis: $('kpis'), share: $('shareBtn'),
-    heroStats: $('heroStats'), heroReg: $('heroReg'), topnav: $('topnav'), navList: $('navList'), navStats: $('navStats'),
-    bcard: $('bcard'), bTitle: $('boardTitle'), bSub: $('boardSub'), legend: $('legend'), search: $('search'), searchBox: $('searchBox'),
-    selbar: $('selbar'), selPlace: $('selPlace'), selName: $('selName'), selCard: $('selCard'), selClear: $('selClear'),
-    side: $('side'), toast: $('toast')
-  };
-  var SHARE_URL = 'https://t.me/troutmasterua_bot?startapp';
-  var ZEBRA = true;
-  var RC = { w: ['В', 'Перемога'], d: ['РН', 'Рибна нічия'], z: ['БН', 'Безрибна нічия'], l: ['П', 'Поразка'] };
-  state.query = '';
-
-  function isListMode() {
-    var p = state.payload;
-    return !!p && (p.mode === 'Список учасників' ||
-      (!p.mode && (p.sheets || []).length === 1 && /учасник/i.test(p.sheets[0].name || '')));
-  }
-  function tabLabel(name) { return /результат/i.test(name) ? 'Залік' : /^тур/i.test(String(name).trim()) ? 'По турах' : name; }
-  function initials(n) { return String(n || '').split(/\s+/).filter(Boolean).slice(0, 2).map(function (s) { return s.charAt(0); }).join('').toUpperCase(); }
-  function colBy(m, re) { return m.cols.find(function (k) { return k.role !== 'name' && k.role !== 'place' && re.test(k.label); }) || null; }
-  function fmtInt(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
-  function matchQuery(name) { var q = state.query.trim().toLowerCase(); return !q || String(name).toLowerCase().indexOf(q) !== -1; }
-  function resultsModel() { return state.models.find(function (m) { return /результат/i.test(m.name); }) || null; }
-  function placeByName() {
-    var m = resultsModel(), map = {};
-    if (m) m.rows.forEach(function (r) { map[normName(r.cells[m.nameCol ? m.nameCol.c : 1])] = r; });
-    return map;
-  }
-  function playedTours(t) { return t ? t.tourAvg.filter(function (x) { return x != null; }).length : 0; }
-  function tourTotals(t) {
-    var s = [];
-    if (!t) return s;
-    for (var i = 0; i < t.rounds; i++) s.push(null);
-    Object.keys(t.byName).forEach(function (k) {
-      t.byName[k].tours.forEach(function (x, i) { if (x.code) s[i] = (s[i] || 0) + x.fish; });
-    });
-    return s;
-  }
-  // Підсумки заліку з аркуша «Результат» (+ «Тури» для форми й В·РН·БН·П)
-  function standingsRows() {
-    var m = resultsModel();
-    if (!m || !m.nameCol) return null;
-    var cPts = colBy(m, /^бали/i), cWin = colBy(m, /^(виграш|перемог)/i), cFish = colBy(m, /^риб/i);
-    if (!cPts) return null;
-    var t = toursData();
-    var moves = (state.payload && state.payload.showMoves === false) ? {} : (state.moves[m.name] || {});
-    return {
-      model: m, fishLabel: cFish ? cFish.label : '',
-      rows: m.rows.map(function (row) {
-        var name = row.cells[m.nameCol.c];
-        var me = t ? t.byName[normName(name)] : null;
-        var cnt = { w: 0, d: 0, z: 0, l: 0 }, form = [];
-        if (me) me.tours.forEach(function (x) { if (x.code) { cnt[x.code]++; form.push(x.code); } });
-        var dp = drawPlayer(name);
-        return {
-          key: row.key, name: name, place: row.place, move: moves[row.key] || 0,
-          pts: num(row.cells[cPts.c]), wins: cWin ? num(row.cells[cWin.c]) : (me ? cnt.w : null),
-          fish: cFish ? num(row.cells[cFish.c]) : null, cnt: me ? cnt : null, form: form.slice(-5), num: dp ? dp.n : null
-        };
-      })
-    };
-  }
-  function totalFish() {
-    var t = toursData();
-    if (t && t.totalFish) return t.totalFish;
-    var s = standingsRows();
-    if (s && s.fishLabel) { var n = num(s.fishLabel); if (n) return n; }
-    return null;
-  }
-
-  // ----- Шапка турніру -----
-  var ICON_CAL = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
-  var ICON_PIN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
-  function renderHeader() {
-    var p = state.payload;
-    var ev = (p && p.event) || {};
-    var title = ev.title || (p && p.title) || 'Результати';
-    el.title.textContent = title;
-    var parts = String(ev.subtitle || '').split(/\s*[•·]\s*/).filter(Boolean);
-    el.subtitle.innerHTML = parts.map(function (s, i) {
-      return '<span>' + (i === 0 ? ICON_CAL : i === 1 ? ICON_PIN : '') + esc(s) + '</span>';
-    }).join('');
-    el.subtitle.hidden = !parts.length;
-    if (state.view === 'list' || !state.view) document.title = title + ' | Trout Master';
-    renderChrome();
-  }
-
-  var MONTHS_FULL = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
-  function deadlineText(d) {
-    return d.getDate() + ' ' + MONTHS_FULL[d.getMonth()] + ', ' + d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
-  }
-  // Скільки зареєстровано і скільки місць (список учасників)
-  function seatsInfo() {
-    var p = state.payload || {}, m = isListMode() ? state.models[0] : null;
-    if (!m) return null;
-    return { n: m.rows.length, seats: parseInt(p.seats, 10) || 0 };
-  }
-  function seatsBar(si) {
-    var pct = si.seats ? Math.min(100, Math.round(si.n / si.seats * 100)) : 0;
-    return '<span class="sbar" role="img" aria-label="' + si.n + ' з ' + si.seats + ' місць зайнято"><span style="width:' + pct + '%"></span></span>';
-  }
-  function renderFill() {
-    var box = document.getElementById('fillCard'), si = seatsInfo(), d = regDeadline();
-    var on = !!si && si.seats > 0 && state.view === 'list';
-    box.hidden = !on;
-    if (!on) return;
-    box.innerHTML = '<div class="fillcard__row"><b>Заповнено ' + Math.min(si.n, si.seats) + ' з ' + si.seats + ' ' + plural(si.seats, 'місця', 'місць', 'місць') + '</b>' +
-      (d && regOpenNow() ? '<span>до ' + esc(deadlineText(d)) + '</span>' : '') + '</div>' + seatsBar(si);
-  }
-  function renderRegExtras() {
-    var box = document.getElementById('regSeats'), si = seatsInfo(), d = regDeadline(), open = regOpenNow();
-    var on = state.view === 'reg' && !!si && open && !state.regDone;
-    box.hidden = !on;
-    var note = document.getElementById('regBotNote');
-    if (note) note.hidden = !(state.view === 'reg' && IN_TG && open && !state.regDone);
-    if (!on) return;
-    var free = si.seats ? si.seats - si.n : 0;
-    var h = '<div class="seats__row"><b>Зареєстровано ' + si.n + (si.seats ? ' з ' + si.seats : '') + '</b>' +
-      (si.seats ? (free > 0 ? '<span class="ok">ще ' + free + ' ' + plural(free, 'місце', 'місця', 'місць') + '</span>' : '<span class="warn">далі — резерв</span>') : '') + '</div>' +
-      (si.seats ? seatsBar(si) : '');
-    if (d) h += '<div class="seats__timer"><span>До закриття</span><span class="ttiles" id="rTimer"></span></div>';
-    box.innerHTML = h;
-    renderTimer();
-  }
-
-  // Плашка статусу, плитки, кнопки шапки, меню, бічна панель, смужка вибору
-  function renderChrome() {
-    var p = state.payload;
-    var list = isListMode();
-    var t = toursData();
-    // Плашка над заголовком
-    var pill = '', pillOn = false;
-    if (p && list) {
-      var open = regOpenNow(), d = regDeadline();
-      pill = open ? 'Триває реєстрація' + (d ? ' · до ' + deadlineText(d) : '') : 'Реєстрацію закрито';
-      pillOn = open;
-    } else if (t) {
-      var pl = playedTours(t);
-      pill = pl >= t.rounds ? 'Тур ' + t.rounds + ' з ' + t.rounds + ' · завершено' : pl ? 'Зіграно ' + pl + ' з ' + t.rounds + ' турів' : '';
-      pillOn = pl > 0 && pl < t.rounds;
-    }
-    v2.pill.innerHTML = pill ? '<i aria-hidden="true"></i>' + esc(pill) : '';
-    v2.pill.hidden = !pill;
-    v2.pill.classList.toggle('is-live', pillOn);
-
-    renderKpis();
-    renderFill();
-    renderRegExtras();
-
-    // Кнопки шапки (комп'ютер)
-    var stats = statsReady();
-    v2.heroStats.hidden = !stats || list;
-    v2.heroReg.hidden = !(list && regOpenNow());
-    // Меню
-    v2.topnav.hidden = !p;
-    v2.navList.textContent = list ? 'Учасники' : 'Результати';
-    v2.navStats.hidden = !stats;
-    v2.navList.setAttribute('aria-current', state.view === 'list' ? 'page' : 'false');
-    v2.navStats.setAttribute('aria-current', state.view === 'stats' ? 'page' : 'false');
-
-    renderSide();
-    renderSelbar();
-  }
-
-  function kpi(cls, label, labelM, valHtml, extra) {
-    return '<div class="kpi ' + cls + '"><span class="kpi__l"><span class="l-d">' + label + '</span><span class="l-m">' + (labelM || label) + '</span></span>' +
-      '<span class="kpi__v">' + valHtml + '</span>' + (extra || '') + '</div>';
-  }
-  function renderKpis() {
-    var p = state.payload, h = '';
-    if (!p) { v2.kpis.innerHTML = ''; return; }
-    if (isListMode()) {
-      var m = state.models[0], n = m ? m.rows.length : 0, seats = parseInt(p.seats, 10) || 0;
-      var pct = seats ? Math.min(100, Math.round(n / seats * 100)) : 0;
-      h += kpi('', 'Зареєстровано', 'Учасників', n + (seats ? ' <small>/ ' + seats + '</small>' : ''),
-        seats ? '<span class="kpi__bar" role="img" aria-label="' + n + ' з ' + seats + ' місць зайнято"><span style="width:' + pct + '%"></span></span>' : '');
-      if (seats) {
-        h += n < seats
-          ? kpi('k-green', 'Вільних місць', 'Вільно', (seats - n) + ' <small class="l-m">' + plural(seats - n, 'місце', 'місця', 'місць') + '</small>', '<span class="kpi__s l-d">далі — резерв</span>')
-          : kpi('', 'Резерв', 'Резерв', (n - seats) + ' <small>' + plural(n - seats, 'учасник', 'учасники', 'учасників') + '</small>', '<span class="kpi__s l-d">усі місця зайняті</span>');
-      }
-      if (regOpenNow() && regDeadline()) h += kpi('k-dark', 'До закриття реєстрації', 'До закриття', '<span id="kTimer"></span>');
-      v2.kpis.innerHTML = h;
-      v2.kpis.hidden = false;
-      renderTimer();
-      return;
-    }
-    var s = standingsRows(), t = toursData();
-    var lead = s && s.rows.find(function (r) { return r.place === 1; });
-    var started = s && s.rows.some(function (r) { return r.pts > 0; });
-    if (lead && started) {
-      var finished = t && playedTours(t) >= t.rounds;
-      h += kpi('k-dark d-only', finished ? 'Переможець' : 'Лідер', finished ? 'Переможець' : 'Лідер', esc(lead.name), '<span class="kpi__s">' + [
-        lead.pts != null ? lead.pts + ' ' + plural(lead.pts, 'бал', 'бали', 'балів') : '',
-        lead.wins != null ? lead.wins + ' ' + plural(lead.wins, 'перемога', 'перемоги', 'перемог') : '',
-        lead.fish != null ? lead.fish + ' ' + fishWord(lead.fish) : ''].filter(Boolean).join(' · ') + '</span>');
-    }
-    if (t) {
-      var pl = playedTours(t);
-      h += kpi('', 'Турів зіграно', 'Тур', pl + ' <small>/ ' + t.rounds + '</small>',
-        '<span class="kpi__bar d-only"><span style="width:' + Math.round(pl / t.rounds * 100) + '%"></span></span>');
-    }
-    var tf = totalFish();
-    if (tf != null) {
-      var tot = tourTotals(t), mx = Math.max.apply(null, tot.map(function (x) { return x || 0; }).concat([1]));
-      var spark = t && playedTours(t) > 1 ? '<span class="spark d-only" aria-hidden="true">' + tot.map(function (x) {
-        return '<i style="height:' + (x ? Math.max(2, Math.round(x / mx * 36)) : 0) + 'px"></i>';
-      }).join('') + '</span>' : '';
-      h += kpi('k-spark', 'Усього риби', 'Риби', fmtInt(tf), spark);
-    }
-    if (t && t.avgPerTour != null) h += kpi('d-only', 'Середній улов', 'Середній', fmt1(t.avgPerTour), '<span class="kpi__s">риби на учасника за тур</span>');
-    var m0 = resultsModel() || state.models[0];
-    if (m0) h += kpi('m-only', 'Учасників', 'Учасників', String(m0.rows.length));
-    v2.kpis.innerHTML = h;
-    v2.kpis.hidden = !h;
-  }
-
-  // ----- Бічна панель (комп'ютер, залік) -----
-  function renderSide() {
-    var s = !isListMode() && state.view === 'list' ? standingsRows() : null;
-    var m = currentModel();
-    var on = !!s && !!m && /результат/i.test(m.name) && s.rows.some(function (r) { return r.pts > 0; });
-    v2.side.hidden = !on;
-    document.documentElement.classList.toggle('has-side', on);
-    if (!on) { v2.side.innerHTML = ''; return; }
-    var top3 = [2, 1, 3].map(function (pl) { return s.rows.find(function (r) { return r.place === pl; }); });
-    var h = '';
-    if (top3.every(Boolean)) {
-      h += '<div class="scard"><h3>Подіум</h3><div class="podium">' + top3.map(function (r) {
-        return '<div class="podium__col p' + r.place + '"><span class="podium__name">' + esc(r.name) + '</span>' +
-          '<span class="podium__bar">' + r.place + '</span><span class="podium__pts">' + r.pts + ' ' + plural(r.pts, 'бал', 'бали', 'балів') + '</span></div>';
-      }).join('') + '</div></div>';
-    }
-    var byFish = s.rows.filter(function (r) { return r.fish != null; }).slice().sort(function (a, b) { return b.fish - a.fish; }).slice(0, 3);
-    if (byFish.length) {
-      var mx = byFish[0].fish || 1;
-      h += '<div class="scard"><h3>Найбільше риби</h3>' + byFish.map(function (r) {
-        return '<div class="ftop"><span class="ftop__row"><b>' + esc(r.name) + '</b><span>' + r.fish + ' <small>' + fishWord(r.fish) + '</small></span></span>' +
-          '<span class="ftop__bar"><span style="width:' + Math.round(r.fish / mx * 100) + '%"></span></span></div>';
-      }).join('') + '</div>';
-    }
-    h += '<div class="scard"><h3>Як рахуються бали</h3><ul class="pts-legend">' +
-      '<li><span class="code code-w">В</span>перемога — 3</li><li><span class="code code-d">РН</span>рибна нічия — 2</li>' +
-      '<li><span class="code code-z">БН</span>безрибна нічия — 1</li><li><span class="code code-l">П</span>поразка — 0</li></ul></div>';
-    v2.side.innerHTML = h;
-  }
-
-  // ----- Смужка «Вибрано в таблиці» (комп'ютер) -----
-  function renderSelbar() {
-    var name = state.view === 'list' && !isListMode() ? selectedPlayerName() : null;
-    var cardOn = !(state.payload && state.payload.showCard === false);
-    var on = !!name && cardOn && hasCardData(name);
-    v2.selbar.hidden = !on;
-    if (!on) return;
-    var s = standingsRows(), r = s && s.rows.find(function (x) { return normName(x.name) === normName(name); });
-    v2.selPlace.hidden = !(r && r.place);
-    if (r && r.place) {
-      v2.selPlace.textContent = r.place;
-      v2.selPlace.className = 'selbar__place' + (r.place <= 3 ? ' medal-' + r.place : '');
-    }
-    v2.selName.textContent = name + (r && r.pts != null ? ' · ' + r.pts + ' ' + plural(r.pts, 'бал', 'бали', 'балів') : '');
-  }
-
-  // ----- Вкладки «Залік / По турах» -----
-  function renderTabs() {
-    var list = isListMode();
-    if (state.models.length < 2) el.tabs.innerHTML = '';
-    else {
-      var cur = currentModel();
-      el.tabs.innerHTML = state.models.map(function (m, i) {
-        var sel = m === cur;
-        return '<button type="button" class="tab" role="tab" id="tab-' + i + '" data-tab="' + esc(m.name) +
-          '" aria-selected="' + sel + '" tabindex="' + (sel ? 0 : -1) + '">' + esc(tabLabel(m.name)) + '</button>';
-      }).join('');
-      el.board.setAttribute('aria-labelledby', 'tab-' + state.models.indexOf(cur));
-    }
-    renderSide();
-    var m = currentModel();
-    var tours = !!m && /^тур/i.test(m.name.trim()) && !!toursData();
-    v2.legend.hidden = !tours;
-    if (list) {
-      v2.bTitle.textContent = 'Список учасників';
-      v2.bSub.textContent = 'У порядку реєстрації';
-    } else if (tours) {
-      v2.bTitle.textContent = 'Результати по турах';
-      v2.bSub.textContent = 'У клітинці — результат і улов учасника в турі';
-    } else {
-      v2.bTitle.textContent = m ? (/результат/i.test(m.name) ? 'Загальний залік' : m.name) : 'Результати';
-      v2.bSub.textContent = m && /результат/i.test(m.name) ? 'Бали → перемоги → риба' : '';
-    }
-  }
-
-  // ----- Таблиця: вибір вигляду -----
-  function renderBoard() {
-    var m = currentModel();
-    el.board.classList.remove('is-wide', 'is-compact', 'v2');
-    if (!m || !m.rows.length) { renderTable(); return; }
-    var html = null;
-    if (isListMode()) html = participantsHtml(m);
-    else if (/результат/i.test(m.name)) html = standingsHtml();
-    else if (/^тур/i.test(m.name.trim())) html = toursHtml();
-    if (html == null) { renderTable(); return; }
-    var sc = el.board.querySelector('.tgrid');
-    var x = sc ? sc.scrollLeft : 0;
-    el.board.classList.add('v2');
-    el.board.innerHTML = html;
-    var sc2 = el.board.querySelector('.tgrid');
-    if (sc2) sc2.scrollLeft = x;
-  }
-
-  function medalCls(place, started) { return started && place >= 1 && place <= 3 ? ' medal-' + place : ''; }
-  function moveHtml(mv) {
-    if (!mv) return '';
-    var n = Math.abs(mv), txt = (mv > 0 ? 'піднявся на ' : 'опустився на ') + n + ' ' + plural(n, 'місце', 'місця', 'місць');
-    return '<span class="mv ' + (mv > 0 ? 'up' : 'down') + '" title="' + txt + '"><span aria-hidden="true">' + (mv > 0 ? '▲' : '▼') + n +
-      '</span><span class="visually-hidden">, ' + txt + '</span></span>';
-  }
-
-  // Залік
-  function standingsHtml() {
-    var s = standingsRows();
-    if (!s) return null;
-    var started = s.rows.some(function (r) { return r.pts > 0; });
-    var hasT = s.rows.some(function (r) { return r.cnt; });
-    var fishTotal = totalFish();
-    var flashOn = Date.now() - state.changeTime < 3500;
-    var changed = state.changed[s.model.name] || {};
-    var rows = s.rows.filter(function (r) { return matchQuery(r.name); });
-    var head = '<div class="rk-row rk-head" role="row">' +
-      '<span class="c-pl" role="columnheader">Місце</span><span class="c-nm" role="columnheader">Учасник</span>' +
-      (hasT ? '<span class="c-form d-only" role="columnheader">Останні 5</span><span class="c-wdl d-only" role="columnheader">В · РН · БН · П</span>' : '') +
-      '<span class="c-pts" role="columnheader"><span class="d-only">Бали</span><span class="m-only">Бали · риби' + (fishTotal ? ' (' + fmtInt(fishTotal) + ')' : '') + '</span></span>' +
-      '<span class="c-win d-only" role="columnheader">Перемоги</span>' +
-      '<span class="c-fish d-only" role="columnheader">Риби' + (fishTotal ? ' (' + fmtInt(fishTotal) + ')' : '') + '</span></div>';
-    var body = rows.map(function (r, i) {
-      var sel = state.selected.has(r.key);
-      var cls = 'rk-row r' + (ZEBRA && i % 2 ? ' z' : '') + (sel ? ' is-sel' : '') + medalCls(r.place, started) +
-        (flashOn && changed[r.key] ? ' flash' : '') + (hasT ? '' : ' no-t');
-      var form = r.form.map(function (c) { return '<span class="fb fb-' + c + '" title="' + RC[c][1] + '">' + RC[c][0] + '</span>'; }).join('');
-      var bars = r.form.map(function (c) { return '<i class="fl fl-' + c + '"></i>'; }).join('');
-      var wdl = r.cnt ? '<b class="c-w">' + r.cnt.w + '</b> · <b class="c-d">' + r.cnt.d + '</b> · <b class="c-z">' + r.cnt.z + '</b> · <b class="c-l">' + r.cnt.l + '</b>' : '';
-      var wdlM = r.cnt ? r.cnt.w + 'В · ' + r.cnt.d + 'РН · ' + r.cnt.z + 'БН · ' + r.cnt.l + 'П' : '';
-      return '<div class="' + cls + '" role="row" data-key="' + esc(r.key) + '" tabindex="0" aria-selected="' + sel + '">' +
-        '<span class="c-pl" role="cell"><span class="pc">' + (r.place != null ? r.place : '') + '</span>' + moveHtml(r.move) + '</span>' +
-        '<span class="c-nm" role="cell"><span class="av" aria-hidden="true">' + esc(initials(r.name)) + '</span><span class="nmw">' +
-          '<span class="rk-nm">' + esc(r.name) + '</span>' +
-          (r.num ? '<span class="sub d-only">№ ' + r.num + '</span>' : '') +
-          (r.cnt ? '<span class="msub m-only"><span class="fls" aria-hidden="true">' + bars + '</span>' + wdlM + '</span>' : '') +
-        '</span></span>' +
-        (hasT ? '<span class="c-form d-only" role="cell">' + form + '</span><span class="c-wdl d-only" role="cell">' + wdl + '</span>' : '') +
-        '<span class="c-pts" role="cell"><b>' + (r.pts != null ? r.pts : '') + '</b>' +
-          (r.fish != null ? '<small class="m-only">' + r.fish + ' ' + fishWord(r.fish) + '</small>' : '') + '</span>' +
-        '<span class="c-win d-only" role="cell">' + (r.wins != null ? r.wins : '') + '</span>' +
-        '<span class="c-fish d-only" role="cell">' + (r.fish != null ? r.fish : '') + '</span>' +
-        '</div>';
-    }).join('');
-    if (!rows.length) body = '<div class="empty"><strong>Нікого не знайдено</strong>Спробуйте інше прізвище.</div>';
-    return '<div class="rk' + (hasT ? '' : ' no-t') + '" role="table" aria-label="Загальний залік">' + head + body + '</div>';
-  }
-
-  // По турах
-  function toursHtml() {
-    var t = toursData();
-    if (!t) return null;
-    var places = placeByName(), s = standingsRows();
-    var sByName = {};
-    if (s) s.rows.forEach(function (r) { sByName[normName(r.name)] = r; });
-    var started = s && s.rows.some(function (r) { return r.pts > 0; });
-    var list = Object.keys(t.byName).map(function (k) { return t.byName[k]; });
-    list.forEach(function (x) { var r = sByName[normName(x.name)]; x._st = r || null; });
-    list.sort(function (a, b) {
-      var pa = a._st && a._st.place != null ? a._st.place : 999, pb = b._st && b._st.place != null ? b._st.place : 999;
-      return pa - pb;
-    });
-    list = list.filter(function (x) { return matchQuery(x.name); });
-    var tot = tourTotals(t);
-    var head = '<div class="tr-row tr-head"><span class="t-pl">#</span><span class="t-nm">Учасник</span>' +
-      tot.map(function (f, i) { return '<span class="t-c"><b>' + (i + 1) + '</b><small>' + (f != null ? f : '') + '</small></span>'; }).join('') +
-      '<span class="t-s d-only">Бали</span><span class="t-s d-only">Перем.</span><span class="t-s d-only">Риби</span></div>';
-    var body = list.map(function (x, i) {
-      var st = x._st, key = st ? st.key : x.name, sel = state.selected.has(key);
-      var cells = x.tours.map(function (c) {
-        if (!c.code) return '<span class="t-c"><span class="tc tc-none" title="Тур ' + c.n + ': ще не зіграно">–</span></span>';
-        return '<span class="t-c"><span class="tc tc-' + c.code + '" title="Тур ' + c.n + ': ' + RC[c.code][1] + ', ' + c.fish + ' ' + fishWord(c.fish) + '">' +
-          '<small>' + RC[c.code][0] + '</small><b>' + c.fish + '</b></span></span>';
-      }).join('');
-      return '<div class="tr-row r' + (ZEBRA && i % 2 ? ' z' : '') + (sel ? ' is-sel' : '') + '" data-key="' + esc(key) + '" tabindex="0" aria-selected="' + sel + '">' +
-        '<span class="t-pl"><span class="pc' + medalCls(st && st.place, started) + '">' + (st && st.place != null ? st.place : '') + '</span></span>' +
-        '<span class="t-nm">' + esc(x.name) + '</span>' + cells +
-        '<span class="t-s d-only"><b>' + (st && st.pts != null ? st.pts : (x.points != null ? x.points : '')) + '</b></span>' +
-        '<span class="t-s d-only">' + (st && st.wins != null ? st.wins : '') + '</span>' +
-        '<span class="t-s d-only">' + (st && st.fish != null ? st.fish : '') + '</span></div>';
-    }).join('');
-    if (!list.length) body = '<div class="empty"><strong>Нікого не знайдено</strong>Спробуйте інше прізвище.</div>';
-    return '<p class="tgrid-hint m-only" aria-hidden="true">гортайте →</p><div class="tgrid" role="region" aria-label="Результати по турах" tabindex="0"><div class="tgrid__in">' + head + body + '</div></div>';
-  }
-
-  // Список учасників під час реєстрації
-  function participantsHtml(m) {
-    var pl = state.payload || {};
-    var seats = parseInt(pl.seats, 10) || 0;
-    var all = m.rows.map(function (row, i) {
-      return { key: row.key, i: i, n: m.placeCol ? row.cells[m.placeCol.c] : String(i + 1), name: m.nameCol ? row.cells[m.nameCol.c] : row.key };
-    });
-    var main = seats ? all.slice(0, seats) : all, reserve = seats ? all.slice(seats) : [];
-    var free = seats && all.length < seats ? seats - all.length : 0;
-    var newest = all.length - 2;   // останні дві реєстрації — «нове»
-    // На комп'ютері дві колонки: ліва — перша половина списку, права — друга
-    var half = 1;
-    function z2(j) { return (j % half) % 2 ? ' z2' : ''; }
-    function olOpen(count) { half = Math.max(1, Math.ceil(count / 2)); return '<ol class="plist" style="--rows:' + half + '">'; }
-    function item(p, j) {
-      var sel = state.selected.has(p.key);
-      return '<li class="pt r' + (j % 2 ? ' z1' : '') + z2(j) + (sel ? ' is-sel' : '') + '" data-key="' + esc(p.key) + '">' +
-        '<span class="pt__n">' + esc(p.n) + '</span><span class="av" aria-hidden="true">' + esc(initials(p.name)) + '</span>' +
-        '<span class="pt__nm">' + esc(p.name) + '</span>' + (p.i >= newest && p.i > 0 && all.length > 3 ? '<span class="pt__new">new</span>' : '') + '</li>';
-    }
-    var vis = main.filter(function (p) { return matchQuery(p.name); });
-    var nFree = free && !state.query ? free : 0;
-    var h = '<div class="plist-head m-only" aria-hidden="true"><span>Учасник</span><span>№</span></div>' + olOpen(vis.length + nFree) + vis.map(item).join('');
-    if (nFree) {
-      for (var k = 0; k < nFree; k++) {
-        var j = vis.length + k, nn = all.length + k + 1;
-        h += '<li class="pt pt--free' + (j % 2 ? ' z1' : '') + z2(j) + '"><span class="pt__n">' + nn + '</span>' +
-          '<span class="av av--free" aria-hidden="true"></span><span class="pt__nm">Вільне місце</span></li>';
-      }
-    }
-    h += '</ol>';
-    var rv = reserve.filter(function (p) { return matchQuery(p.name); });
-    if (rv.length) h += '<p class="plist-sep">Резерв</p>' + olOpen(rv.length) + rv.map(item).join('') + '</ol>';
-    if (!vis.length && !rv.length) h = '<div class="empty"><strong>Нікого не знайдено</strong>Спробуйте інше прізвище.</div>';
-    return h;
-  }
-
-  function renderInfo() { if (el.info) el.info.hidden = true; }
-
-  // ----- Події нового дизайну -----
-  v2.search.addEventListener('input', function () { state.query = v2.search.value; renderBoard(); });
-  v2.navList.addEventListener('click', function () { goList(); });
-  document.getElementById('heroBack').addEventListener('click', function () { goList(); });
-  v2.navStats.addEventListener('click', function () { goStats(); });
-  v2.heroStats.addEventListener('click', function () { goStats(); });
-  v2.heroReg.addEventListener('click', function () { goReg(); });
-  v2.selCard.addEventListener('click', function () { goCard(); });
-  v2.selClear.addEventListener('click', function () {
-    selectOnly(null);
-    Array.prototype.forEach.call(el.board.querySelectorAll('[data-key]'), function (row) {
-      row.classList.remove('is-sel');
-      if (row.hasAttribute('aria-selected')) row.setAttribute('aria-selected', 'false');
-    });
-  });
-  var toastT = null;
-  function toast(msg) {
-    v2.toast.textContent = msg;
-    v2.toast.hidden = false;
-    clearTimeout(toastT);
-    toastT = setTimeout(function () { v2.toast.hidden = true; }, 2600);
-  }
-  function shareLink(url, text) {
-    var tg = window.Telegram && window.Telegram.WebApp;
-    try {
-      if (tg && tg.initData && tg.openTelegramLink) {
-        tg.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text));
-        return;
-      }
-    } catch (e) { /* */ }
-    if (navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
-      navigator.share({ title: text, text: text, url: url }).catch(function () {});
-      return;
-    }
-    var done = function () { toast('Посилання скопійовано'); };
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, function () { toast(url); });
-    else toast(url);
-  }
-  v2.share.addEventListener('click', function () {
-    var ev = (state.payload && state.payload.event) || {};
-    shareLink(SHARE_URL, (ev.title || 'TROUT MASTER') + ': результати наживо');
-  });
-  // Клавіатура: Enter/пробіл на рядку = тап
-  el.board.addEventListener('keydown', function (e) {
-    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.r[data-key]')) { e.preventDefault(); e.target.click(); }
-  });
-  // ================= /Новий дизайн =================
-
-  // Посилання на картку: t.me/…?startapp=p9 (Telegram) або …/#p9 (браузер) — номер із жеребкування
-  var wantM = /(?:tgWebAppStartParam=|#)p(\d+)(?:&|$)/.exec(location.hash + '&' + location.search.replace(/^\?/, ''));
-  state.wantPlayer = wantM ? +wantM[1] : null;
-  function openWantedPlayer() {
-    if (!state.wantPlayer || !drawData()) return;
-    var dp = drawData().players.find(function (x) { return +x.n === state.wantPlayer; });
-    state.wantPlayer = null;
-    if (!dp || !hasCardData(dp.name)) return;
-    var s = standingsRows(), r = s && s.rows.find(function (x) { return normName(x.name) === normName(dp.name); });
-    selectOnly(r ? r.key : dp.name);
-    renderBoard();
-    goCard();
-  }
 
   // ---------- Start ----------
   var cached = store.get(LS.data, null);
