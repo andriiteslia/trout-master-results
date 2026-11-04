@@ -1453,6 +1453,67 @@
   });
   document.addEventListener('tm-tg-ready', function () { if (state.view !== 'list') tgBack(true); });
 
+  // ----- Telegram: свайп від лівого краю екрана — «Назад» (iOS і Android) -----
+  // Працює на реєстрації, картці й статистиці. Тягнемо палець від краю: з'являється стрілка,
+  // після ~72 px вона заповнюється — відпускаєш, і повертаємось на головну.
+  (function edgeSwipeBack() {
+    if (!IN_TG) return;
+    var EDGE = 28, GO = 72, MAX = 96;
+    var ind = null, sx = 0, sy = 0, dx = 0, on = false, decided = false, armed = false;
+    function indicator() {
+      if (ind) return ind;
+      ind = document.createElement('div');
+      ind.className = 'swipe-back';
+      ind.setAttribute('aria-hidden', 'true');
+      ind.innerHTML = '<svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>';
+      document.body.appendChild(ind);
+      return ind;
+    }
+    function paint(x, y) {
+      var i = indicator(), k = Math.min(x, MAX) / MAX;
+      i.classList.add('is-dragging');
+      i.style.top = y + 'px';
+      i.style.transform = 'translate(' + (Math.min(x, MAX) * 0.6 - 44) + 'px, -50%) scale(' + (0.6 + 0.4 * k) + ')';
+      i.style.opacity = String(Math.min(1, k * 1.6));
+      var nowArmed = x >= GO;
+      if (nowArmed !== armed) {
+        armed = nowArmed;
+        i.classList.toggle('is-armed', armed);
+        if (armed) try { window.Telegram.WebApp.HapticFeedback.selectionChanged(); } catch (e) { /* */ }
+      }
+    }
+    function reset() {
+      on = decided = armed = false; dx = 0;
+      if (ind) { ind.classList.remove('is-armed', 'is-dragging'); ind.style.opacity = '0'; ind.style.transform = 'translate(-44px, -50%) scale(0.6)'; }
+    }
+    document.addEventListener('touchstart', function (e) {
+      if (state.view === 'list' || e.touches.length !== 1) return;
+      var t = e.touches[0];
+      if (t.clientX > EDGE) return;
+      on = true; decided = false; sx = t.clientX; sy = t.clientY; dx = 0;
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
+      if (!on) return;
+      var t = e.touches[0], mx = t.clientX - sx, my = t.clientY - sy;
+      if (!decided) {
+        if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
+        decided = true;
+        if (mx <= 0 || Math.abs(my) > Math.abs(mx)) { on = false; return; }   // вертикальний скрол — не наш жест
+      }
+      dx = Math.max(0, mx);
+      if (e.cancelable) e.preventDefault();
+      paint(dx, t.clientY);
+    }, { passive: false });
+    function end() {
+      if (!on) return;
+      var go = decided && dx >= GO;
+      reset();
+      if (go) goList();
+    }
+    document.addEventListener('touchend', end, { passive: true });
+    document.addEventListener('touchcancel', function () { reset(); }, { passive: true });
+  })();
+
   // ----- Telegram: автоматично виділити свій рядок -----
   // Скрипт таблиці за підписаними даними Telegram знаходить ім'я людини (колонка G → B).
   // Виділяємо кожне ім'я лише один раз: якщо людина зняла виділення, воно не повертається.

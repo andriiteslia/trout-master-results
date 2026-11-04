@@ -1618,3 +1618,23 @@ html, body { background: var(--nav); }
   .tg-back .ts-hero .pc-hero__bar { display: none; }
   .tg-back .pc-hero__acts { margin-left: auto; }
 }
+
+/* Реєстрація на телефоні: картку «Зареєстровано N з M · До закриття» не показуємо (лічильник і таймер є в шапці) */
+@media (max-width: 979px) { #regSeats { display: none !important; } }
+
+/* Telegram: стрілка жесту «свайп від краю — назад» */
+.swipe-back {
+  position: fixed; left: 0; top: 50%; z-index: 100;
+  width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: rgba(10, 10, 10, 0.72); color: #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  opacity: 0; transform: translate(-44px, -50%) scale(0.6);
+  pointer-events: none;
+  transition: background-color 0.15s ease;
+}
+.swipe-back.is-armed { background: #0a0a0a; }
+.swipe-back svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+@media (prefers-reduced-motion: no-preference) {
+  .swipe-back:not(.is-dragging) { transition: background-color 0.15s ease, opacity 0.2s ease, transform 0.2s ease; }
+}
