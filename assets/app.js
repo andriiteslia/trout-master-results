@@ -2227,7 +2227,7 @@
         c.lineWidth = 2; c.strokeStyle = 'rgba(255,255,255,0.08)'; c.stroke();
         c.textAlign = 'left';
         c.fillStyle = '#98a2b3'; c.font = '600 34px Fixel, system-ui, sans-serif'; c.fillText(t[0], x + 40, y + 60);
-        c.fillStyle = '#ffffff'; fitText(c, t[1], tw - 80, 80, 800); c.fillText(t[1], x + 40, y + 142);
+        c.fillStyle = '#ffffff'; fitText(c, t[1], tw - 80, 66, 800); c.fillText(t[1], x + 40, y + 136);
         if (t[2]) { c.fillStyle = '#8a93a3'; fitText(c, t[2], tw - 80, 30, 500); c.fillText(t[2], x + 40, y + 184); }
         c.textAlign = 'center';
       });
