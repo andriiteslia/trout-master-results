@@ -774,11 +774,13 @@
     var I_BACK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
     var I_NEXT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
     var I_SHARE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>';
+    var I_STORY = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M12 7v6M9 10l3-3 3 3"/></svg>';
     h += '<header class="pc-hero"><div class="pc-hero__bar">' +
       '<button type="button" class="hero-back pc-back" data-act="back">' + I_BACK + '<span class="l-m">Назад</span><span class="l-d">До підсумку</span></button>' +
       '<span class="pc-hero__acts">' +
         (nav.prev ? '<button type="button" class="pc-ibtn d-only" data-act="prev" aria-label="Попередній учасник: ' + esc(nav.prev.name) + '">' + I_BACK + '</button>' : '') +
         (nav.next ? '<button type="button" class="pc-ibtn d-only" data-act="next" aria-label="Наступний учасник: ' + esc(nav.next.name) + '">' + I_NEXT + '</button>' : '') +
+        (started ? '<button type="button" class="pc-sharestory d-only" data-act="story">' + I_STORY + '<span>Поділитися результатом</span></button>' : '') +
         '<button type="button" class="pc-share d-only" data-act="share" aria-label="Поділитися карткою">' + I_SHARE + '<span>Поділитися карткою</span></button>' +
       '</span></div>' +
       '<div class="pc-hero__main">' +
@@ -812,9 +814,9 @@
         '<div class="pk"><span class="pk__l">Перемоги</span><span class="pk__v pk__v--sm">' + Math.round(st.winRate * 100) + '%</span>' +
           '<span class="pk__s">' + (st.streak ? '<span class="l-m">серія — ' + st.streak + ' ' + plural(st.streak, 'тур', 'тури', 'турів') + '</span><span class="l-d">найдовша серія — ' + st.streak + ' ' + plural(st.streak, 'тур', 'тури', 'турів') + ' поспіль</span>' : st.cnt.w + ' з ' + st.played) + '</span></div>' +
         '</div>' +
-        '<button type="button" class="pc-story" data-act="story">' +
-          '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M12 7v6M9 10l3-3 3 3"/></svg>' +
-          '<span>Поділитися результатом</span><small>картинка для сторіс</small></button>';
+        // Телефон: кнопка внизу екрана, як «Зареєструватися»
+        '<div class="pc-storybar m-only"><button type="button" class="btn pc-storybtn" data-act="story">' + I_STORY +
+          '<span class="btn__text">Поділитися результатом</span></button></div>';
     } else {
       h += '<p class="info pc-note">Турнір ще не почався. Тут уже видно жеребкування, а статистика з’явиться після перших турів.</p>';
     }

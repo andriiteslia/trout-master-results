@@ -1827,3 +1827,32 @@ input, textarea, select { caret-color: var(--nav); }
 @media (min-width: 980px) { .pc-story { margin: 0 0 24px; } }
 /* Градієнт під прозорою рамкою: малюємо від краю рамки, інакше на боках видно «шов» повторення градієнта */
 #cardOpen, #selCard, .pc-story, .story__share { background-origin: border-box; background-repeat: no-repeat; }
+
+/* «Поділитися результатом»: на комп'ютері — у шапці картки поруч із «Поділитися карткою» */
+.pc-sharestory {
+  display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 999px;
+  border: 0; cursor: pointer; font: inherit; font-size: 15px; font-weight: 650; color: #fff;
+  background: linear-gradient(135deg, #4a9112 0%, #2b660a 100%);
+  box-shadow: 0 6px 16px rgba(43, 102, 10, 0.25);
+}
+.pc-sharestory svg, .pc-storybtn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+@media (hover: hover) { .pc-sharestory:hover { background: linear-gradient(135deg, #52a014 0%, #30720b 100%); } }
+.pc-sharestory:active { background: linear-gradient(135deg, #3f7d0f 0%, #245708 100%); }
+/* …а на телефоні — закріплена внизу, як «Зареєструватися» */
+.pc-storybar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; justify-content: center;
+  padding: 24px max(16px, env(safe-area-inset-right)) calc(24px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px))) max(16px, env(safe-area-inset-left));
+  background: linear-gradient(to top, var(--page) 55%, rgba(243, 244, 246, 0));
+  pointer-events: none;
+}
+.pc-storybtn {
+  display: flex; width: 100%; max-width: 420px; pointer-events: auto; gap: 8px;
+  color: #fff; border-color: transparent;
+  background: linear-gradient(135deg, #4a9112 0%, #2b660a 100%); background-origin: border-box; background-repeat: no-repeat;
+  box-shadow: 0 8px 20px rgba(43, 102, 10, 0.30);
+}
+.pc-storybtn:not(:disabled):active { background: linear-gradient(135deg, #3f7d0f 0%, #245708 100%); }
+@media (max-width: 979px) {
+  .pcard:has(.pc-storybar) .pc-sheet { padding-bottom: calc(112px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px))); }
+}
+@media (min-width: 980px) { .pc-storybar { display: none !important; } }
