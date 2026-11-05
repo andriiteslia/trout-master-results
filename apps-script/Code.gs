@@ -1006,12 +1006,13 @@ function removeTelegramWebhook() {
 // ---------------------------------------------------------------------------
 
 var BC_TITLE = 'Розсилка в Telegram';
-var BC_TO_ALL = 'Усім, хто дозволив';
-var BC_TO_REG = 'Лише зареєстрованим';
+var BC_TO_REG = 'Учасникам турніру';
+var BC_TO_ALL = 'Усім, хто відкривав апку';
 var BC_IDLE = '—';
 var BC_TEST = 'Надіслати тест собі';
-var BC_SEND = 'Надіслати всім';
+var BC_SEND = 'Надіслати';
 var BC_BUTTON = 'Відкрити TM APP';
+var BC_BUTTON_ME = 'Моя картка в TM APP';
 // Рядки блоку відносно заголовка
 var BC_TEXT = 1, BC_TO = 2, BC_TESTID = 3, BC_ACTION = 4, BC_STATUS = 5, BC_HELP = 6;
 
@@ -1033,53 +1034,201 @@ function setupBroadcast_(sh) {
     .setFontWeight('bold');
   var text = sh.getRange(r + BC_TEXT, 2);
   text.setWrap(true).setVerticalAlignment('top').setBackground('#fffbe8');
-  sh.setRowHeight(r + BC_TEXT, 90);
+  sh.setRowHeight(r + BC_TEXT, 110);
 
   var to = sh.getRange(r + BC_TO, 2);
-  to.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList([BC_TO_ALL, BC_TO_REG], true).setAllowInvalid(false).build())
+  var toNow = String(to.getDisplayValue()).trim();
+  to.clearDataValidations();
+  to.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList([BC_TO_REG, BC_TO_ALL], true).setAllowInvalid(false).build())
     .setFontWeight('bold').setBackground('#e3f0fa');
-  if (!to.getDisplayValue()) to.setValue(BC_TO_ALL);
+  if (toNow !== BC_TO_REG && toNow !== BC_TO_ALL) to.setValue(BC_TO_REG);
 
-  var tid = sh.getRange(r + BC_TESTID, 2);
-  tid.setNumberFormat('@').setBackground('#e3f0fa').setHorizontalAlignment('left');
+  sh.getRange(r + BC_TESTID, 2).setNumberFormat('@').setBackground('#e3f0fa').setHorizontalAlignment('left');
 
   var act = sh.getRange(r + BC_ACTION, 2);
+  act.clearDataValidations();
+  act.setValue(BC_IDLE);
   act.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList([BC_IDLE, BC_TEST, BC_SEND], true).setAllowInvalid(false).build())
     .setFontWeight('bold').setBackground('#fde7e7');
-  act.setValue(BC_IDLE);
 
   var help = sh.getRange(r + BC_HELP, 1, 1, 2);
   help.merge().setWrap(true).setFontColor('#475467').setVerticalAlignment('top');
-  help.setValue('Бот пише лише тим, у кого в аркуші «Відвідування» стоїть «Можна писати: так» (натиснули Start у боті або дозволили повідомлення в застосунку). ' +
-    '\nТекст — як у звичайному повідомленні, новий рядок: Ctrl+Enter (на Mac — ⌘+Enter). Під повідомленням буде кнопка «' + BC_BUTTON + '». ' +
-    '\n«' + BC_TEST + '» — надіслати лише на ID із рядка вище, щоб перевірити, як виглядає. «' + BC_SEND + '» — надіслати по-справжньому (скасувати не можна). ' +
-    '\nПісля розсилки «Дія» сама повертається в «—», а в «Остання розсилка» видно, скільком дійшло.');
+  help.setValue('«' + BC_TO_REG + '» — основний склад з аркуша «Учасники» (стільки, скільки вказано в «Кількість місць»; резерв не отримує). ' +
+    '«' + BC_TO_ALL + '» — усі з аркуша «Відвідування». Бот може написати лише тим, хто колись натиснув Start у боті або дозволив повідомлення: кому не дійшло, тому в «Відвідуванні» стане «Можна писати: ні». ' +
+    '\nУ тексті можна писати мітки — кожен отримає свої дані: {ім\'я} (у кличному відмінку: Андрію, Олександре), {прізвище}, {номер}, {місце} (напр. 5-те), {бали}, {риби}. ' +
+    '{місце}, {бали} і {риби} беруться з опублікованих результатів — спершу опублікуйте їх у B3. Кому мітку нема чим заповнити, той повідомлення не отримує. ' +
+    '\nУ персональному повідомленні кнопка «' + BC_BUTTON_ME + '» відкриває апку з виділеним рядком учасника; в інших — «' + BC_BUTTON + '». Новий рядок у тексті: Ctrl+Enter (⌘+Enter). ' +
+    '\n«' + BC_TEST + '» — те саме повідомлення лише на ID вище (з вашими даними). «' + BC_SEND + '» — по-справжньому, скасувати не можна. Після надсилання «Дія» повертається в «—».');
   bcStatus_(sh, r, recipientsInfo_(sh.getParent(), sh, r));
 }
 
 function bcStatus_(sh, r, text) { sh.getRange(r + BC_STATUS, 2).setValue(text); }
 
-/** Хто отримає розсилку: [{id, row}] з «Відвідування». */
-function bcRecipients_(ss, toReg) {
+// ----- Хто є хто -----
+
+/** Основний склад з «Учасників»: [{num, name, id}] (перші «Кількість місць» рядків з іменем). */
+function mainSquad_(ss) {
+  var reg = ss.getSheetByName(REG_SHEET);
+  if (!reg || reg.getLastRow() < 2) return [];
+  var rows = reg.getRange(2, 1, reg.getLastRow() - 1, REG_COL_TG_ID).getDisplayValues();
+  var site = ss.getSheetByName(SYNC_SHEET);
+  var seats = site ? parseInt(String(site.getRange(CELL_SEATS).getDisplayValue()).replace(/\s/g, ''), 10) : 0;
+  var out = [];
+  rows.forEach(function (x) {
+    var name = String(x[REG_COL_NAME - 1]).replace(/\s+/g, ' ').trim();
+    if (!name) return;
+    out.push({ num: String(x[REG_COL_NUM - 1]).trim(), name: name, id: String(x[REG_COL_TG_ID - 1]).replace(/\s/g, '') });
+  });
+  return seats > 0 ? out.slice(0, seats) : out;
+}
+
+/** «Відвідування»: [{id, row, regNames: []}] */
+function visitors_(ss) {
   var vs = ss.getSheetByName(VISITS_SHEET);
   if (!vs || vs.getLastRow() < 2) return [];
-  var rows = vs.getRange(2, 1, vs.getLastRow() - 1, VISITS_HEAD.length).getDisplayValues();
-  var seen = {}, out = [];
-  rows.forEach(function (x, i) {
-    var id = String(x[0]).trim();
-    if (!/^\d{3,15}$/.test(id) || seen[id]) return;
-    if (String(x[VISITS_COL_WRITE - 1]).trim().toLowerCase() !== 'так') return;
-    if (toReg && !String(x[3]).trim()) return;
-    seen[id] = 1;
-    out.push({ id: id, row: i + 2 });
-  });
+  return vs.getRange(2, 1, vs.getLastRow() - 1, VISITS_HEAD.length).getDisplayValues().map(function (x, i) {
+    return {
+      id: String(x[0]).replace(/\s/g, ''), row: i + 2,
+      regNames: String(x[3]).split(',').map(function (n) { return n.replace(/\s+/g, ' ').trim().toLowerCase(); }).filter(Boolean)
+    };
+  }).filter(function (v) { return /^\d{3,15}$/.test(v.id); });
+}
+
+/** Кому надсилати: [{id, person|null, visitRow}] — один запис на Telegram ID. */
+function bcRecipients_(ss, toReg) {
+  var vis = visitors_(ss), byId = {}, out = [], seen = {};
+  vis.forEach(function (v) { if (!byId[v.id]) byId[v.id] = v; });
+  var squad = mainSquad_(ss);
+  var idOf = function (p) {
+    if (/^\d{3,15}$/.test(p.id)) return p.id;
+    var key = p.name.toLowerCase();
+    var v = vis.find(function (x) { return x.regNames.indexOf(key) !== -1; });
+    return v ? v.id : '';
+  };
+  var personById = {};
+  squad.forEach(function (p) { var id = idOf(p); if (id && !personById[id]) personById[id] = p; });
+  if (toReg) {
+    squad.forEach(function (p) {
+      var id = idOf(p);
+      if (!id || seen[id]) return;
+      seen[id] = 1;
+      out.push({ id: id, person: personById[id], visitRow: byId[id] ? byId[id].row : 0 });
+    });
+  } else {
+    vis.forEach(function (v) {
+      if (seen[v.id]) return;
+      seen[v.id] = 1;
+      out.push({ id: v.id, person: personById[v.id] || null, visitRow: v.row });
+    });
+    // учасники з ID, яких чомусь немає у «Відвідуванні»
+    squad.forEach(function (p) {
+      var id = idOf(p);
+      if (!id || seen[id]) return;
+      seen[id] = 1;
+      out.push({ id: id, person: p, visitRow: 0 });
+    });
+  }
   return out;
 }
 
 function recipientsInfo_(ss, sh, r) {
   var toReg = String(sh.getRange(r + BC_TO, 2).getDisplayValue()).trim() === BC_TO_REG;
-  var n = bcRecipients_(ss, toReg).length;
-  return 'Готово до розсилки: ' + n + ' ' + plural_(n, 'отримувач', 'отримувачі', 'отримувачів') + ' (' + (toReg ? 'зареєстровані' : 'усі, хто дозволив') + ')';
+  var list = bcRecipients_(ss, toReg);
+  var n = list.length;
+  var info = 'Готово до розсилки: ' + n + ' ' + plural_(n, 'отримувач', 'отримувачі', 'отримувачів');
+  if (toReg) {
+    var squad = mainSquad_(ss).length, noId = squad - n;
+    info += ' з ' + squad + ' учасників основного складу' + (noId > 0 ? ' (ще ' + noId + ' без Telegram)' : '');
+  } else info += ' (усі, хто відкривав апку)';
+  return info;
+}
+
+// ----- Підстановки {ім'я}, {місце}… -----
+
+/** Результати з опублікованого знімка: { 'прізвище ім'я' (малими): {place, pts, fish} }, або null. */
+function publishedResults_() {
+  var json = getSnapshot_();
+  if (!json) return null;
+  var snap; try { snap = JSON.parse(json); } catch (e) { return null; }
+  var sheet = (snap.sheets || []).find(function (x) { return /результат/i.test(x.name || ''); });
+  if (!sheet || !sheet.values || !sheet.values.length) return null;
+  var hr = Number(sheet.headerRows) || 1, vals = sheet.values, w = 0;
+  vals.forEach(function (row) { w = Math.max(w, row.length); });
+  var labels = [];
+  for (var c = 0; c < w; c++) {
+    var l = '';
+    for (var h = 0; h < hr && h < vals.length; h++) if (String(vals[h][c] || '').trim()) l = String(vals[h][c]).trim();
+    labels.push(l.toLowerCase());
+  }
+  var find = function (re) { for (var i = 0; i < labels.length; i++) if (re.test(labels[i])) return i; return -1; };
+  var cName = find(/учасник|прізвище|піб/), cPlace = find(/^(#|№|місце)$/), cPts = find(/^бали/), cFish = find(/^риб/);
+  if (cName < 0) return null;
+  var out = {}, anyPts = false;
+  vals.slice(hr).forEach(function (row) {
+    var name = String(row[cName] || '').replace(/\s+/g, ' ').trim();
+    if (!name) return;
+    var pts = cPts >= 0 ? Number(String(row[cPts]).replace(',', '.')) : NaN;
+    if (pts > 0) anyPts = true;
+    out[name.toLowerCase()] = {
+      place: cPlace >= 0 ? parseInt(row[cPlace], 10) : NaN,
+      pts: isNaN(pts) ? '' : String(row[cPts]).trim(),
+      fish: cFish >= 0 ? String(row[cFish]).trim() : ''
+    };
+  });
+  // Турнір ще не почався (у всіх 0 балів) — місць ще немає
+  if (!anyPts) Object.keys(out).forEach(function (k) { out[k].place = NaN; });
+  return out;
+}
+
+/** Порядковий: 1-ше, 2-ге, 3-тє, 5-те, 7-ме… */
+function ordinal_(n) {
+  var t = n % 100, d = n % 10, end;
+  if (t >= 11 && t <= 19) end = 'те';
+  else end = { 1: 'ше', 2: 'ге', 3: 'тє', 7: 'ме', 8: 'ме' }[d] || (d === 0 && n % 100 === 40 ? 'ве' : 'те');
+  return n + '-' + end;
+}
+
+/** Кличний відмінок імені: Андрій → Андрію, Олександр → Олександре, Дмитро → Дмитре, Олена → Олено. */
+function vocative_(name) {
+  var n = String(name || '').trim();
+  if (!n) return n;
+  var exc = { 'Ігор': 'Ігоре', 'Лев': 'Леве', 'Петро': 'Петре', 'Ілля': 'Іллє', 'Марія': 'Маріє', 'Наталія': 'Наталіє', 'Ольга': 'Ольго',
+    'Любов': 'Любове', 'Яків': 'Якове', 'Федір': 'Федоре', 'Никифір': 'Никифоре', 'Антоній': 'Антонію' };
+  if (/[кгх]$/.test(n)) return n + 'у';                         // Марк → Марку, Олег → Олегу
+  if (exc[n]) return exc[n];
+  if (/[ії]й$/.test(n)) return n.slice(0, -1) + 'ю';         // Андрій, Віталій, Сергій, Олексій
+  if (/ій$/.test(n)) return n.slice(0, -1) + 'ю';
+  if (/й$/.test(n)) return n.slice(0, -1) + 'ю';               // Валентин(ий)…
+  if (/ія$/.test(n)) return n.slice(0, -1) + 'є';              // Юлія → Юліє
+  if (/я$/.test(n)) return n.slice(0, -1) + 'ю';               // Таня → Таню
+  if (/а$/.test(n)) return n.slice(0, -1) + 'о';               // Микита → Микито
+  if (/о$/.test(n)) return n.slice(0, -1) + 'е';               // Дмитро → Дмитре
+  if (/ь$/.test(n)) return n.slice(0, -1) + 'ю';               // Олесь → Олесю, Василь → Василю
+  if (/[бвгґджзклмнпрстфхцчшщ]$/i.test(n)) return n + 'е';     // Іван → Іване, Олександр → Олександре
+  return n;
+}
+
+var BC_TAGS = /\{\s*(ім['’ʼ`]?я|прізвище|номер|місце|бали|риби)\s*\}/gi;
+
+/** Підставляє дані людини в текст. Повертає null, якщо якусь мітку нема чим заповнити. */
+function personalize_(text, person, results) {
+  var missing = false;
+  var out = text.replace(BC_TAGS, function (m, tag) {
+    tag = tag.toLowerCase().replace(/['’ʼ`]/g, '');
+    if (!person) { missing = true; return m; }
+    var parts = person.name.split(' ');
+    var res = results ? results[person.name.toLowerCase()] : null;
+    var v = '';
+    if (tag === 'імя') v = vocative_(parts[1] || parts[0]);
+    else if (tag === 'прізвище') v = parts[0];
+    else if (tag === 'номер') v = person.num;
+    else if (tag === 'місце') v = res && res.place > 0 ? ordinal_(res.place) : '';
+    else if (tag === 'бали') v = res ? res.pts : '';
+    else if (tag === 'риби') v = res ? res.fish : '';
+    if (v === '' || v == null) missing = true;
+    return v;
+  });
+  return missing ? null : out;
 }
 
 function plural_(n, one, few, many) {
@@ -1099,7 +1248,7 @@ function handleBroadcastEdit_(e, sh) {
   if (row < r + BC_TEXT || row > r + BC_STATUS) return false;
   var ss = e.source || sh.getParent();
   if (row !== r + BC_ACTION) {
-    if (row !== r + BC_STATUS) bcStatus_(sh, r, recipientsInfo_(ss, sh, r));   // змінили текст / «Кому» / ID — оновлюємо підрахунок
+    if (row === r + BC_TO) bcStatus_(sh, r, recipientsInfo_(ss, sh, r));   // змінили «Кому» — оновлюємо підрахунок
     return true;
   }
   var v = String(e.value == null ? '' : e.value).trim();
@@ -1121,38 +1270,57 @@ function broadcast_(ss, sh, r, test) {
     var text = String(sh.getRange(r + BC_TEXT, 2).getValue() || '').replace(/\r\n?/g, '\n').trim();
     if (!text) { bcStatus_(sh, r, '⚠️ Немає тексту повідомлення'); return; }
     if (text.length > 4000) { bcStatus_(sh, r, '⚠️ Задовгий текст: ' + text.length + ' символів (максимум 4000)'); return; }
+    var hasTags = new RegExp(BC_TAGS.source, 'i').test(text);
+    var results = hasTags ? publishedResults_() : null;
+    var toReg = String(sh.getRange(r + BC_TO, 2).getDisplayValue()).trim() === BC_TO_REG;
+
     var list;
     if (test) {
       var tid = String(sh.getRange(r + BC_TESTID, 2).getDisplayValue()).replace(/\s/g, '');
       if (!/^\d{3,15}$/.test(tid)) { bcStatus_(sh, r, '⚠️ Вкажіть свій Telegram ID у рядку «Тест — мій Telegram ID» (є в аркуші «Відвідування», колонка A)'); return; }
-      list = [{ id: tid, row: 0 }];
+      // Тест — з даними самого тестувальника; якщо його немає серед учасників — з даними першого учасника
+      var mine = bcRecipients_(ss, true).find(function (x) { return x.id === tid; });
+      var person = mine ? mine.person : (hasTags ? (mainSquad_(ss)[0] || null) : null);
+      list = [{ id: tid, person: person, visitRow: 0 }];
     } else {
-      var toReg = String(sh.getRange(r + BC_TO, 2).getDisplayValue()).trim() === BC_TO_REG;
       list = bcRecipients_(ss, toReg);
-      if (!list.length) { bcStatus_(sh, r, '⚠️ Немає кому надсилати: ні в кого немає «Можна писати: так»'); return; }
+      if (!list.length) { bcStatus_(sh, r, '⚠️ Немає кому надсилати'); return; }
     }
+
     bcStatus_(sh, r, '⏳ Надсилаю… 0 з ' + list.length);
     SpreadsheetApp.flush();
-    var markup = { inline_keyboard: [[{ text: BC_BUTTON, web_app: { url: SETTINGS.SITE_URL } }]] };
-    var sent = 0, blocked = 0, failed = 0, vs = ss.getSheetByName(VISITS_SHEET);
+    var sent = 0, blocked = 0, failed = 0, skipped = 0, vs = ss.getSheetByName(VISITS_SHEET);
     for (var i = 0; i < list.length; i++) {
-      var res = tgApi_('sendMessage', { chat_id: list[i].id, text: text, reply_markup: markup, disable_web_page_preview: true });
+      var x = list[i];
+      var body = hasTags ? personalize_(text, x.person, results) : text;
+      if (body == null) { skipped++; continue; }
+      var url = SETTINGS.SITE_URL + (x.person && x.person.num ? '?sel=' + encodeURIComponent(x.person.num) : '');
+      var markup = { inline_keyboard: [[{ text: x.person && hasTags ? BC_BUTTON_ME : BC_BUTTON, web_app: { url: x.person && hasTags ? url : SETTINGS.SITE_URL } }]] };
+      var payload = { chat_id: x.id, text: body, reply_markup: markup, disable_web_page_preview: true };
+      var res = tgApi_('sendMessage', payload);
       if (res && !res.ok && res.error_code === 429) {   // Telegram просить зачекати
         Utilities.sleep(((res.parameters && res.parameters.retry_after) || 1) * 1000 + 200);
-        res = tgApi_('sendMessage', { chat_id: list[i].id, text: text, reply_markup: markup, disable_web_page_preview: true });
+        res = tgApi_('sendMessage', payload);
       }
-      if (res && res.ok) sent++;
-      else if (res && res.error_code === 403) {   // заблокував бота або видалив чат
+      if (res && res.ok) {
+        sent++;
+        if (vs && x.visitRow && !test) vs.getRange(x.visitRow, VISITS_COL_WRITE).setValue('так');
+      } else if (res && (res.error_code === 403 || res.error_code === 400)) {   // не дозволив боту писати / заблокував
         blocked++;
-        if (vs && list[i].row) vs.getRange(list[i].row, VISITS_COL_WRITE).setValue('ні');
+        if (vs && x.visitRow && !test) vs.getRange(x.visitRow, VISITS_COL_WRITE).setValue('ні');
       } else failed++;
       if (i % 10 === 9) { bcStatus_(sh, r, '⏳ Надсилаю… ' + (i + 1) + ' з ' + list.length); SpreadsheetApp.flush(); }
       Utilities.sleep(60);   // ~15 повідомлень за секунду — з запасом до ліміту Telegram
     }
-    var msg = (test ? '🧪 ' : '✅ ') + now() + ' · ' + (test ? (sent ? 'тест надіслано собі' : 'тест не дійшов — перевірте ID і чи натиснули ви Start у боті') :
-      'надіслано ' + sent + ' з ' + list.length) +
-      (blocked ? ' · ' + blocked + ' ' + plural_(blocked, 'заблокував', 'заблокували', 'заблокували') + ' бота' : '') +
-      (failed ? ' · ' + failed + ' не вдалося' : '');
+    var total = list.length;
+    var msg = test
+      ? '🧪 ' + now() + ' · ' + (sent ? 'тест надіслано собі' + (list[0].person && hasTags ? ' (з даними: ' + list[0].person.name + ')' : '')
+          : skipped ? 'тест не надіслано: для «' + (list[0].person ? list[0].person.name : 'вас') + '» немає даних для міток (місце/бали — спершу опублікуйте результати)'
+          : 'тест не дійшов — перевірте ID і чи натиснули ви Start у боті')
+      : '✅ ' + now() + ' · ' + (toReg ? 'учасникам' : 'усім, хто відкривав') + ': надіслано ' + sent + ' з ' + total +
+        (blocked ? ' · ' + blocked + ' не дозволили боту писати' : '') +
+        (skipped ? ' · ' + skipped + ' без даних для міток' : '') +
+        (failed ? ' · ' + failed + ' помилка' : '');
     bcStatus_(sh, r, msg);
   } catch (err) {
     console.error(err);
