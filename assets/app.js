@@ -2137,7 +2137,7 @@
     };
   }
   // ----- Картинка-сторіс з результатом учасника (1080×1920) -----
-  // Важливе — в «безпечній зоні» сторіс Instagram/Telegram: зверху ~180 px і знизу ~140 px перекриває інтерфейс
+  // Важливе — в «безпечній зоні» сторіс Instagram/Telegram: зверху ~200 px перекриває інтерфейс, знизу ~260 px — поле відповіді
   function loadImg(src) {
     return new Promise(function (res) {
       if (!src) return res(null);
@@ -2179,13 +2179,13 @@
       if (fish) { c.globalAlpha = 0.07; var fw = 1300, fh = fw * fish.height / fish.width; c.drawImage(fish, W - fw * 0.78, H - fh - 120, fw, fh); c.globalAlpha = 1; }
       c.textAlign = 'center'; c.textBaseline = 'alphabetic';
       // лого і турнір
-      if (logo) { var lw = 440, lh = lw * 292 / 1020; c.drawImage(logo, (W - lw) / 2, 190, lw, lh); }
-      c.fillStyle = '#d0d5dd'; fitText(c, ev.title || 'TROUT MASTER', 900, 42, 650); c.fillText(ev.title || 'TROUT MASTER', W / 2, 400);
-      if (ev.subtitle) { c.fillStyle = '#8a93a3'; fitText(c, ev.subtitle, 900, 32, 500); c.fillText(ev.subtitle, W / 2, 448); }
+      if (logo) { var lw = 440, lh = lw * 292 / 1020; c.drawImage(logo, (W - lw) / 2, 210, lw, lh); }
+      c.fillStyle = '#d0d5dd'; fitText(c, ev.title || 'TROUT MASTER', 900, 42, 650); c.fillText(ev.title || 'TROUT MASTER', W / 2, 404);
+      if (ev.subtitle) { c.fillStyle = '#8a93a3'; fitText(c, ev.subtitle, 900, 32, 500); c.fillText(ev.subtitle, W / 2, 450); }
       // фото / ініціали з обідком кольору місця
       var place = st.played > 0 ? st.place : null;
       var ring = place === 1 ? '#e8b931' : place === 2 ? '#c0c7d2' : place === 3 ? '#d08a52' : '#76b11d';
-      var cx = W / 2, cy = 720, R = 170;
+      var cx = W / 2, cy = 692, R = 158;
       c.beginPath(); c.arc(cx, cy, R + 14, 0, Math.PI * 2); c.fillStyle = ring; c.fill();
       c.beginPath(); c.arc(cx, cy, R + 4, 0, Math.PI * 2); c.fillStyle = '#0a0a0a'; c.fill();
       c.save(); c.beginPath(); c.arc(cx, cy, R, 0, Math.PI * 2); c.clip();
@@ -2193,7 +2193,7 @@
       else { c.fillStyle = '#1c1f24'; c.fillRect(cx - R, cy - R, R * 2, R * 2); c.fillStyle = '#e4e7ec'; c.font = '800 130px Fixel, system-ui, sans-serif'; c.textBaseline = 'middle'; c.fillText(initials(st.name), cx, cy + 6); c.textBaseline = 'alphabetic'; }
       c.restore();
       if (place) {
-        var bx = cx + R * 0.72, by = cy + R * 0.72, br = 58;
+        var bx = cx + R * 0.72, by = cy + R * 0.72, br = 54;
         var medal = { 1: ['#fbefc6', '#6b4d00'], 2: ['#e9edf2', '#344054'], 3: ['#f6e3d2', '#7a3f12'] }[place] || ['#1f3d0a', '#ffffff'];
         c.beginPath(); c.arc(bx, by, br + 8, 0, Math.PI * 2); c.fillStyle = '#0a0a0a'; c.fill();
         c.beginPath(); c.arc(bx, by, br, 0, Math.PI * 2); c.fillStyle = medal[0]; c.fill();
@@ -2201,15 +2201,15 @@
         c.fillStyle = medal[1]; c.font = '800 ' + (place > 9 ? 56 : 68) + 'px Fixel, system-ui, sans-serif'; c.textBaseline = 'middle'; c.fillText(String(place), bx, by + 4); c.textBaseline = 'alphabetic';
       }
       // ім'я
-      c.fillStyle = '#ffffff'; fitText(c, st.name, 960, 96, 800); c.fillText(st.name, W / 2, 1012);
+      c.fillStyle = '#ffffff'; fitText(c, st.name, 960, 96, 800); c.fillText(st.name, W / 2, 960);
       // «1 місце з 28»
       if (place) {
         var pt = place + ' місце' + (total ? ' з ' + total : '');
         c.font = '700 44px Fixel, system-ui, sans-serif';
         var pw = c.measureText(pt).width + 72;
-        rrect(c, (W - pw) / 2, 1046, pw, 76, 38);
+        rrect(c, (W - pw) / 2, 992, pw, 74, 37);
         c.fillStyle = place <= 3 ? 'rgba(232,185,49,0.16)' : 'rgba(118,177,29,0.16)'; c.fill();
-        c.fillStyle = place <= 3 ? '#f2cf5b' : '#9bd83a'; c.fillText(pt, W / 2, 1099);
+        c.fillStyle = place <= 3 ? '#f2cf5b' : '#9bd83a'; c.fillText(pt, W / 2, 1044);
       }
       // плитки 2×2
       var tiles = [
@@ -2220,20 +2220,20 @@
           ? ['Проти суперників', st.vsOpp.mine + ' : ' + st.vsOpp.theirs, (st.vsOpp.mine - st.vsOpp.theirs > 0 ? '+' : '') + (st.vsOpp.mine - st.vsOpp.theirs) + ' ' + fishWord(Math.abs(st.vsOpp.mine - st.vsOpp.theirs))]
           : ['Найкращий тур', st.best ? st.best.fish + ' ' + fishWord(st.best.fish) : '—', st.best ? 'тур ' + st.best.n + (st.best.sector ? ', сектор ' + st.best.sector : '') : '']
       ];
-      var tw = 450, th = 222, gx = 26, x0 = (W - tw * 2 - gx) / 2, y0 = 1176;
+      var tw = 450, th = 208, gx = 22, x0 = (W - tw * 2 - gx) / 2, y0 = 1104;
       tiles.forEach(function (t, i) {
         var x = x0 + (i % 2) * (tw + gx), y = y0 + Math.floor(i / 2) * (th + gx);
         rrect(c, x, y, tw, th, 40); c.fillStyle = 'rgba(255,255,255,0.06)'; c.fill();
         c.lineWidth = 2; c.strokeStyle = 'rgba(255,255,255,0.08)'; c.stroke();
         c.textAlign = 'left';
-        c.fillStyle = '#98a2b3'; c.font = '600 34px Fixel, system-ui, sans-serif'; c.fillText(t[0], x + 40, y + 64);
-        c.fillStyle = '#ffffff'; fitText(c, t[1], tw - 80, 84, 800); c.fillText(t[1], x + 40, y + 152);
-        if (t[2]) { c.fillStyle = '#8a93a3'; fitText(c, t[2], tw - 80, 30, 500); c.fillText(t[2], x + 40, y + 198); }
+        c.fillStyle = '#98a2b3'; c.font = '600 34px Fixel, system-ui, sans-serif'; c.fillText(t[0], x + 40, y + 60);
+        c.fillStyle = '#ffffff'; fitText(c, t[1], tw - 80, 80, 800); c.fillText(t[1], x + 40, y + 142);
+        if (t[2]) { c.fillStyle = '#8a93a3'; fitText(c, t[2], tw - 80, 30, 500); c.fillText(t[2], x + 40, y + 184); }
         c.textAlign = 'center';
       });
       // низ
-      c.fillStyle = '#8a93a3'; c.font = '500 34px Fixel, system-ui, sans-serif'; c.fillText('Результати й статистика — у Telegram', W / 2, 1716);
-      c.fillStyle = '#9bd83a'; c.font = '800 46px Fixel, system-ui, sans-serif'; c.fillText('@troutmasterua_bot', W / 2, 1774);
+      c.fillStyle = '#8a93a3'; c.font = '500 34px Fixel, system-ui, sans-serif'; c.fillText('Результати й статистика — у Telegram', W / 2, 1600);
+      c.fillStyle = '#9bd83a'; c.font = '800 46px Fixel, system-ui, sans-serif'; c.fillText('@troutmasterua_bot', W / 2, 1654);
       return cv;
     });
   }
