@@ -304,6 +304,8 @@ function setupSync() {
     'Можна вказати з назвою аркуша, напр. Results!A1:AK. Без номера останнього рядка (A1:AK) береться все заповнене. Зміна діапазону одразу публікує дані.')
     .setFontColor('#475467');
 
+  setupBroadcast_(sh);
+
   // Одна активна таблиця: старі тригери прибираємо
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === 'handleSiteSync') ScriptApp.deleteTrigger(t);
@@ -327,6 +329,8 @@ function handleSiteSync(e) {
     return;
   }
   if (sh.getName() !== SYNC_SHEET) return;
+  // Блок «Розсилка в Telegram»
+  if (handleBroadcastEdit_(e, sh)) return;
   var a1 = e.range.getA1Notation();
   var v = String(e.value == null ? '' : e.value).trim();
   var isPublish = a1 === CELL_PUBLISH && (v === ACTION_PUBLISH || v.toUpperCase() === 'TRUE');
@@ -995,6 +999,167 @@ function setupTelegramWebhook() {
 function removeTelegramWebhook() {
   var res = tgApi_('deleteWebhook', {});
   Logger.log(res && res.ok ? 'Вебхук вимкнено.' : 'Не вдалося: ' + JSON.stringify(res));
+}
+
+// ---------------------------------------------------------------------------
+// Розсилка в Telegram (блок «Розсилка в Telegram» на аркуші «Сайт»)
+// ---------------------------------------------------------------------------
+
+var BC_TITLE = 'Розсилка в Telegram';
+var BC_TO_ALL = 'Усім, хто дозволив';
+var BC_TO_REG = 'Лише зареєстрованим';
+var BC_IDLE = '—';
+var BC_TEST = 'Надіслати тест собі';
+var BC_SEND = 'Надіслати всім';
+var BC_BUTTON = 'Відкрити TM APP';
+// Рядки блоку відносно заголовка
+var BC_TEXT = 1, BC_TO = 2, BC_TESTID = 3, BC_ACTION = 4, BC_STATUS = 5, BC_HELP = 6;
+
+/** Рядок заголовка «Розсилка в Telegram» на аркуші «Сайт» (0 — блоку немає). */
+function bcRow_(sh) {
+  var last = sh.getLastRow();
+  if (last < 1) return 0;
+  var col = sh.getRange(1, 1, last, 1).getDisplayValues();
+  for (var i = 0; i < col.length; i++) if (String(col[i][0]).trim() === BC_TITLE) return i + 1;
+  return 0;
+}
+
+/** Створює (або оновлює оформлення) блоку розсилки під діапазонами. */
+function setupBroadcast_(sh) {
+  var r = bcRow_(sh);
+  if (!r) r = Math.max(sh.getLastRow(), RANGE_ROW_FIRST + RANGE_KEYS.length) + 2;
+  sh.getRange(r, 1).setValue(BC_TITLE).setFontWeight('bold').setFontSize(12);
+  sh.getRange(r + BC_TEXT, 1, 5, 1).setValues([['Текст повідомлення'], ['Кому'], ['Тест — мій Telegram ID'], ['Дія'], ['Остання розсилка']])
+    .setFontWeight('bold');
+  var text = sh.getRange(r + BC_TEXT, 2);
+  text.setWrap(true).setVerticalAlignment('top').setBackground('#fffbe8');
+  sh.setRowHeight(r + BC_TEXT, 90);
+
+  var to = sh.getRange(r + BC_TO, 2);
+  to.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList([BC_TO_ALL, BC_TO_REG], true).setAllowInvalid(false).build())
+    .setFontWeight('bold').setBackground('#e3f0fa');
+  if (!to.getDisplayValue()) to.setValue(BC_TO_ALL);
+
+  var tid = sh.getRange(r + BC_TESTID, 2);
+  tid.setNumberFormat('@').setBackground('#e3f0fa').setHorizontalAlignment('left');
+
+  var act = sh.getRange(r + BC_ACTION, 2);
+  act.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList([BC_IDLE, BC_TEST, BC_SEND], true).setAllowInvalid(false).build())
+    .setFontWeight('bold').setBackground('#fde7e7');
+  act.setValue(BC_IDLE);
+
+  var help = sh.getRange(r + BC_HELP, 1, 1, 2);
+  help.merge().setWrap(true).setFontColor('#475467').setVerticalAlignment('top');
+  help.setValue('Бот пише лише тим, у кого в аркуші «Відвідування» стоїть «Можна писати: так» (натиснули Start у боті або дозволили повідомлення в застосунку). ' +
+    '\nТекст — як у звичайному повідомленні, новий рядок: Ctrl+Enter (на Mac — ⌘+Enter). Під повідомленням буде кнопка «' + BC_BUTTON + '». ' +
+    '\n«' + BC_TEST + '» — надіслати лише на ID із рядка вище, щоб перевірити, як виглядає. «' + BC_SEND + '» — надіслати по-справжньому (скасувати не можна). ' +
+    '\nПісля розсилки «Дія» сама повертається в «—», а в «Остання розсилка» видно, скільком дійшло.');
+  bcStatus_(sh, r, recipientsInfo_(sh.getParent(), sh, r));
+}
+
+function bcStatus_(sh, r, text) { sh.getRange(r + BC_STATUS, 2).setValue(text); }
+
+/** Хто отримає розсилку: [{id, row}] з «Відвідування». */
+function bcRecipients_(ss, toReg) {
+  var vs = ss.getSheetByName(VISITS_SHEET);
+  if (!vs || vs.getLastRow() < 2) return [];
+  var rows = vs.getRange(2, 1, vs.getLastRow() - 1, VISITS_HEAD.length).getDisplayValues();
+  var seen = {}, out = [];
+  rows.forEach(function (x, i) {
+    var id = String(x[0]).trim();
+    if (!/^\d{3,15}$/.test(id) || seen[id]) return;
+    if (String(x[VISITS_COL_WRITE - 1]).trim().toLowerCase() !== 'так') return;
+    if (toReg && !String(x[3]).trim()) return;
+    seen[id] = 1;
+    out.push({ id: id, row: i + 2 });
+  });
+  return out;
+}
+
+function recipientsInfo_(ss, sh, r) {
+  var toReg = String(sh.getRange(r + BC_TO, 2).getDisplayValue()).trim() === BC_TO_REG;
+  var n = bcRecipients_(ss, toReg).length;
+  return 'Готово до розсилки: ' + n + ' ' + plural_(n, 'отримувач', 'отримувачі', 'отримувачів') + ' (' + (toReg ? 'зареєстровані' : 'усі, хто дозволив') + ')';
+}
+
+function plural_(n, one, few, many) {
+  n = Math.abs(n) % 100;
+  var n1 = n % 10;
+  if (n > 10 && n < 20) return many;
+  if (n1 > 1 && n1 < 5) return few;
+  if (n1 === 1) return one;
+  return many;
+}
+
+/** Правка в блоці розсилки. Повертає true, якщо правка стосувалась блоку. */
+function handleBroadcastEdit_(e, sh) {
+  var r = bcRow_(sh);
+  if (!r || e.range.getColumn() !== 2 || e.range.getNumRows() !== 1) return false;
+  var row = e.range.getRow();
+  if (row < r + BC_TEXT || row > r + BC_STATUS) return false;
+  var ss = e.source || sh.getParent();
+  if (row !== r + BC_ACTION) {
+    if (row !== r + BC_STATUS) bcStatus_(sh, r, recipientsInfo_(ss, sh, r));   // змінили текст / «Кому» / ID — оновлюємо підрахунок
+    return true;
+  }
+  var v = String(e.value == null ? '' : e.value).trim();
+  if (v !== BC_TEST && v !== BC_SEND) return true;
+  broadcast_(ss, sh, r, v === BC_TEST);
+  return true;
+}
+
+function broadcast_(ss, sh, r, test) {
+  var act = sh.getRange(r + BC_ACTION, 2);
+  var now = function () { return Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone() || 'Europe/Kyiv', 'dd.MM.yyyy HH:mm'); };
+  if (!PropertiesService.getScriptProperties().getProperty('BOT_TOKEN')) {
+    act.setValue(BC_IDLE); bcStatus_(sh, r, '⚠️ Немає BOT_TOKEN у властивостях скрипта'); return;
+  }
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) { act.setValue(BC_IDLE); bcStatus_(sh, r, '⚠️ Розсилка вже йде, спробуйте за хвилину'); return; }
+  try {
+    act.setValue(BC_IDLE);   // одразу повертаємо «—», щоб випадково не надіслати двічі
+    var text = String(sh.getRange(r + BC_TEXT, 2).getValue() || '').replace(/\r\n?/g, '\n').trim();
+    if (!text) { bcStatus_(sh, r, '⚠️ Немає тексту повідомлення'); return; }
+    if (text.length > 4000) { bcStatus_(sh, r, '⚠️ Задовгий текст: ' + text.length + ' символів (максимум 4000)'); return; }
+    var list;
+    if (test) {
+      var tid = String(sh.getRange(r + BC_TESTID, 2).getDisplayValue()).replace(/\s/g, '');
+      if (!/^\d{3,15}$/.test(tid)) { bcStatus_(sh, r, '⚠️ Вкажіть свій Telegram ID у рядку «Тест — мій Telegram ID» (є в аркуші «Відвідування», колонка A)'); return; }
+      list = [{ id: tid, row: 0 }];
+    } else {
+      var toReg = String(sh.getRange(r + BC_TO, 2).getDisplayValue()).trim() === BC_TO_REG;
+      list = bcRecipients_(ss, toReg);
+      if (!list.length) { bcStatus_(sh, r, '⚠️ Немає кому надсилати: ні в кого немає «Можна писати: так»'); return; }
+    }
+    bcStatus_(sh, r, '⏳ Надсилаю… 0 з ' + list.length);
+    SpreadsheetApp.flush();
+    var markup = { inline_keyboard: [[{ text: BC_BUTTON, web_app: { url: SETTINGS.SITE_URL } }]] };
+    var sent = 0, blocked = 0, failed = 0, vs = ss.getSheetByName(VISITS_SHEET);
+    for (var i = 0; i < list.length; i++) {
+      var res = tgApi_('sendMessage', { chat_id: list[i].id, text: text, reply_markup: markup, disable_web_page_preview: true });
+      if (res && !res.ok && res.error_code === 429) {   // Telegram просить зачекати
+        Utilities.sleep(((res.parameters && res.parameters.retry_after) || 1) * 1000 + 200);
+        res = tgApi_('sendMessage', { chat_id: list[i].id, text: text, reply_markup: markup, disable_web_page_preview: true });
+      }
+      if (res && res.ok) sent++;
+      else if (res && res.error_code === 403) {   // заблокував бота або видалив чат
+        blocked++;
+        if (vs && list[i].row) vs.getRange(list[i].row, VISITS_COL_WRITE).setValue('ні');
+      } else failed++;
+      if (i % 10 === 9) { bcStatus_(sh, r, '⏳ Надсилаю… ' + (i + 1) + ' з ' + list.length); SpreadsheetApp.flush(); }
+      Utilities.sleep(60);   // ~15 повідомлень за секунду — з запасом до ліміту Telegram
+    }
+    var msg = (test ? '🧪 ' : '✅ ') + now() + ' · ' + (test ? (sent ? 'тест надіслано собі' : 'тест не дійшов — перевірте ID і чи натиснули ви Start у боті') :
+      'надіслано ' + sent + ' з ' + list.length) +
+      (blocked ? ' · ' + blocked + ' ' + plural_(blocked, 'заблокував', 'заблокували', 'заблокували') + ' бота' : '') +
+      (failed ? ' · ' + failed + ' не вдалося' : '');
+    bcStatus_(sh, r, msg);
+  } catch (err) {
+    console.error(err);
+    bcStatus_(sh, r, '⚠️ Помилка розсилки: ' + (err && err.message ? err.message : err));
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function tgApi_(method, payload) {
