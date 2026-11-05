@@ -1015,7 +1015,11 @@ var BC_SEND = 'Надіслати';
 var BC_BUTTON = 'Відкрити TM APP';
 var BC_BUTTON_ME = 'Моя картка в TM APP';
 // Рядки блоку відносно заголовка
-var BC_TEXT = 1, BC_TO = 2, BC_TESTID = 3, BC_ACTION = 4, BC_STATUS = 5, BC_HELP = 6;
+var BC_TEXT = 1, BC_PHOTO = 2, BC_TO = 3, BC_TESTID = 4, BC_ACTION = 5, BC_STATUS = 6, BC_HELP = 7;
+// Табличка «Картинки для розсилки» (назва | посилання) — під блоком розсилки
+var BC_PICS_TITLE = 'Картинки для розсилки';
+var BC_PICS_ROWS = 20;   // скільки рядків табличка дає під назви
+var BC_PICS_DEFAULT = ['Реєстрація завершена', 'Проміжні результати', 'Підсумкові результати'];
 
 /** Рядок заголовка «Розсилка в Telegram» на аркуші «Сайт» (0 — блоку немає). */
 function bcRow_(sh) {
@@ -1030,8 +1034,13 @@ function bcRow_(sh) {
 function setupBroadcast_(sh) {
   var r = bcRow_(sh);
   if (!r) r = Math.max(sh.getLastRow(), RANGE_ROW_FIRST + RANGE_KEYS.length) + 2;
+  // Старий макет (без рядка «Фото»): звільняємо рядок під текстом
+  if (String(sh.getRange(r + 2, 1).getDisplayValue()).trim() === 'Кому') {
+    sh.getRange(r + 2, 1, 6, 2).breakApart();
+    sh.insertRowsAfter(r + 1, 1);
+  }
   sh.getRange(r, 1).setValue(BC_TITLE).setFontWeight('bold').setFontSize(12);
-  sh.getRange(r + BC_TEXT, 1, 5, 1).setValues([['Текст повідомлення'], ['Кому'], ['Тест — мій Telegram ID'], ['Дія'], ['Остання розсилка']])
+  sh.getRange(r + BC_TEXT, 1, 6, 1).setValues([['Текст повідомлення'], ['Фото'], ['Кому'], ['Тест — мій Telegram ID'], ['Дія'], ['Остання розсилка']])
     .setFontWeight('bold');
   var text = sh.getRange(r + BC_TEXT, 2);
   text.setWrap(true).setVerticalAlignment('top').setBackground('#fffbe8');
@@ -1052,9 +1061,29 @@ function setupBroadcast_(sh) {
   act.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList([BC_IDLE, BC_TEST, BC_SEND], true).setAllowInvalid(false).build())
     .setFontWeight('bold').setBackground('#fde7e7');
 
+  // Табличка картинок і список «Фото»
+  var p = bcPicsRow_(sh);
+  if (!p) {
+    p = r + BC_HELP + 2;
+    sh.getRange(p, 1).setValue(BC_PICS_TITLE);
+    sh.getRange(p + 1, 1, 1, 2).setValues([['Назва', 'Посилання на фото (Google Drive, доступ «Усі, хто має посилання»)']]);
+    sh.getRange(p + 2, 1, BC_PICS_DEFAULT.length, 1).setValues(BC_PICS_DEFAULT.map(function (n) { return [n]; }));
+  }
+  sh.getRange(p, 1).setFontWeight('bold').setFontSize(12);
+  sh.getRange(p + 1, 1, 1, 2).setFontWeight('bold').setFontColor('#475467');
+  sh.getRange(p + 2, 1, BC_PICS_ROWS, 1).setBackground('#f7f8fa');
+  sh.getRange(p + 2, 2, BC_PICS_ROWS, 1).setBackground('#e3f0fa').setWrap(false);
+  var photo = sh.getRange(r + BC_PHOTO, 2);
+  photo.clearDataValidations();
+  photo.setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInRange(sh.getRange(p + 2, 1, BC_PICS_ROWS, 1), true).setAllowInvalid(false)
+    .setHelpText('Порожньо — без фото. Список — з таблички «' + BC_PICS_TITLE + '» нижче.').build())
+    .setFontWeight('bold').setBackground('#e3f0fa');
+
   var help = sh.getRange(r + BC_HELP, 1, 1, 2);
   help.merge().setWrap(true).setFontColor('#475467').setVerticalAlignment('top');
-  help.setValue('«Кому» спершу «—»: поки не оберете отримувачів, «' + BC_SEND + '» нічого не надішле (тест собі працює завжди). Після розсилки «Кому» знову стає «—». ' +
+  help.setValue('«Фото» — картинка з таблички «' + BC_PICS_TITLE + '» нижче (порожньо — лише текст). Текст стає підписом під фото; якщо він довший за 1024 символи — бот надішле фото, а за ним текст окремим повідомленням. ' +
+    '\n«Кому» спершу «—»: поки не оберете отримувачів, «' + BC_SEND + '» нічого не надішле (тест собі працює завжди). Після розсилки «Кому» знову стає «—». ' +
     '\n«' + BC_TO_REG + '» — основний склад з аркуша «Учасники» (стільки, скільки вказано в «Кількість місць»; резерв не отримує). ' +
     '«' + BC_TO_ALL + '» — усі з аркуша «Відвідування». Бот може написати лише тим, хто колись натиснув Start у боті або дозволив повідомлення: кому не дійшло, тому в «Відвідуванні» стане «Можна писати: ні». ' +
     '\nУ тексті можна писати мітки — кожен отримає свої дані: {ім\'я} (у кличному відмінку: Андрію, Олександре), {прізвище}, {номер}, {місце} (напр. 5-те), {бали}, {риби}. ' +
@@ -1065,6 +1094,57 @@ function setupBroadcast_(sh) {
 }
 
 function bcStatus_(sh, r, text) { sh.getRange(r + BC_STATUS, 2).setValue(text); }
+
+/** Рядок заголовка «Картинки для розсилки» (0 — таблички немає). */
+function bcPicsRow_(sh) {
+  var last = sh.getLastRow();
+  if (last < 1) return 0;
+  var col = sh.getRange(1, 1, last, 1).getDisplayValues();
+  for (var i = 0; i < col.length; i++) if (String(col[i][0]).trim() === BC_PICS_TITLE) return i + 1;
+  return 0;
+}
+
+/** Посилання на картинку за назвою з таблички (або '' якщо фото не обрано). */
+function bcPhotoLink_(sh, r) {
+  var name = String(sh.getRange(r + BC_PHOTO, 2).getDisplayValue()).trim();
+  if (!name) return { name: '', link: '' };
+  var p = bcPicsRow_(sh);
+  if (!p) return { name: name, link: '' };
+  var rows = sh.getRange(p + 2, 1, BC_PICS_ROWS, 2).getDisplayValues();
+  for (var i = 0; i < rows.length; i++) if (String(rows[i][0]).trim() === name) return { name: name, link: String(rows[i][1]).trim() };
+  return { name: name, link: '' };
+}
+
+/** Завантажує картинку за посиланням (Google Drive або пряме). Повертає Blob або кидає зрозумілу помилку. */
+function bcFetchPhoto_(link) {
+  var id = (/\/d\/([\w-]{20,})/.exec(link) || /[?&]id=([\w-]{20,})/.exec(link) || [])[1];
+  var url = id ? 'https://drive.google.com/uc?export=download&id=' + id : link;
+  if (!/^https?:\/\//i.test(url)) throw new Error('Це не посилання: ' + link);
+  var resp = UrlFetchApp.fetch(url, { followRedirects: true, muteHttpExceptions: true });
+  var type = String((resp.getHeaders() || {})['Content-Type'] || resp.getBlob().getContentType() || '').toLowerCase();
+  if (resp.getResponseCode() !== 200 || type.indexOf('image/') !== 0) {
+    throw new Error('Не вдалося взяти фото — відкрийте доступ «Усі, хто має посилання» (Google Drive → Поділитися)');
+  }
+  var blob = resp.getBlob();
+  if (blob.getBytes().length > 10 * 1024 * 1024) throw new Error('Фото більше за 10 МБ — Telegram не прийме');
+  return blob.setName('photo.' + (type.indexOf('png') !== -1 ? 'png' : 'jpg'));
+}
+
+/** sendPhoto: photo — Blob (перше завантаження) або file_id (далі). */
+function tgPhoto_(chatId, photo, caption, markup) {
+  if (typeof photo === 'string') {
+    var p = { chat_id: chatId, photo: photo };
+    if (caption) p.caption = caption;
+    if (markup) p.reply_markup = markup;
+    return tgApi_('sendPhoto', p);
+  }
+  var token = PropertiesService.getScriptProperties().getProperty('BOT_TOKEN');
+  var form = { chat_id: String(chatId), photo: photo };
+  if (caption) form.caption = caption;
+  if (markup) form.reply_markup = JSON.stringify(markup);
+  var resp = UrlFetchApp.fetch('https://api.telegram.org/bot' + String(token).trim() + '/sendPhoto', { method: 'post', payload: form, muteHttpExceptions: true });
+  try { return JSON.parse(resp.getContentText()); } catch (e) { return null; }
+}
 
 // ----- Хто є хто -----
 
@@ -1293,9 +1373,27 @@ function broadcast_(ss, sh, r, test) {
       if (!list.length) { bcStatus_(sh, r, '⚠️ Немає кому надсилати'); return; }
     }
 
+    // Фото (якщо обрано): завантажуємо один раз, далі Telegram надсилає за file_id
+    var pic = bcPhotoLink_(sh, r), photo = null;
+    if (pic.name) {
+      if (!pic.link) { bcStatus_(sh, r, '⚠️ Для «' + pic.name + '» немає посилання в табличці «' + BC_PICS_TITLE + '»'); return; }
+      try { photo = bcFetchPhoto_(pic.link); } catch (err) { bcStatus_(sh, r, '⚠️ ' + err.message); return; }
+    }
+
     bcStatus_(sh, r, '⏳ Надсилаю… 0 з ' + list.length);
     SpreadsheetApp.flush();
     var sent = 0, blocked = 0, failed = 0, skipped = 0, vs = ss.getSheetByName(VISITS_SHEET);
+    var send = function (chatId, body, markup) {
+      if (!photo) return tgApi_('sendMessage', { chat_id: chatId, text: body, reply_markup: markup, disable_web_page_preview: true });
+      var fits = body.length <= 1024;
+      var res = tgPhoto_(chatId, photo, fits ? body : '', fits ? markup : null);
+      if (res && res.ok && typeof photo !== 'string') {   // запам'ятали file_id — далі без повторного завантаження
+        var sizes = res.result && res.result.photo;
+        if (sizes && sizes.length) photo = sizes[sizes.length - 1].file_id;
+      }
+      if (res && res.ok && !fits) res = tgApi_('sendMessage', { chat_id: chatId, text: body, reply_markup: markup, disable_web_page_preview: true });
+      return res;
+    };
     for (var i = 0; i < list.length; i++) {
       var x = list[i];
       var body = hasTags ? personalize_(text, x.person, results) : text;
@@ -1305,11 +1403,10 @@ function broadcast_(ss, sh, r, test) {
       var res0 = x.person && results ? results[x.person.name.toLowerCase()] : null;
       var played = res0 && res0.place > 0 && (Number(String(res0.pts).replace(',', '.')) > 0 || Number(res0.fish) > 0);
       var markup = { inline_keyboard: [[{ text: played ? BC_BUTTON_ME : BC_BUTTON, web_app: { url: url } }]] };
-      var payload = { chat_id: x.id, text: body, reply_markup: markup, disable_web_page_preview: true };
-      var res = tgApi_('sendMessage', payload);
+      var res = send(x.id, body, markup);
       if (res && !res.ok && res.error_code === 429) {   // Telegram просить зачекати
         Utilities.sleep(((res.parameters && res.parameters.retry_after) || 1) * 1000 + 200);
-        res = tgApi_('sendMessage', payload);
+        res = send(x.id, body, markup);
       }
       if (res && res.ok) {
         sent++;
@@ -1323,10 +1420,10 @@ function broadcast_(ss, sh, r, test) {
     }
     var total = list.length;
     var msg = test
-      ? '🧪 ' + now() + ' · ' + (sent ? 'тест надіслано собі' + (list[0].person && hasTags ? ' (з даними: ' + list[0].person.name + ')' : '')
+      ? '🧪 ' + now() + ' · ' + (sent ? 'тест надіслано собі' + (pic.name ? ' з фото «' + pic.name + '»' : '') + (list[0].person && hasTags ? ' (з даними: ' + list[0].person.name + ')' : '')
           : skipped ? 'тест не надіслано: для «' + (list[0].person ? list[0].person.name : 'вас') + '» немає даних для міток (місце/бали — спершу опублікуйте результати)'
           : 'тест не дійшов — перевірте ID і чи натиснули ви Start у боті')
-      : '✅ ' + now() + ' · ' + (toReg ? 'учасникам' : 'усім, хто відкривав') + ': надіслано ' + sent + ' з ' + total +
+      : '✅ ' + now() + ' · ' + (toReg ? 'учасникам' : 'усім, хто відкривав') + (pic.name ? ' (фото «' + pic.name + '»)' : '') + ': надіслано ' + sent + ' з ' + total +
         (blocked ? ' · ' + blocked + ' не дозволили боту писати' : '') +
         (skipped ? ' · ' + skipped + ' без даних для міток' : '') +
         (failed ? ' · ' + failed + ' помилка' : '');
