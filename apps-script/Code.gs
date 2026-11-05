@@ -1006,6 +1006,7 @@ function removeTelegramWebhook() {
 // ---------------------------------------------------------------------------
 
 var BC_TITLE = 'Розсилка в Telegram';
+var BC_TO_NONE = '—';               // нікому не обрано: «Надіслати» нічого не робить
 var BC_TO_REG = 'Учасникам турніру';
 var BC_TO_ALL = 'Усім, хто відкривав апку';
 var BC_IDLE = '—';
@@ -1039,9 +1040,9 @@ function setupBroadcast_(sh) {
   var to = sh.getRange(r + BC_TO, 2);
   var toNow = String(to.getDisplayValue()).trim();
   to.clearDataValidations();
-  to.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList([BC_TO_REG, BC_TO_ALL], true).setAllowInvalid(false).build())
+  to.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList([BC_TO_NONE, BC_TO_REG, BC_TO_ALL], true).setAllowInvalid(false).build())
     .setFontWeight('bold').setBackground('#e3f0fa');
-  if (toNow !== BC_TO_REG && toNow !== BC_TO_ALL) to.setValue(BC_TO_REG);
+  if (toNow !== BC_TO_REG && toNow !== BC_TO_ALL) to.setValue(BC_TO_NONE);
 
   sh.getRange(r + BC_TESTID, 2).setNumberFormat('@').setBackground('#e3f0fa').setHorizontalAlignment('left');
 
@@ -1053,7 +1054,8 @@ function setupBroadcast_(sh) {
 
   var help = sh.getRange(r + BC_HELP, 1, 1, 2);
   help.merge().setWrap(true).setFontColor('#475467').setVerticalAlignment('top');
-  help.setValue('«' + BC_TO_REG + '» — основний склад з аркуша «Учасники» (стільки, скільки вказано в «Кількість місць»; резерв не отримує). ' +
+  help.setValue('«Кому» спершу «—»: поки не оберете отримувачів, «' + BC_SEND + '» нічого не надішле (тест собі працює завжди). Після розсилки «Кому» знову стає «—». ' +
+    '\n«' + BC_TO_REG + '» — основний склад з аркуша «Учасники» (стільки, скільки вказано в «Кількість місць»; резерв не отримує). ' +
     '«' + BC_TO_ALL + '» — усі з аркуша «Відвідування». Бот може написати лише тим, хто колись натиснув Start у боті або дозволив повідомлення: кому не дійшло, тому в «Відвідуванні» стане «Можна писати: ні». ' +
     '\nУ тексті можна писати мітки — кожен отримає свої дані: {ім\'я} (у кличному відмінку: Андрію, Олександре), {прізвище}, {номер}, {місце} (напр. 5-те), {бали}, {риби}. ' +
     '{місце}, {бали} і {риби} беруться з опублікованих результатів — спершу опублікуйте їх у B3. Кому мітку нема чим заповнити, той повідомлення не отримує. ' +
@@ -1132,7 +1134,9 @@ function bcRecipients_(ss, toReg) {
 }
 
 function recipientsInfo_(ss, sh, r) {
-  var toReg = String(sh.getRange(r + BC_TO, 2).getDisplayValue()).trim() === BC_TO_REG;
+  var toVal = String(sh.getRange(r + BC_TO, 2).getDisplayValue()).trim();
+  if (toVal !== BC_TO_REG && toVal !== BC_TO_ALL) return 'Оберіть у «Кому», кому надсилати';
+  var toReg = toVal === BC_TO_REG;
   var list = bcRecipients_(ss, toReg);
   var n = list.length;
   var info = 'Готово до розсилки: ' + n + ' ' + plural_(n, 'отримувач', 'отримувачі', 'отримувачів');
@@ -1272,7 +1276,9 @@ function broadcast_(ss, sh, r, test) {
     if (text.length > 4000) { bcStatus_(sh, r, '⚠️ Задовгий текст: ' + text.length + ' символів (максимум 4000)'); return; }
     var hasTags = new RegExp(BC_TAGS.source, 'i').test(text);
     var results = hasTags ? publishedResults_() : null;
-    var toReg = String(sh.getRange(r + BC_TO, 2).getDisplayValue()).trim() === BC_TO_REG;
+    var toVal = String(sh.getRange(r + BC_TO, 2).getDisplayValue()).trim();
+    var toReg = toVal === BC_TO_REG;
+    if (!test && toVal !== BC_TO_REG && toVal !== BC_TO_ALL) { bcStatus_(sh, r, '⚠️ Не надіслано: оберіть у «Кому», кому надсилати'); return; }
 
     var list;
     if (test) {
@@ -1322,6 +1328,8 @@ function broadcast_(ss, sh, r, test) {
         (skipped ? ' · ' + skipped + ' без даних для міток' : '') +
         (failed ? ' · ' + failed + ' помилка' : '');
     bcStatus_(sh, r, msg);
+    // Після справжньої розсилки «Кому» знову порожнє — щоб наступну не надіслати випадково не тим
+    if (!test) sh.getRange(r + BC_TO, 2).setValue(BC_TO_NONE);
   } catch (err) {
     console.error(err);
     bcStatus_(sh, r, '⚠️ Помилка розсилки: ' + (err && err.message ? err.message : err));
