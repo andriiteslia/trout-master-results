@@ -1059,7 +1059,7 @@ function setupBroadcast_(sh) {
     '«' + BC_TO_ALL + '» — усі з аркуша «Відвідування». Бот може написати лише тим, хто колись натиснув Start у боті або дозволив повідомлення: кому не дійшло, тому в «Відвідуванні» стане «Можна писати: ні». ' +
     '\nУ тексті можна писати мітки — кожен отримає свої дані: {ім\'я} (у кличному відмінку: Андрію, Олександре), {прізвище}, {номер}, {місце} (напр. 5-те), {бали}, {риби}. ' +
     '{місце}, {бали} і {риби} беруться з опублікованих результатів — спершу опублікуйте їх у B3. Кому мітку нема чим заповнити, той повідомлення не отримує. ' +
-    '\nУ персональному повідомленні кнопка «' + BC_BUTTON_ME + '» відкриває апку з виділеним рядком учасника; в інших — «' + BC_BUTTON + '». Новий рядок у тексті: Ctrl+Enter (⌘+Enter). ' +
+    '\nКнопка під повідомленням відкриває апку; учасникам — одразу з виділеним їхнім рядком. Коли результати опубліковані й в учасника є місце, кнопка називається «' + BC_BUTTON_ME + '», інакше — «' + BC_BUTTON + '». Новий рядок у тексті: Ctrl+Enter (⌘+Enter). ' +
     '\n«' + BC_TEST + '» — те саме повідомлення лише на ID вище (з вашими даними). «' + BC_SEND + '» — по-справжньому, скасувати не можна. Після надсилання «Дія» повертається в «—».');
   bcStatus_(sh, r, recipientsInfo_(sh.getParent(), sh, r));
 }
@@ -1275,7 +1275,7 @@ function broadcast_(ss, sh, r, test) {
     if (!text) { bcStatus_(sh, r, '⚠️ Немає тексту повідомлення'); return; }
     if (text.length > 4000) { bcStatus_(sh, r, '⚠️ Задовгий текст: ' + text.length + ' символів (максимум 4000)'); return; }
     var hasTags = new RegExp(BC_TAGS.source, 'i').test(text);
-    var results = hasTags ? publishedResults_() : null;
+    var results = publishedResults_();   // для міток і для назви кнопки
     var toVal = String(sh.getRange(r + BC_TO, 2).getDisplayValue()).trim();
     var toReg = toVal === BC_TO_REG;
     if (!test && toVal !== BC_TO_REG && toVal !== BC_TO_ALL) { bcStatus_(sh, r, '⚠️ Не надіслано: оберіть у «Кому», кому надсилати'); return; }
@@ -1300,8 +1300,11 @@ function broadcast_(ss, sh, r, test) {
       var x = list[i];
       var body = hasTags ? personalize_(text, x.person, results) : text;
       if (body == null) { skipped++; continue; }
+      // Учасник: апка відкривається з його виділеним рядком; «Моя картка» — коли в нього вже є місце в результатах
       var url = SETTINGS.SITE_URL + (x.person && x.person.num ? '?sel=' + encodeURIComponent(x.person.num) : '');
-      var markup = { inline_keyboard: [[{ text: x.person && hasTags ? BC_BUTTON_ME : BC_BUTTON, web_app: { url: x.person && hasTags ? url : SETTINGS.SITE_URL } }]] };
+      var res0 = x.person && results ? results[x.person.name.toLowerCase()] : null;
+      var played = res0 && res0.place > 0 && (Number(String(res0.pts).replace(',', '.')) > 0 || Number(res0.fish) > 0);
+      var markup = { inline_keyboard: [[{ text: played ? BC_BUTTON_ME : BC_BUTTON, web_app: { url: url } }]] };
       var payload = { chat_id: x.id, text: body, reply_markup: markup, disable_web_page_preview: true };
       var res = tgApi_('sendMessage', payload);
       if (res && !res.ok && res.error_code === 429) {   // Telegram просить зачекати
