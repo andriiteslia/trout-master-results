@@ -1015,7 +1015,7 @@ var BC_SEND = 'Надіслати';
 var BC_BUTTON = 'Відкрити TM APP';
 var BC_BUTTON_ME = 'Моя картка в TM APP';
 // Рядки блоку відносно заголовка
-var BC_TEXT = 1, BC_PHOTO = 2, BC_TO = 3, BC_TESTID = 4, BC_ACTION = 5, BC_STATUS = 6, BC_HELP = 7;
+var BC_TEXT = 1, BC_PHOTO = 2, BC_BTN = 3, BC_TO = 4, BC_TESTID = 5, BC_ACTION = 6, BC_STATUS = 7, BC_HELP = 8;
 // Табличка «Картинки для розсилки» (назва | посилання) — під блоком розсилки
 var BC_PICS_TITLE = 'Картинки для розсилки';
 var BC_PICS_ROWS = 20;   // скільки рядків табличка дає під назви
@@ -1034,14 +1034,20 @@ function bcRow_(sh) {
 function setupBroadcast_(sh) {
   var r = bcRow_(sh);
   if (!r) r = Math.max(sh.getLastRow(), RANGE_ROW_FIRST + RANGE_KEYS.length) + 2;
-  // Старий макет (без рядка «Фото»): звільняємо рядок під текстом
+  // Старі макети: без рядка «Фото» (Кому одразу під текстом) і без рядка «Кнопка» (Кому під «Фото»)
   if (String(sh.getRange(r + 2, 1).getDisplayValue()).trim() === 'Кому') {
     sh.getRange(r + 2, 1, 6, 2).breakApart();
     sh.insertRowsAfter(r + 1, 1);
   }
+  if (String(sh.getRange(r + 3, 1).getDisplayValue()).trim() === 'Кому') {
+    sh.getRange(r + 3, 1, 6, 2).breakApart();
+    sh.insertRowsAfter(r + 2, 1);
+  }
   sh.getRange(r, 1).setValue(BC_TITLE).setFontWeight('bold').setFontSize(12);
-  sh.getRange(r + BC_TEXT, 1, 6, 1).setValues([['Текст повідомлення'], ['Фото'], ['Кому'], ['Тест — мій Telegram ID'], ['Дія'], ['Остання розсилка']])
+  sh.getRange(r + BC_TEXT, 1, 7, 1).setValues([['Текст повідомлення'], ['Фото'], ['Кнопка (текст | посилання)'], ['Кому'], ['Тест — мій Telegram ID'], ['Дія'], ['Остання розсилка']])
     .setFontWeight('bold');
+  sh.getRange(r + BC_BTN, 2).setBackground('#e3f0fa').setNote('Текст другої кнопки під повідомленням, напр. 📍 Маршрут. Порожньо — лише «' + BC_BUTTON + '».');
+  sh.getRange(r + BC_BTN, 3).setBackground('#e3f0fa').setNote('Посилання для кнопки, напр. https://maps.app.goo.gl/…');
   var text = sh.getRange(r + BC_TEXT, 2);
   text.setWrap(true).setVerticalAlignment('top').setBackground('#fffbe8');
   sh.setRowHeight(r + BC_TEXT, 110);
@@ -1082,7 +1088,9 @@ function setupBroadcast_(sh) {
 
   var help = sh.getRange(r + BC_HELP, 1, 1, 2);
   help.merge().setWrap(true).setFontColor('#475467').setVerticalAlignment('top');
-  help.setValue('«Фото» — картинка з таблички «' + BC_PICS_TITLE + '» нижче (порожньо — лише текст). Текст стає підписом під фото; якщо він довший за 1024 символи — бот надішле фото, а за ним текст окремим повідомленням. ' +
+  help.setValue('Посилання в тексті: [Правила турніру](https://…) — учасник побачить клікабельні слова «Правила турніру». Звичайне посилання теж стає клікабельним. ' +
+    '\n«Кнопка» — друга кнопка під повідомленням поруч із «' + BC_BUTTON + '»: у B — текст (напр. 📍 Маршрут), у C — посилання. Порожньо — без неї. ' +
+    '\n«Фото» — картинка з таблички «' + BC_PICS_TITLE + '» нижче (порожньо — лише текст). Текст стає підписом під фото; якщо він довший за 1024 символи — бот надішле фото, а за ним текст окремим повідомленням. ' +
     '\n«Кому» спершу «—»: поки не оберете отримувачів, «' + BC_SEND + '» нічого не надішле (тест собі працює завжди). Після розсилки «Кому» знову стає «—». ' +
     '\n«' + BC_TO_REG + '» — основний склад з аркуша «Учасники» (стільки, скільки вказано в «Кількість місць»; резерв не отримує). ' +
     '«' + BC_TO_ALL + '» — усі з аркуша «Відвідування». Бот може написати лише тим, хто колись натиснув Start у боті або дозволив повідомлення: кому не дійшло, тому в «Відвідуванні» стане «Можна писати: ні». ' +
@@ -1094,6 +1102,18 @@ function setupBroadcast_(sh) {
 }
 
 function bcStatus_(sh, r, text) { sh.getRange(r + BC_STATUS, 2).setValue(text); }
+
+/** Текст → HTML для Telegram: екрануємо <>&, а [слова](https://…) робимо посиланням. */
+function bcHtml_(text) {
+  var esc = String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return esc.replace(/\[([^\]\n]+)\]\(((?:https?|tg):\/\/[^\s)]+)\)/g, function (m, label, url) {
+    return '<a href="' + url.replace(/"/g, '&quot;') + '">' + label + '</a>';
+  });
+}
+/** Скільки символів побачить людина (для ліміту підпису під фото 1024). */
+function bcVisibleLen_(text) {
+  return String(text).replace(/\[([^\]\n]+)\]\(((?:https?|tg):\/\/[^\s)]+)\)/g, '$1').length;
+}
 
 /** Рядок заголовка «Картинки для розсилки» (0 — таблички немає). */
 function bcPicsRow_(sh) {
@@ -1134,13 +1154,13 @@ function bcFetchPhoto_(link) {
 function tgPhoto_(chatId, photo, caption, markup) {
   if (typeof photo === 'string') {
     var p = { chat_id: chatId, photo: photo };
-    if (caption) p.caption = caption;
+    if (caption) { p.caption = caption; p.parse_mode = 'HTML'; }
     if (markup) p.reply_markup = markup;
     return tgApi_('sendPhoto', p);
   }
   var token = PropertiesService.getScriptProperties().getProperty('BOT_TOKEN');
   var form = { chat_id: String(chatId), photo: photo };
-  if (caption) form.caption = caption;
+  if (caption) { form.caption = caption; form.parse_mode = 'HTML'; }
   if (markup) form.reply_markup = JSON.stringify(markup);
   var resp = UrlFetchApp.fetch('https://api.telegram.org/bot' + String(token).trim() + '/sendPhoto', { method: 'post', payload: form, muteHttpExceptions: true });
   try { return JSON.parse(resp.getContentText()); } catch (e) { return null; }
@@ -1373,6 +1393,15 @@ function broadcast_(ss, sh, r, test) {
       if (!list.length) { bcStatus_(sh, r, '⚠️ Немає кому надсилати'); return; }
     }
 
+    // Друга кнопка (необов'язково)
+    var btnText = String(sh.getRange(r + BC_BTN, 2).getDisplayValue()).trim();
+    var btnUrl = String(sh.getRange(r + BC_BTN, 3).getDisplayValue()).trim();
+    var extraBtn = null;
+    if (btnText || btnUrl) {
+      if (!btnText || !/^(https?|tg):\/\/\S+$/i.test(btnUrl)) { bcStatus_(sh, r, '⚠️ «Кнопка»: потрібні і текст (B), і посилання на https://… (C)'); return; }
+      extraBtn = { text: btnText.slice(0, 60), url: btnUrl };
+    }
+
     // Фото (якщо обрано): завантажуємо один раз, далі Telegram надсилає за file_id
     var pic = bcPhotoLink_(sh, r), photo = null;
     if (pic.name) {
@@ -1384,14 +1413,15 @@ function broadcast_(ss, sh, r, test) {
     SpreadsheetApp.flush();
     var sent = 0, blocked = 0, failed = 0, skipped = 0, vs = ss.getSheetByName(VISITS_SHEET);
     var send = function (chatId, body, markup) {
-      if (!photo) return tgApi_('sendMessage', { chat_id: chatId, text: body, reply_markup: markup, disable_web_page_preview: true });
-      var fits = body.length <= 1024;
-      var res = tgPhoto_(chatId, photo, fits ? body : '', fits ? markup : null);
+      var html = bcHtml_(body);
+      if (!photo) return tgApi_('sendMessage', { chat_id: chatId, text: html, parse_mode: 'HTML', reply_markup: markup, disable_web_page_preview: true });
+      var fits = bcVisibleLen_(body) <= 1024;
+      var res = tgPhoto_(chatId, photo, fits ? html : '', fits ? markup : null);
       if (res && res.ok && typeof photo !== 'string') {   // запам'ятали file_id — далі без повторного завантаження
         var sizes = res.result && res.result.photo;
         if (sizes && sizes.length) photo = sizes[sizes.length - 1].file_id;
       }
-      if (res && res.ok && !fits) res = tgApi_('sendMessage', { chat_id: chatId, text: body, reply_markup: markup, disable_web_page_preview: true });
+      if (res && res.ok && !fits) res = tgApi_('sendMessage', { chat_id: chatId, text: html, parse_mode: 'HTML', reply_markup: markup, disable_web_page_preview: true });
       return res;
     };
     for (var i = 0; i < list.length; i++) {
@@ -1402,7 +1432,9 @@ function broadcast_(ss, sh, r, test) {
       var url = SETTINGS.SITE_URL + (x.person && x.person.num ? '?sel=' + encodeURIComponent(x.person.num) : '');
       var res0 = x.person && results ? results[x.person.name.toLowerCase()] : null;
       var played = res0 && res0.place > 0 && (Number(String(res0.pts).replace(',', '.')) > 0 || Number(res0.fish) > 0);
-      var markup = { inline_keyboard: [[{ text: played ? BC_BUTTON_ME : BC_BUTTON, web_app: { url: url } }]] };
+      var row0 = [{ text: played ? BC_BUTTON_ME : BC_BUTTON, web_app: { url: url } }];
+      if (extraBtn) row0.push(extraBtn);
+      var markup = { inline_keyboard: [row0] };
       var res = send(x.id, body, markup);
       if (res && !res.ok && res.error_code === 429) {   // Telegram просить зачекати
         Utilities.sleep(((res.parameters && res.parameters.retry_after) || 1) * 1000 + 200);
