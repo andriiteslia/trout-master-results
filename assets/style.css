@@ -1772,3 +1772,9 @@ input, textarea, select { caret-color: var(--nav); }
   .pc-hero .pc-place.pc-place--badge { width: 30px; height: 30px; font-size: 15px; border-color: var(--page); right: -2px; bottom: -2px; }
 }
 @supports (corner-shape: squircle) { .pc-ava > img, .pc-place--badge { corner-shape: round; } }
+
+/* Подіум: фото (або ініціали) над іменем, з обідком кольору місця */
+.podium__av { width: 48px; height: 48px; font-size: 14px; margin-bottom: -2px; }
+.p1 .podium__av { width: 56px; height: 56px; box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--gold); }
+.p2 .podium__av { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--silver); }
+.p3 .podium__av { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--bronze); }

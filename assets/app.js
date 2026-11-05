@@ -2085,7 +2085,7 @@
     .then(function (m) {
       if (!m || typeof m !== 'object' || !Object.keys(m).length) return;
       PHOTOS = m;
-      if (state.models && state.models.length) renderBoard();
+      if (state.models && state.models.length) { renderBoard(); try { renderSide(); } catch (e) { /* */ } }
       if (state.view === 'card' && typeof renderCard === 'function') try { renderCard(); } catch (e) { /* */ }
     })
     .catch(function () { /* без фото — лишаються ініціали */ });
@@ -2330,7 +2330,8 @@
     var h = '';
     if (top3.every(Boolean)) {
       h += '<div class="scard"><h3>Подіум</h3><div class="podium">' + top3.map(function (r) {
-        return '<div class="podium__col p' + r.place + '"><span class="podium__name">' + esc(r.name) + '</span>' +
+        return '<div class="podium__col p' + r.place + '">' + avatarHtml(r.name).replace('class="av', 'class="av podium__av') +
+          '<span class="podium__name">' + esc(r.name) + '</span>' +
           '<span class="podium__bar">' + r.place + '</span><span class="podium__pts">' + r.pts + ' ' + plural(r.pts, 'бал', 'бали', 'балів') + '</span></div>';
       }).join('') + '</div></div>';
     }
