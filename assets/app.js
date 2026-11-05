@@ -782,7 +782,11 @@
         '<button type="button" class="pc-share d-only" data-act="share" aria-label="Поділитися карткою">' + I_SHARE + '<span>Поділитися карткою</span></button>' +
       '</span></div>' +
       '<div class="pc-hero__main">' +
-      (started && st.place ? '<div class="pc-place' + medal + '" aria-hidden="true">' + st.place + '</div>' : '') +
+      // Є фото — кружечок із фото, а місце маленьким значком у куті; немає — кружечок із місцем, як раніше
+      (PHOTOS[normName(st.name)]
+        ? '<div class="pc-ava" aria-hidden="true"><img src="assets/players/' + encodeURIComponent(PHOTOS[normName(st.name)]) + '" alt="" decoding="async">' +
+            (started && st.place ? '<span class="pc-place pc-place--badge' + medal + '">' + st.place + '</span>' : '') + '</div>'
+        : (started && st.place ? '<div class="pc-place' + medal + '" aria-hidden="true">' + st.place + '</div>' : '')) +
       '<div class="pc-head__txt"><h1 class="title" id="pcTitle" tabindex="-1">' + esc(st.name) + '</h1>' +
       '<p class="pc-sub m-only">' + esc([st.num ? '№ ' + st.num : '', sideWord ? sideWord + ' берег' : '', placeTxt].filter(Boolean).join(' · ')) + '</p>' +
       '<p class="pc-chips d-only">' + chips.map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('') +
@@ -2082,6 +2086,7 @@
       if (!m || typeof m !== 'object' || !Object.keys(m).length) return;
       PHOTOS = m;
       if (state.models && state.models.length) renderBoard();
+      if (state.view === 'card' && typeof renderCard === 'function') try { renderCard(); } catch (e) { /* */ }
     })
     .catch(function () { /* без фото — лишаються ініціали */ });
   function colBy(m, re) { return m.cols.find(function (k) { return k.role !== 'name' && k.role !== 'place' && re.test(k.label); }) || null; }
