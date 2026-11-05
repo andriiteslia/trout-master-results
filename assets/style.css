@@ -1825,3 +1825,5 @@ input, textarea, select { caret-color: var(--nav); }
 /* відступи кнопки «Поділитися результатом» — як між іншими блоками картки */
 .pc-story { margin: 0 0 12px; }
 @media (min-width: 980px) { .pc-story { margin: 0 0 24px; } }
+/* Градієнт під прозорою рамкою: малюємо від краю рамки, інакше на боках видно «шов» повторення градієнта */
+#cardOpen, #selCard, .pc-story, .story__share { background-origin: border-box; background-repeat: no-repeat; }
