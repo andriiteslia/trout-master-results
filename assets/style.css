@@ -1747,3 +1747,8 @@ input, textarea, select { caret-color: var(--nav); }
 #regSubmit.is-idle:not(:disabled):active { background: #d0d5dd; box-shadow: none; }
 #regSubmit { transition: background-color 0.18s ease, color 0.18s ease; }
 @media (prefers-reduced-motion: reduce) { #regSubmit { transition: none; } }
+
+/* Фото учасника в кружечку замість ініціалів */
+.av--ph { position: relative; overflow: hidden; color: transparent; }
+.av--ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+@supports (corner-shape: squircle) { .av--ph img { corner-shape: round; } }

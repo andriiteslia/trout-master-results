@@ -2061,6 +2061,28 @@
   }
   function tabLabel(name) { return /результат/i.test(name) ? 'Підсумок' : /^тур/i.test(String(name).trim()) ? 'По турах' : name; }
   function initials(n) { return String(n || '').split(/\s+/).filter(Boolean).slice(0, 2).map(function (s) { return s.charAt(0); }).join('').toUpperCase(); }
+  // ----- Фото учасників (assets/players/players.json: «прізвище ім'я» малими літерами → файл) -----
+  // Кого немає у списку або чиє фото не завантажилось — показуємо ініціали.
+  var PHOTOS = {};
+  function avatarHtml(name) {
+    var f = PHOTOS[normName(name)];
+    return '<span class="av' + (f ? ' av--ph' : '') + '" aria-hidden="true">' + esc(initials(name)) +
+      (f ? '<img src="assets/players/' + encodeURIComponent(f) + '" alt="" loading="lazy" decoding="async">' : '') + '</span>';
+  }
+  document.addEventListener('error', function (e) {
+    var t = e.target;
+    if (t && t.tagName === 'IMG' && t.parentNode && t.parentNode.classList && t.parentNode.classList.contains('av')) {
+      t.parentNode.classList.remove('av--ph'); t.remove();
+    }
+  }, true);
+  fetch('assets/players/players.json?v=' + Math.floor(Date.now() / 600000), { cache: 'no-cache' })
+    .then(function (r) { return r.ok ? r.json() : {}; })
+    .then(function (m) {
+      if (!m || typeof m !== 'object' || !Object.keys(m).length) return;
+      PHOTOS = m;
+      if (state.models && state.models.length) renderBoard();
+    })
+    .catch(function () { /* без фото — лишаються ініціали */ });
   function colBy(m, re) { return m.cols.find(function (k) { return k.role !== 'name' && k.role !== 'place' && re.test(k.label); }) || null; }
   function fmtInt(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
   function matchQuery(name) { var q = state.query.trim().toLowerCase(); return !q || String(name).toLowerCase().indexOf(q) !== -1; }
@@ -2426,7 +2448,7 @@
       var wdlM = r.cnt ? r.cnt.w + 'В · ' + r.cnt.d + 'РН · ' + r.cnt.z + 'БН · ' + r.cnt.l + 'П' : '';
       return '<div class="' + cls + '" role="row" data-key="' + esc(r.key) + '" tabindex="0" aria-selected="' + sel + '">' +
         '<span class="c-pl" role="cell"><span class="pc">' + (r.place != null ? r.place : '') + '</span>' + moveHtml(r.move) + '</span>' +
-        '<span class="c-nm" role="cell"><span class="av" aria-hidden="true">' + esc(initials(r.name)) + '</span><span class="nmw">' +
+        '<span class="c-nm" role="cell">' + avatarHtml(r.name) + '<span class="nmw">' +
           '<span class="rk-nm">' + esc(r.name) + '</span>' +
           (r.num ? '<span class="sub d-only">№ ' + r.num + '</span>' : '') +
           (r.cnt ? '<span class="msub m-only"><span class="fls" aria-hidden="true">' + bars + '</span>' + wdlM + '</span>' : '') +
@@ -2498,7 +2520,7 @@
     function item(p, j) {
       var sel = state.selected.has(p.key);
       return '<li class="pt r' + (j % 2 ? ' z1' : '') + z2(j) + (sel ? ' is-sel' : '') + '" data-key="' + esc(p.key) + '">' +
-        '<span class="pt__n">' + esc(p.n) + '</span><span class="av" aria-hidden="true">' + esc(initials(p.name)) + '</span>' +
+        '<span class="pt__n">' + esc(p.n) + '</span>' + avatarHtml(p.name) +
         '<span class="pt__nm">' + esc(p.name) + '</span>' + (p.i >= newest && p.i > 0 && all.length > 3 ? '<span class="pt__new">new</span>' : '') + '</li>';
     }
     var vis = main.filter(function (p) { return matchQuery(p.name); });
