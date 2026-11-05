@@ -1905,6 +1905,16 @@
     if (focus) { if (ne) reg.name.focus(); else if (pe) reg.phone.focus(); }
     return !ne && !pe;
   }
+  // Кнопка сіра, доки поля не заповнені правильно; натиснути її можна завжди — тоді підсвітяться помилки
+  function updateRegReady() {
+    var ok = !nameError(reg.name.value) && !phoneError(reg.phone.value);
+    reg.submit.classList.toggle('is-idle', !ok);
+  }
+  reg.form.addEventListener('input', updateRegReady);
+  reg.name.addEventListener('blur', updateRegReady);
+  reg.phone.addEventListener('blur', updateRegReady);
+  updateRegReady();
+
   function showAlert(msg) {
     reg.alert.textContent = msg || '';
     reg.alert.hidden = !msg;
@@ -1971,6 +1981,7 @@
         if (auto.indexOf(name) === -1) { auto.push(name); store.set(LS_AUTO, auto.slice(-50)); }
         state.focusKey = name;
         reg.form.reset();
+        updateRegReady();
         state.regTried = false;
         renderReg();
         renderNotify(canOfferNotify() ? 'offer' : 'none');

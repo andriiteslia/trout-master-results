@@ -1740,3 +1740,10 @@ input, textarea, select { caret-color: var(--nav); }
   .ptr:not(.is-dragging) { transition: opacity 0.2s ease, transform 0.25s ease; }
 }
 @supports (corner-shape: squircle) { .ptr, .ptr__spin, .swipe-back { corner-shape: round; } }
+
+/* Форма реєстрації: «неактивна» кнопка, поки поля не заповнені правильно (але клікабельна — покаже помилки) */
+#regSubmit.is-idle { background: #e4e7ec; color: #98a2b3; box-shadow: none; }
+@media (hover: hover) { #regSubmit.is-idle:hover { background: #dde1e7; } }
+#regSubmit.is-idle:not(:disabled):active { background: #d0d5dd; box-shadow: none; }
+#regSubmit { transition: background-color 0.18s ease, color 0.18s ease; }
+@media (prefers-reduced-motion: reduce) { #regSubmit { transition: none; } }
