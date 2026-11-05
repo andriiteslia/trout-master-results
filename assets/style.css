@@ -1822,3 +1822,6 @@ input, textarea, select { caret-color: var(--nav); }
 .story-open body { overflow: hidden; }
 @supports (corner-shape: squircle) { .story, .story * { corner-shape: round; } }   /* супереліпс тут ламає малювання затемнення в Chrome */
 .story__acts a.btn { text-decoration: none; }
+/* відступи кнопки «Поділитися результатом» — як між іншими блоками картки */
+.pc-story { margin: 0 0 12px; }
+@media (min-width: 980px) { .pc-story { margin: 0 0 24px; } }
