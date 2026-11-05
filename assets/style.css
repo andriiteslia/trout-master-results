@@ -1778,3 +1778,16 @@ input, textarea, select { caret-color: var(--nav); }
 .p1 .podium__av { width: 56px; height: 56px; box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--gold); }
 .p2 .podium__av { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--silver); }
 .p3 .podium__av { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--bronze); }
+
+/* Кнопка «Картка учасника» — насичений зелений градієнт бренду, білий текст (контраст ≥ 5:1) */
+#cardOpen, .regbar #cardOpen, #selCard {
+  background: linear-gradient(135deg, #4a9112 0%, #2b660a 100%);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 8px 20px rgba(43, 102, 10, 0.30);
+}
+#selCard svg { stroke: currentColor; }
+@media (hover: hover) {
+  #cardOpen:hover, #selCard:hover { background: linear-gradient(135deg, #52a014 0%, #30720b 100%); }
+}
+#cardOpen:not(:disabled):active, #selCard:not(:disabled):active { background: linear-gradient(135deg, #3f7d0f 0%, #245708 100%); }
