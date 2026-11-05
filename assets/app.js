@@ -1415,6 +1415,13 @@
       else { var par = hd.parentElement; natural = par.getBoundingClientRect().top + (parseFloat(getComputedStyle(par).borderTopWidth) || 0) + (parseFloat(getComputedStyle(par).paddingTop) || 0); }
       hd.classList.toggle('is-stuck', hd.getBoundingClientRect().top > natural + 0.5);
     });
+    // Форма реєстрації (Telegram): над «кришкою» аркуша лише поки її верх не вище 12 px під панеллю;
+    // далі вона ховається під заокруглення, як рядки таблиць, і не налазить на кути
+    if (IN_TG && state.view === 'reg' && reg.form.offsetParent) {
+      var tb = document.querySelector('.topbar');
+      var top = tb ? parseFloat(getComputedStyle(tb).paddingTop) || 0 : 0;
+      reg.form.classList.toggle('over-cap', reg.form.getBoundingClientRect().top >= top + 11.5);
+    }
   }
   window.addEventListener('scroll', function () { if (!stuckFrame) stuckFrame = requestAnimationFrame(markStuckHeads); }, { passive: true });
 

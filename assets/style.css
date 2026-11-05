@@ -1688,7 +1688,7 @@ html, body { background: var(--nav); }
 @media (max-width: 979px) {
   .view-reg .main { padding-left: 12px; padding-right: 12px; padding-top: 12px; }
 }
-@media (max-width: 979px) { .tg.tg-stuck .view-reg #regForm, .tg.tg-stuck #regForm { position: relative; z-index: 52; } }
+@media (max-width: 979px) { .tg.tg-stuck #regForm.over-cap { position: relative; z-index: 52; } }
 
 /* Картка учасника: коли шапка «Тури» прилипла, у неї заокруглені верхні кути й рамка — як у самої картки */
 .pcard .pc-tour--head { transition: border-radius 0.12s ease; }
