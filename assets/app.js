@@ -804,7 +804,7 @@
         '<div class="pk"><span class="pk__l">Улов</span><span class="pk__v">' + st.fish + ' <small>' + fishWord(st.fish) + '</small></span>' +
           '<span class="pk__s">' + (st.avg != null ? fmt1(st.avg) + ' за тур' : '') + '<span class="d-only">' + (st.tAvg != null ? ' · в середньому по турніру ' + fmt1(st.tAvg) : '') + '</span></span></div>' +
         (st.vsOpp ? '<div class="pk"><span class="pk__l">Проти суперників</span><span class="pk__v pk__v--sm">' + st.vsOpp.mine + ' : ' + st.vsOpp.theirs + '</span>' +
-          '<span class="pk__badge ' + (diff > 0 ? 'is-up' : diff < 0 ? 'is-down' : '') + '">' + (diff > 0 ? '+' : '') + diff + '<span class="d-only"> ' + fishWord(Math.abs(diff)) + '</span></span></div>' : '') +
+          '<span class="pk__badge ' + (diff > 0 ? 'is-up' : diff < 0 ? 'is-down' : '') + '">' + (diff > 0 ? '+' : '') + diff + '<span class="d-only"> ' + fishWord(Math.abs(diff)) + '</span></span></div>' : gapTile(st)) +
         '<div class="pk"><span class="pk__l">Перемоги</span><span class="pk__v pk__v--sm">' + Math.round(st.winRate * 100) + '%</span>' +
           '<span class="pk__s">' + (st.streak ? '<span class="l-m">серія — ' + st.streak + ' ' + plural(st.streak, 'тур', 'тури', 'турів') + '</span><span class="l-d">найдовша серія — ' + st.streak + ' ' + plural(st.streak, 'тур', 'тури', 'турів') + ' поспіль</span>' : st.cnt.w + ' з ' + st.played) + '</span></div>' +
         '</div>';
@@ -2103,6 +2103,37 @@
         };
       })
     };
+  }
+  // Плитка «Відрив» у картці (коли немає даних «Проти суперників»): лідеру — запас над 2-м місцем,
+  // решті — скільки балів до 1-го місця й до місця вище
+  function gapTile(st) {
+    var sr = standingsRows();
+    if (!sr || st.points == null) return '';
+    var rows = sr.rows.filter(function (r) { return r.pts != null && r.place; })
+      .sort(function (a, b) { return a.place - b.place; });
+    var me = rows.find(function (r) { return normName(r.name) === normName(st.name); });
+    if (!me || rows.length < 2) return '';
+    var pts = function (n) { return plural(Math.abs(n), 'бал', 'бали', 'балів'); };
+    var lbl, val, sub;
+    if (me.place === 1) {
+      var second = rows.find(function (r) { return r !== me && r.place > 1; }) || rows.find(function (r) { return r !== me; });
+      var lead = me.pts - second.pts;
+      lbl = 'Відрив'; val = (lead > 0 ? '+' : '') + lead;
+      sub = lead > 0 ? 'від ' + second.place + '-го місця' : 'стільки ж балів у ' + second.place + '-го місця';
+    } else {
+      var leader = rows[0];
+      var toLead = leader.pts - me.pts;
+      lbl = 'До 1-го місця'; val = (toLead > 0 ? '\u2212' : '') + toLead;
+      // найближче місце вище, де балів більше (рівні бали — це вже розподіл за перемогами й рибою)
+      var above = rows.filter(function (r) { return r.place < me.place && r.pts > me.pts; }).pop();
+      var below = rows.find(function (r) { return r.place > me.place && r.pts < me.pts; });
+      if (above && above.place > 1) sub = '\u2212' + (above.pts - me.pts) + ' до ' + above.place + '-го місця';
+      else if (below) sub = '+' + (me.pts - below.pts) + ' від ' + below.place + '-го місця';
+      else sub = '';
+    }
+    return '<div class="pk"><span class="pk__l">' + lbl + '</span><span class="pk__v pk__v--sm">' + val +
+      ' <small>' + pts(+String(val).replace(/[^0-9]/g, '')) + '</small></span>' +
+      (sub ? '<span class="pk__s">' + esc(sub) + '</span>' : '') + '</div>';
   }
   function totalFish() {
     var t = toursData();
