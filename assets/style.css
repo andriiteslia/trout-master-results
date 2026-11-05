@@ -1791,3 +1791,34 @@ input, textarea, select { caret-color: var(--nav); }
   #cardOpen:hover, #selCard:hover { background: linear-gradient(135deg, #52a014 0%, #30720b 100%); }
 }
 #cardOpen:not(:disabled):active, #selCard:not(:disabled):active { background: linear-gradient(135deg, #3f7d0f 0%, #245708 100%); }
+
+/* Картка: «Поділитися результатом» (картинка для сторіс) */
+.pc-story {
+  display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 12px; align-items: center;
+  width: 100%; margin: 12px 0 0; padding: 14px 18px; text-align: left; cursor: pointer;
+  border: 0; border-radius: 16px; color: #fff; font: inherit;
+  background: linear-gradient(135deg, #4a9112 0%, #2b660a 100%);
+  box-shadow: 0 8px 20px rgba(43, 102, 10, 0.25);
+}
+.pc-story svg { grid-row: 1 / 3; width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.pc-story span { font-weight: 700; font-size: 16px; line-height: 1.2; }
+.pc-story small { font-size: 12.5px; opacity: 0.85; }
+@media (hover: hover) { .pc-story:hover { background: linear-gradient(135deg, #52a014 0%, #30720b 100%); } }
+.pc-story:active { background: linear-gradient(135deg, #3f7d0f 0%, #245708 100%); }
+@media (min-width: 980px) { .pc-story { max-width: 360px; } }
+
+/* Перегляд картинки перед тим, як поділитися */
+.story { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: calc(var(--tg-top, 0px) + 12px) 16px calc(env(safe-area-inset-bottom, 0px) + 16px); background: rgba(0, 0, 0, 0.82); }
+.story[hidden] { display: none; }
+.story__box { width: min(100%, 420px); max-height: 100%; display: flex; flex-direction: column; gap: 12px; }
+.story__img { position: relative; aspect-ratio: 9 / 16; max-height: calc(100dvh - var(--tg-top, 0px) - 180px); margin: 0 auto; width: auto; height: 100%; border-radius: 18px; overflow: hidden; background: #111; display: grid; place-items: center; }
+.story__img img { width: 100%; height: 100%; object-fit: contain; display: block; -webkit-touch-callout: default; user-select: auto; }
+.story__spin { width: 34px; height: 34px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.15); border-top-color: #9bd83a; animation: ptr-spin 0.8s linear infinite; }
+.story__hint { margin: 0; text-align: center; color: #d0d5dd; font-size: 14px; }
+.story__acts { display: flex; gap: 8px; }
+.story__acts > * { flex: 1; }
+.story__acts [hidden] { display: none; }
+.story__share { background: linear-gradient(135deg, #4a9112 0%, #2b660a 100%); color: #fff; border-color: transparent; }
+.story-open body { overflow: hidden; }
+@supports (corner-shape: squircle) { .story, .story * { corner-shape: round; } }   /* супереліпс тут ламає малювання затемнення в Chrome */
+.story__acts a.btn { text-decoration: none; }
