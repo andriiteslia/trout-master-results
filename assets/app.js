@@ -2161,7 +2161,7 @@
     var photo = PHOTOS[normName(st.name)];
     var total = cardPlayersCount();
     return Promise.all([
-      loadImg('assets/logo.svg?v=2'),
+      loadImg('assets/logo.svg?v=3'),
       loadImg(photo ? 'assets/players/' + encodeURIComponent(photo) : null),
       loadImg('assets/fish.webp'),
       document.fonts && document.fonts.load ? Promise.all([document.fonts.load('800 80px Fixel'), document.fonts.load('600 34px Fixel')]).catch(function () {}) : null
@@ -2179,7 +2179,7 @@
       if (fish) { c.globalAlpha = 0.07; var fw = 1300, fh = fw * fish.height / fish.width; c.drawImage(fish, W - fw * 0.78, H - fh - 120, fw, fh); c.globalAlpha = 1; }
       c.textAlign = 'center'; c.textBaseline = 'alphabetic';
       // лого і турнір
-      if (logo) { var lw = 440, lh = lw * 292 / 1020; c.drawImage(logo, (W - lw) / 2, 210, lw, lh); }
+      if (logo) { var lw = 440, lh = lw * 306 / 1020; c.drawImage(logo, (W - lw) / 2, 210, lw, lh); }
       c.fillStyle = '#d0d5dd'; fitText(c, ev.title || 'TROUT MASTER', 900, 42, 650); c.fillText(ev.title || 'TROUT MASTER', W / 2, 404);
       if (ev.subtitle) { c.fillStyle = '#8a93a3'; fitText(c, ev.subtitle, 900, 32, 500); c.fillText(ev.subtitle, W / 2, 450); }
       // фото / ініціали з обідком кольору місця
