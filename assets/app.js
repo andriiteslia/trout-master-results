@@ -775,7 +775,7 @@
     var I_NEXT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
     var I_SHARE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>';
     h += '<header class="pc-hero"><div class="pc-hero__bar">' +
-      '<button type="button" class="hero-back pc-back" data-act="back">' + I_BACK + '<span class="l-m">Назад</span><span class="l-d">До заліку</span></button>' +
+      '<button type="button" class="hero-back pc-back" data-act="back">' + I_BACK + '<span class="l-m">Назад</span><span class="l-d">До підсумку</span></button>' +
       '<span class="pc-hero__acts">' +
         (nav.prev ? '<button type="button" class="pc-ibtn d-only" data-act="prev" aria-label="Попередній учасник: ' + esc(nav.prev.name) + '">' + I_BACK + '</button>' : '') +
         (nav.next ? '<button type="button" class="pc-ibtn d-only" data-act="next" aria-label="Наступний учасник: ' + esc(nav.next.name) + '">' + I_NEXT + '</button>' : '') +
@@ -1051,7 +1051,7 @@
     var I_BACK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
     var I_TABLE = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M3 14.5h18M9 9.5V20"/></svg>';
     var h = '<header class="pc-hero ts-hero"><div class="pc-hero__bar m-only">' +
-      '<button type="button" class="hero-back pc-back" data-act="back">' + I_BACK + '<span>' + (isListMode() ? 'Учасники' : 'Залік') + '</span></button></div>' +
+      '<button type="button" class="hero-back pc-back" data-act="back">' + I_BACK + '<span>' + (isListMode() ? 'Учасники' : 'Підсумок') + '</span></button></div>' +
       '<div class="ts-hero__main"><div class="pc-head__txt"><h1 class="title" id="tsTitle" tabindex="-1">Статистика</h1>' +
       '<p class="pc-sub">' + esc([ev.title].concat(sub).filter(Boolean).join(' · ')) + '</p></div>' +
       '<button type="button" class="btn2 btn2-dark d-only" data-act="back">' + I_TABLE + '<span>Результати</span></button></div>' +
@@ -1408,19 +1408,22 @@
     stuckFrame = 0;
     // Шапка «прилипла», якщо вона нижче свого звичайного місця (одразу після попереднього елемента
     // або від верху таблиці)
+    var tbar = IN_TG ? document.querySelector('.topbar') : null;
+    var capTop = tbar ? parseFloat(getComputedStyle(tbar).paddingTop) || 0 : 0;   // нижній край панелі Telegram
     [].forEach.call(document.querySelectorAll('.pcard .pc-tour--head, .tg .rk-head, .tg .plist-head, .tg .tgrid-hd'), function (hd) {
       if (!hd.offsetParent) return;
       var prev = hd.previousElementSibling, natural;
       if (prev && prev.offsetParent) natural = prev.getBoundingClientRect().bottom + (parseFloat(getComputedStyle(prev).marginBottom) || 0);
       else { var par = hd.parentElement; natural = par.getBoundingClientRect().top + (parseFloat(getComputedStyle(par).borderTopWidth) || 0) + (parseFloat(getComputedStyle(par).paddingTop) || 0); }
-      hd.classList.toggle('is-stuck', hd.getBoundingClientRect().top > natural + 0.5);
+      var r = hd.getBoundingClientRect().top;
+      hd.classList.toggle('is-stuck', r > natural + 0.5);
+      // Telegram: шапка над «кришкою» аркуша лише поки стоїть на своєму місці (12 px під панеллю);
+      // коли таблиця закінчується і шапка їде вгору — ховається під заокруглення, а не налазить на кути
+      if (IN_TG) hd.classList.toggle('over-cap', r >= capTop + 11.5);
     });
-    // Форма реєстрації (Telegram): над «кришкою» аркуша лише поки її верх не вище 12 px під панеллю;
-    // далі вона ховається під заокруглення, як рядки таблиць, і не налазить на кути
+    // Форма реєстрації (Telegram): так само
     if (IN_TG && state.view === 'reg' && reg.form.offsetParent) {
-      var tb = document.querySelector('.topbar');
-      var top = tb ? parseFloat(getComputedStyle(tb).paddingTop) || 0 : 0;
-      reg.form.classList.toggle('over-cap', reg.form.getBoundingClientRect().top >= top + 11.5);
+      reg.form.classList.toggle('over-cap', reg.form.getBoundingClientRect().top >= capTop + 11.5);
     }
   }
   window.addEventListener('scroll', function () { if (!stuckFrame) stuckFrame = requestAnimationFrame(markStuckHeads); }, { passive: true });
@@ -2056,7 +2059,7 @@
     return !!p && (p.mode === 'Список учасників' ||
       (!p.mode && (p.sheets || []).length === 1 && /учасник/i.test(p.sheets[0].name || '')));
   }
-  function tabLabel(name) { return /результат/i.test(name) ? 'Залік' : /^тур/i.test(String(name).trim()) ? 'По турах' : name; }
+  function tabLabel(name) { return /результат/i.test(name) ? 'Підсумок' : /^тур/i.test(String(name).trim()) ? 'По турах' : name; }
   function initials(n) { return String(n || '').split(/\s+/).filter(Boolean).slice(0, 2).map(function (s) { return s.charAt(0); }).join('').toUpperCase(); }
   function colBy(m, re) { return m.cols.find(function (k) { return k.role !== 'name' && k.role !== 'place' && re.test(k.label); }) || null; }
   function fmtInt(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
@@ -2326,7 +2329,7 @@
       v2.bTitle.textContent = 'Результати по турах';
       v2.bSub.textContent = 'У клітинці — результат і улов учасника в турі';
     } else {
-      v2.bTitle.textContent = m ? (/результат/i.test(m.name) ? 'Загальний залік' : m.name) : 'Результати';
+      v2.bTitle.textContent = m ? (/результат/i.test(m.name) ? 'Підсумкова таблиця' : m.name) : 'Результати';
       v2.bSub.textContent = m && /результат/i.test(m.name) ? 'Бали → перемоги → риба' : '';
     }
   }
@@ -2405,7 +2408,7 @@
         '</div>';
     }).join('');
     if (!rows.length) body = '<div class="empty"><strong>Нікого не знайдено</strong>Спробуйте інше прізвище.</div>';
-    return '<div class="rk' + (hasT ? '' : ' no-t') + '" role="table" aria-label="Загальний залік">' + head + body + '</div>';
+    return '<div class="rk' + (hasT ? '' : ' no-t') + '" role="table" aria-label="Підсумкова таблиця">' + head + body + '</div>';
   }
 
   // По турах
