@@ -1510,6 +1510,86 @@
   });
   document.addEventListener('tm-tg-ready', function () { if (state.view !== 'list') tgBack(true); });
 
+  // ----- Telegram: потягнути сторінку вниз — оновити дані (pull to refresh) -----
+  // Робить той самий запит, що й автооновлення кожні 15 с: бере вже опубліковані дані, таблицю не чіпає.
+  // «Оновлено – 14:32» показує час публікації, тож від ручного оновлення він не змінюється, якщо нових даних немає.
+  (function pullToRefresh() {
+    if (!IN_TG) return;
+    var GO = 72, MAX = 110, COOLDOWN = 3000;
+    var ind = null, sy = 0, sx = 0, dy = 0, on = false, decided = false, armed = false, busy = false, lastAt = 0;
+    function indicator() {
+      if (ind) return ind;
+      ind = document.createElement('div');
+      ind.className = 'ptr';
+      ind.setAttribute('aria-hidden', 'true');
+      ind.innerHTML = '<svg class="ptr__arrow" viewBox="0 0 24 24"><path d="M12 5v13M6 12l6 6 6-6"/></svg><span class="ptr__spin"></span>';
+      document.body.appendChild(ind);
+      return ind;
+    }
+    function paint(d) {
+      var i = indicator(), k = Math.min(d, MAX) / MAX;
+      i.classList.add('is-dragging');
+      i.style.opacity = String(Math.min(1, k * 1.8));
+      i.style.transform = 'translate(-50%, ' + (Math.min(d, MAX) * 0.55 - 44) + 'px) rotate(' + (armed ? 180 : 0) + 'deg)';
+      var nowArmed = d >= GO;
+      if (nowArmed !== armed) {
+        armed = nowArmed;
+        i.classList.toggle('is-armed', armed);
+        i.style.transform = 'translate(-50%, ' + (Math.min(d, MAX) * 0.55 - 44) + 'px) rotate(' + (armed ? 180 : 0) + 'deg)';
+        if (armed) try { window.Telegram.WebApp.HapticFeedback.selectionChanged(); } catch (e) { /* */ }
+      }
+    }
+    function hide() {
+      if (!ind) return;
+      ind.classList.remove('is-dragging', 'is-armed', 'is-busy');
+      ind.style.opacity = '0';
+      ind.style.transform = 'translate(-50%, -44px)';
+    }
+    function refresh() {
+      var i = indicator();
+      busy = true; lastAt = Date.now();
+      i.classList.remove('is-dragging', 'is-armed');
+      i.classList.add('is-busy');
+      i.style.opacity = '1';
+      i.style.transform = 'translate(-50%, 16px)';
+      try { window.Telegram.WebApp.HapticFeedback.impactOccurred('light'); } catch (e) { /* */ }
+      var t0 = Date.now();
+      if (!state.loading) load();
+      var iv = setInterval(function () {
+        if (state.loading || Date.now() - t0 < 700) return;   // крутимо щонайменше 0,7 с, щоб було видно
+        clearInterval(iv);
+        busy = false;
+        try { window.Telegram.WebApp.HapticFeedback.notificationOccurred(state.error ? 'error' : 'success'); } catch (e) { /* */ }
+        hide();
+      }, 100);
+    }
+    document.addEventListener('touchstart', function (e) {
+      if (busy || e.touches.length !== 1 || (window.scrollY || document.documentElement.scrollTop) > 0) return;
+      var t = e.touches[0];
+      if (t.clientX <= 28) return;   // від лівого краю — це жест «Назад»
+      on = true; decided = false; armed = false; sy = t.clientY; sx = t.clientX; dy = 0;
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
+      if (!on) return;
+      var t = e.touches[0], my = t.clientY - sy, mx = t.clientX - sx;
+      if (!decided) {
+        if (Math.abs(my) < 8 && Math.abs(mx) < 8) return;
+        decided = true;
+        if (my <= 0 || Math.abs(mx) > Math.abs(my) || (window.scrollY || 0) > 0) { on = false; return; }
+      }
+      dy = Math.max(0, my);
+      if (e.cancelable) e.preventDefault();
+      paint(dy);
+    }, { passive: false });
+    document.addEventListener('touchend', function () {
+      if (!on) return;
+      on = false;
+      if (decided && dy >= GO && Date.now() - lastAt > COOLDOWN) refresh(); else hide();
+      armed = false;
+    }, { passive: true });
+    document.addEventListener('touchcancel', function () { if (on) { on = false; if (!busy) hide(); } }, { passive: true });
+  })();
+
   // ----- Telegram: свайп від лівого краю екрана — «Назад» (iOS і Android) -----
   // Працює на реєстрації, картці й статистиці. Тягнемо палець від краю: з'являється стрілка,
   // після ~72 px вона заповнюється — відпускаєш, і повертаємось на головну.

@@ -1719,3 +1719,24 @@ html, body { background: var(--nav); }
 
 /* Курсор у полях введення — чорний, як навбар (на світлому полі білий курсор не видно) */
 input, textarea, select { caret-color: var(--nav); }
+
+/* Telegram: «потягни вниз — оновити» */
+.ptr {
+  position: fixed; left: 50%; top: calc(var(--tg-top, 0px) + 8px); z-index: 61;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: #fff; color: var(--nav);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  opacity: 0; transform: translate(-50%, -44px);
+  pointer-events: none;
+}
+.ptr__arrow { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transition: opacity 0.15s ease; }
+.ptr.is-armed .ptr__arrow { color: #3f7d0f; }
+.ptr__spin { display: none; width: 20px; height: 20px; border-radius: 50%; border: 2.4px solid #e4e7ec; border-top-color: var(--nav); }
+.ptr.is-busy .ptr__arrow { display: none; }
+.ptr.is-busy .ptr__spin { display: block; animation: ptr-spin 0.7s linear infinite; }
+@keyframes ptr-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: no-preference) {
+  .ptr:not(.is-dragging) { transition: opacity 0.2s ease, transform 0.25s ease; }
+}
+@supports (corner-shape: squircle) { .ptr, .ptr__spin, .swipe-back { corner-shape: round; } }
