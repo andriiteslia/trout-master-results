@@ -2185,20 +2185,20 @@
       // фото / ініціали з обідком кольору місця
       var place = st.played > 0 ? st.place : null;
       var ring = place === 1 ? '#e8b931' : place === 2 ? '#c0c7d2' : place === 3 ? '#d08a52' : '#76b11d';
-      var cx = W / 2, cy = 692, R = 158;
-      c.beginPath(); c.arc(cx, cy, R + 14, 0, Math.PI * 2); c.fillStyle = ring; c.fill();
+      var cx = W / 2, cy = 676, R = 132;
+      c.beginPath(); c.arc(cx, cy, R + 12, 0, Math.PI * 2); c.fillStyle = ring; c.fill();
       c.beginPath(); c.arc(cx, cy, R + 4, 0, Math.PI * 2); c.fillStyle = '#0a0a0a'; c.fill();
       c.save(); c.beginPath(); c.arc(cx, cy, R, 0, Math.PI * 2); c.clip();
       if (face) c.drawImage(face, cx - R, cy - R, R * 2, R * 2);
-      else { c.fillStyle = '#1c1f24'; c.fillRect(cx - R, cy - R, R * 2, R * 2); c.fillStyle = '#e4e7ec'; c.font = '800 130px Fixel, system-ui, sans-serif'; c.textBaseline = 'middle'; c.fillText(initials(st.name), cx, cy + 6); c.textBaseline = 'alphabetic'; }
+      else { c.fillStyle = '#1c1f24'; c.fillRect(cx - R, cy - R, R * 2, R * 2); c.fillStyle = '#e4e7ec'; c.font = '800 110px Fixel, system-ui, sans-serif'; c.textBaseline = 'middle'; c.fillText(initials(st.name), cx, cy + 6); c.textBaseline = 'alphabetic'; }
       c.restore();
       if (place) {
-        var bx = cx + R * 0.72, by = cy + R * 0.72, br = 54;
+        var bx = cx + R * 0.74, by = cy + R * 0.74, br = 48;
         var medal = { 1: ['#fbefc6', '#6b4d00'], 2: ['#e9edf2', '#344054'], 3: ['#f6e3d2', '#7a3f12'] }[place] || ['#1f3d0a', '#ffffff'];
         c.beginPath(); c.arc(bx, by, br + 8, 0, Math.PI * 2); c.fillStyle = '#0a0a0a'; c.fill();
         c.beginPath(); c.arc(bx, by, br, 0, Math.PI * 2); c.fillStyle = medal[0]; c.fill();
         c.lineWidth = 6; c.strokeStyle = ring; c.stroke();
-        c.fillStyle = medal[1]; c.font = '800 ' + (place > 9 ? 56 : 68) + 'px Fixel, system-ui, sans-serif'; c.textBaseline = 'middle'; c.fillText(String(place), bx, by + 4); c.textBaseline = 'alphabetic';
+        c.fillStyle = medal[1]; c.font = '800 ' + (place > 9 ? 50 : 60) + 'px Fixel, system-ui, sans-serif'; c.textBaseline = 'middle'; c.fillText(String(place), bx, by + 4); c.textBaseline = 'alphabetic';
       }
       // ім'я
       c.fillStyle = '#ffffff'; fitText(c, st.name, 960, 96, 800); c.fillText(st.name, W / 2, 960);
