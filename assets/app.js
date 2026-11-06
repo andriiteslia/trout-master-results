@@ -2156,9 +2156,11 @@
   }
   function fitText(ctx, text, maxW, size, weight) {
     var s = size;
-    do { ctx.font = weight + ' ' + s + 'px Fixel, system-ui, sans-serif'; s -= 2; } while (ctx.measureText(text).width > maxW && s > 20);
+    do { ctx.font = weight + ' ' + s + 'px Fixel, system-ui, sans-serif'; s -= 1; } while (ctx.measureText(text).width > maxW && s > 12);
   }
-  function storyCanvas(st) {
+  // fmt: 'story' — 1080×1920 (сторіс), 'wide' — 1440×1080 (4:3, допис / чат)
+  function storyCanvas(st, fmt) {
+    var wide = fmt === 'wide';
     var ev = (state.payload && state.payload.event) || {};
     var photo = PHOTOS[normName(st.name)];
     var total = cardPlayersCount();
@@ -2170,35 +2172,41 @@
       document.fonts && document.fonts.load ? Promise.all([document.fonts.load('700 80px Fixel'), document.fonts.load('500 30px Fixel')]).catch(function () {}) : null
     ]).then(function (r) {
       var logo = r[0], face = r[1], fish = r[2];
-      var W = 1080, H = 1920, cv = document.createElement('canvas');
+      var W = wide ? 1440 : 1080, H = wide ? 1080 : 1920, cv = document.createElement('canvas');
       cv.width = W; cv.height = H;
       var c = cv.getContext('2d');
       var track = function (px) { try { c.letterSpacing = px + 'px'; } catch (e) { /* */ } };
       var font = function (w, size) { c.font = w + ' ' + size + 'px ' + F; };
       var place = st.played > 0 ? st.place : null;
       var accent = place === 1 ? '#e8c35a' : place === 2 ? '#c9d0da' : place === 3 ? '#d79a6a' : '#8fd12a';
+      // Розкладка: сторіс — усе по центру стовпчиком; 4:3 — ліворуч людина, праворуч статистика
+      var L = wide
+        ? { cx: 400, logoW: 280, logoY: 112, titleY: 262, subY: 302, photoY: 500, R: 122, nameY: 722, nameW: 660, nameS: 62, placeY: 776,
+            px: 780, py: 210, pw: 580, ph: 560, footY: 952, botY: 998, footX: W / 2, glowX: 400, glowY: 470, fishX: W - 980, fishY: 640, fishW: 960 }
+        : { cx: W / 2, logoW: 340, logoY: 214, titleY: 390, subY: 434, photoY: 640, R: 118, nameY: 878, nameW: 920, nameS: 78, placeY: 936,
+            px: 90, py: 1010, pw: W - 180, ph: 520, footY: 1600, botY: 1648, footX: W / 2, glowX: W / 2, glowY: 560, fishX: W - 1180 - 10, fishY: 1240, fishW: 1180 };
 
-      // фон: глибокий чорний, м'яке зелене світло зверху, ледь помітна форель унизу (голова видно праворуч)
+      // фон: глибокий чорний, м'яке зелене світло, ледь помітна форель (голова праворуч)
       c.fillStyle = '#08090a'; c.fillRect(0, 0, W, H);
-      var g = c.createRadialGradient(W / 2, 560, 20, W / 2, 560, 820);
+      var g = c.createRadialGradient(L.glowX, L.glowY, 20, L.glowX, L.glowY, wide ? 700 : 820);
       g.addColorStop(0, 'rgba(118,177,29,0.20)'); g.addColorStop(0.55, 'rgba(118,177,29,0.06)'); g.addColorStop(1, 'rgba(118,177,29,0)');
       c.fillStyle = g; c.fillRect(0, 0, W, H);
       if (fish) {
-        var fw = 1180, fh = fw * fish.height / fish.width;
-        c.globalAlpha = 0.07; c.drawImage(fish, W - fw - 10, 1240, fw, fh); c.globalAlpha = 1;
+        var fh = L.fishW * fish.height / fish.width;
+        c.globalAlpha = 0.07; c.drawImage(fish, L.fishX, L.fishY, L.fishW, fh); c.globalAlpha = 1;
       }
       c.textAlign = 'center'; c.textBaseline = 'alphabetic';
 
       // лого й назва турніру
-      if (logo) { var lw = 340, lh = lw * 306 / 1020; c.drawImage(logo, (W - lw) / 2, 214, lw, lh); }
-      track(5); font(500, 26); c.fillStyle = '#9aa3b2';
+      if (logo) { var lh = L.logoW * 306 / 1020; c.drawImage(logo, L.cx - L.logoW / 2, L.logoY, L.logoW, lh); }
+      track(5); font(500, wide ? 24 : 26); c.fillStyle = '#9aa3b2';
       var title = String(ev.title || 'TROUT MASTER').toUpperCase();
-      c.fillText(title, W / 2, 390);
+      fitText(c, title, wide ? 640 : 900, wide ? 24 : 26, 500); c.fillText(title, L.cx, L.titleY);
       track(0);
-      if (ev.subtitle) { font(400, 28); c.fillStyle = '#6b7380'; c.fillText(ev.subtitle, W / 2, 434); }
+      if (ev.subtitle) { c.fillStyle = '#6b7380'; fitText(c, ev.subtitle, wide ? 660 : 900, wide ? 26 : 28, 400); c.fillText(ev.subtitle, L.cx, L.subY); }
 
       // фото: тонкий обідок кольору місця з повітрям
-      var cx = W / 2, cy = 640, R = 118;
+      var cx = L.cx, cy = L.photoY, R = L.R;
       c.beginPath(); c.arc(cx, cy, R + 14, 0, Math.PI * 2); c.lineWidth = 3; c.strokeStyle = accent; c.stroke();
       c.save(); c.beginPath(); c.arc(cx, cy, R, 0, Math.PI * 2); c.clip();
       if (face) c.drawImage(face, cx - R, cy - R, R * 2, R * 2);
@@ -2215,10 +2223,10 @@
       }
 
       // ім'я і місце
-      c.fillStyle = '#ffffff'; track(-1); fitText(c, st.name, 920, 78, 700); c.fillText(st.name, W / 2, 878); track(0);
+      c.fillStyle = '#ffffff'; track(-1); fitText(c, st.name, L.nameW, L.nameS, 700); c.fillText(st.name, cx, L.nameY); track(0);
       if (place) {
         var pt = place + ' місце' + (total ? ' з ' + total : '');
-        track(1); font(500, 32); c.fillStyle = accent; c.fillText(pt, W / 2, 936); track(0);
+        track(1); font(500, wide ? 30 : 32); c.fillStyle = accent; c.fillText(pt, cx, L.placeY); track(0);
       }
 
       // панель статистики: одна скляна картка 2×2 з тонкими роздільниками
@@ -2230,24 +2238,24 @@
           ? ['ПРОТИ СУПЕРНИКІВ', st.vsOpp.mine + ':' + st.vsOpp.theirs, (st.vsOpp.mine - st.vsOpp.theirs > 0 ? '+' : '') + (st.vsOpp.mine - st.vsOpp.theirs) + ' ' + fishWord(Math.abs(st.vsOpp.mine - st.vsOpp.theirs))]
           : ['НАЙКРАЩИЙ ТУР', st.best ? String(st.best.fish) : '—', st.best ? fishWord(st.best.fish) + ' · тур ' + st.best.n : '']
       ];
-      var px = 90, py = 1010, pw = W - px * 2, ph = 520, cw = pw / 2, ch = ph / 2;
+      var px = L.px, py = L.py, pw = L.pw, ph = L.ph, cw = pw / 2, ch = ph / 2;
       rrect(c, px, py, pw, ph, 44);
       c.fillStyle = 'rgba(255,255,255,0.035)'; c.fill();
       c.lineWidth = 1.5; c.strokeStyle = 'rgba(255,255,255,0.10)'; c.stroke();
       c.strokeStyle = 'rgba(255,255,255,0.08)'; c.lineWidth = 1.5;
       c.beginPath(); c.moveTo(px + cw, py + 36); c.lineTo(px + cw, py + ph - 36); c.moveTo(px + 36, py + ch); c.lineTo(px + pw - 36, py + ch); c.stroke();
       stats.forEach(function (t, i) {
-        var x = px + (i % 2) * cw + 48, y = py + Math.floor(i / 2) * ch;
+        var x = px + (i % 2) * cw + (wide ? 40 : 48), y = py + Math.floor(i / 2) * ch, inner = cw - (wide ? 80 : 96);
         c.textAlign = 'left';
-        track(3); font(500, 22); c.fillStyle = '#7d8696'; c.fillText(t[0], x, y + 72); track(0);
-        c.fillStyle = '#ffffff'; track(-1); fitText(c, t[1], cw - 96, 68, 650); c.fillText(t[1], x, y + 160); track(0);
-        if (t[2]) { c.fillStyle = '#8a93a3'; fitText(c, t[2], cw - 96, 26, 400); c.fillText(t[2], x, y + 206); }
+        track(wide ? 2 : 3); fitText(c, t[0], inner, 22, 500); c.fillStyle = '#7d8696'; c.fillText(t[0], x, y + 72); track(0);
+        c.fillStyle = '#ffffff'; track(-1); fitText(c, t[1], inner, wide ? 62 : 68, 650); c.fillText(t[1], x, y + 160); track(0);
+        if (t[2]) { c.fillStyle = '#8a93a3'; fitText(c, t[2], inner, wide ? 24 : 26, 400); c.fillText(t[2], x, y + 206); }
         c.textAlign = 'center';
       });
 
       // підпис
-      track(4); font(500, 22); c.fillStyle = '#6b7380'; c.fillText('РЕЗУЛЬТАТИ Й СТАТИСТИКА', W / 2, 1600); track(0);
-      font(600, 36); c.fillStyle = '#9bd83a'; c.fillText('@troutmasterua_bot', W / 2, 1648);
+      track(4); font(500, 22); c.fillStyle = '#6b7380'; c.fillText('РЕЗУЛЬТАТИ Й СТАТИСТИКА', L.footX, L.footY); track(0);
+      font(600, 36); c.fillStyle = '#9bd83a'; c.fillText('@troutmasterua_bot', L.footX, L.botY);
       return cv;
     });
   }
@@ -2267,6 +2275,9 @@
       story.el.setAttribute('aria-modal', 'true');
       story.el.setAttribute('aria-label', 'Поділитися результатом');
       story.el.innerHTML = '<div class="story__box"><div class="story__img"><span class="story__spin" aria-hidden="true"></span></div>' +
+        '<div class="story__fmt" role="radiogroup" aria-label="Формат картинки">' +
+          '<button type="button" role="radio" data-fmt="story" aria-checked="true">Сторіс 9:16</button>' +
+          '<button type="button" role="radio" data-fmt="wide" aria-checked="false">Допис 4:3</button></div>' +
         '<p class="story__hint" hidden>Утримуй картинку, щоб зберегти її в Фото, а далі — додай у сторіс.</p>' +
         '<div class="story__acts"><button type="button" class="btn btn-primary story__share">Поділитися</button>' +
         '<a class="btn btn-secondary story__save" download>Зберегти</a>' +
@@ -2274,19 +2285,36 @@
       document.body.appendChild(story.el);
       story.el.addEventListener('click', function (e) { if (e.target === story.el || e.target.closest('.story__close')) closeStory(); });
       document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && story.el && !story.el.hidden) closeStory(); });
+      story.el.querySelector('.story__fmt').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-fmt]');
+        if (!b || b.getAttribute('data-fmt') === story.fmt) return;
+        story.fmt = b.getAttribute('data-fmt');
+        try { localStorage.setItem('tm:storyFmt', story.fmt); } catch (x) { /* */ }
+        renderStory();
+      });
       story.el.querySelector('.story__share').addEventListener('click', function () {
         if (!story.file) return;
         navigator.share({ files: [story.file], title: 'TROUT MASTER' }).catch(function () { /* скасував */ });
       });
     }
-    var box = story.el.querySelector('.story__img');
-    box.innerHTML = '<span class="story__spin" aria-hidden="true"></span>';
+    story.st = st;
+    if (!story.fmt) { try { story.fmt = localStorage.getItem('tm:storyFmt') || 'story'; } catch (x) { story.fmt = 'story'; } }
     story.el.hidden = false;
     document.documentElement.classList.add('story-open');
-    storyCanvas(st).then(function (cv) {
+    renderStory();
+  }
+  function renderStory() {
+    var st = story.st, fmt = story.fmt === 'wide' ? 'wide' : 'story';
+    [].forEach.call(story.el.querySelectorAll('[data-fmt]'), function (b) { b.setAttribute('aria-checked', String(b.getAttribute('data-fmt') === fmt)); });
+    var box = story.el.querySelector('.story__img');
+    box.classList.toggle('is-wide', fmt === 'wide');
+    box.innerHTML = '<span class="story__spin" aria-hidden="true"></span>';
+    if (story.url) { try { URL.revokeObjectURL(story.url); } catch (e) { /* */ } story.url = null; }
+    var token = story.token = (story.token || 0) + 1;
+    storyCanvas(st, fmt).then(function (cv) {
       cv.toBlob(function (blob) {
-        if (!blob) return;
-        var fname = 'trout-master-' + (st.num || 'result') + '.png';
+        if (!blob || token !== story.token) return;
+        var fname = 'trout-master-' + (st.num || 'result') + (fmt === 'wide' ? '-4x3' : '-story') + '.png';
         story.file = typeof File === 'function' ? new File([blob], fname, { type: 'image/png' }) : null;
         story.url = URL.createObjectURL(blob);
         box.innerHTML = '<img alt="Результат: ' + esc(st.name) + '" src="' + story.url + '">';

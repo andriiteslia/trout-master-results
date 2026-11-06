@@ -1009,6 +1009,9 @@ var BC_TITLE = 'Розсилка в Telegram';
 var BC_TO_NONE = '—';               // нікому не обрано: «Надіслати» нічого не робить
 var BC_TO_REG = 'Учасникам турніру';
 var BC_TO_ALL = 'Усім, хто відкривав апку';
+var BC_CHAT = '@troutmasterua';                        // публічний чат/канал турніру
+var BC_TO_CHAT = 'У чат ' + BC_CHAT;
+var BC_APP_LINK = 'https://t.me/troutmasterua_bot?startapp';   // у групах і каналах кнопка відкриває апку через посилання
 var BC_IDLE = '—';
 var BC_TEST = 'Надіслати тест собі';
 var BC_SEND = 'Надіслати';
@@ -1055,9 +1058,9 @@ function setupBroadcast_(sh) {
   var to = sh.getRange(r + BC_TO, 2);
   var toNow = String(to.getDisplayValue()).trim();
   to.clearDataValidations();
-  to.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList([BC_TO_NONE, BC_TO_REG, BC_TO_ALL], true).setAllowInvalid(false).build())
+  to.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList([BC_TO_NONE, BC_TO_REG, BC_TO_ALL, BC_TO_CHAT], true).setAllowInvalid(false).build())
     .setFontWeight('bold').setBackground('#e3f0fa');
-  if (toNow !== BC_TO_REG && toNow !== BC_TO_ALL) to.setValue(BC_TO_NONE);
+  if (toNow !== BC_TO_REG && toNow !== BC_TO_ALL && toNow !== BC_TO_CHAT) to.setValue(BC_TO_NONE);
 
   sh.getRange(r + BC_TESTID, 2).setNumberFormat('@').setBackground('#e3f0fa').setHorizontalAlignment('left');
 
@@ -1093,6 +1096,7 @@ function setupBroadcast_(sh) {
     '\n«Фото» — картинка з таблички «' + BC_PICS_TITLE + '» нижче (порожньо — лише текст). Текст стає підписом під фото; якщо він довший за 1024 символи — бот надішле фото, а за ним текст окремим повідомленням. ' +
     '\n«Кому» спершу «—»: поки не оберете отримувачів, «' + BC_SEND + '» нічого не надішле (тест собі працює завжди). Після розсилки «Кому» знову стає «—». ' +
     '\n«' + BC_TO_REG + '» — основний склад з аркуша «Учасники» (стільки, скільки вказано в «Кількість місць»; резерв не отримує). ' +
+    '«' + BC_TO_CHAT + '» — одне повідомлення в чат турніру (бот має бути доданий туди адміністратором з правом надсилати повідомлення; мітки {ім\'я}, {місце} там не працюють). ' +
     '«' + BC_TO_ALL + '» — усі з аркуша «Відвідування». Бот може написати лише тим, хто колись натиснув Start у боті або дозволив повідомлення: кому не дійшло, тому в «Відвідуванні» стане «Можна писати: ні». ' +
     '\nУ тексті можна писати мітки — кожен отримає свої дані: {ім\'я} (у кличному відмінку: Андрію, Олександре), {прізвище}, {номер}, {місце} (напр. 5-те), {бали}, {риби}. ' +
     '{місце}, {бали} і {риби} беруться з опублікованих результатів — спершу опублікуйте їх у B3. Кому мітку нема чим заповнити, той повідомлення не отримує. ' +
@@ -1235,6 +1239,7 @@ function bcRecipients_(ss, toReg) {
 
 function recipientsInfo_(ss, sh, r) {
   var toVal = String(sh.getRange(r + BC_TO, 2).getDisplayValue()).trim();
+  if (toVal === BC_TO_CHAT) return 'Готово до розсилки: одне повідомлення в чат ' + BC_CHAT;
   if (toVal !== BC_TO_REG && toVal !== BC_TO_ALL) return 'Оберіть у «Кому», кому надсилати';
   var toReg = toVal === BC_TO_REG;
   var list = bcRecipients_(ss, toReg);
@@ -1378,7 +1383,9 @@ function broadcast_(ss, sh, r, test) {
     var results = publishedResults_();   // для міток і для назви кнопки
     var toVal = String(sh.getRange(r + BC_TO, 2).getDisplayValue()).trim();
     var toReg = toVal === BC_TO_REG;
-    if (!test && toVal !== BC_TO_REG && toVal !== BC_TO_ALL) { bcStatus_(sh, r, '⚠️ Не надіслано: оберіть у «Кому», кому надсилати'); return; }
+    var toChat = toVal === BC_TO_CHAT;
+    if (!test && toVal !== BC_TO_REG && toVal !== BC_TO_ALL && !toChat) { bcStatus_(sh, r, '⚠️ Не надіслано: оберіть у «Кому», кому надсилати'); return; }
+    if (!test && toChat && hasTags) { bcStatus_(sh, r, '⚠️ У чат не надіслано: мітки {ім\'я}, {місце}… працюють лише в особистих повідомленнях — приберіть їх з тексту'); return; }
 
     var list;
     if (test) {
@@ -1388,6 +1395,8 @@ function broadcast_(ss, sh, r, test) {
       var mine = bcRecipients_(ss, true).find(function (x) { return x.id === tid; });
       var person = mine ? mine.person : (hasTags ? (mainSquad_(ss)[0] || null) : null);
       list = [{ id: tid, person: person, visitRow: 0 }];
+    } else if (toChat) {
+      list = [{ id: BC_CHAT, person: null, visitRow: 0, chat: true }];
     } else {
       list = bcRecipients_(ss, toReg);
       if (!list.length) { bcStatus_(sh, r, '⚠️ Немає кому надсилати'); return; }
@@ -1432,7 +1441,8 @@ function broadcast_(ss, sh, r, test) {
       var url = SETTINGS.SITE_URL + (x.person && x.person.num ? '?sel=' + encodeURIComponent(x.person.num) : '');
       var res0 = x.person && results ? results[x.person.name.toLowerCase()] : null;
       var played = res0 && res0.place > 0 && (Number(String(res0.pts).replace(',', '.')) > 0 || Number(res0.fish) > 0);
-      var row0 = [{ text: played ? BC_BUTTON_ME : BC_BUTTON, web_app: { url: url } }];
+      // У групах і каналах Telegram не дозволяє кнопку-апку — там звичайне посилання на апку
+      var row0 = [x.chat ? { text: BC_BUTTON, url: BC_APP_LINK } : { text: played ? BC_BUTTON_ME : BC_BUTTON, web_app: { url: url } }];
       if (extraBtn) row0.push(extraBtn);
       var markup = { inline_keyboard: [row0] };
       var res = send(x.id, body, markup);
@@ -1455,6 +1465,9 @@ function broadcast_(ss, sh, r, test) {
       ? '🧪 ' + now() + ' · ' + (sent ? 'тест надіслано собі' + (pic.name ? ' з фото «' + pic.name + '»' : '') + (list[0].person && hasTags ? ' (з даними: ' + list[0].person.name + ')' : '')
           : skipped ? 'тест не надіслано: для «' + (list[0].person ? list[0].person.name : 'вас') + '» немає даних для міток (місце/бали — спершу опублікуйте результати)'
           : 'тест не дійшов — перевірте ID і чи натиснули ви Start у боті')
+      : toChat
+        ? (sent ? '✅ ' + now() + ' · надіслано в чат ' + BC_CHAT + (pic.name ? ' (фото «' + pic.name + '»)' : '')
+                : '⚠️ ' + now() + ' · у чат ' + BC_CHAT + ' не надіслано: додайте бота в чат адміністратором з правом надсилати повідомлення')
       : '✅ ' + now() + ' · ' + (toReg ? 'учасникам' : 'усім, хто відкривав') + (pic.name ? ' (фото «' + pic.name + '»)' : '') + ': надіслано ' + sent + ' з ' + total +
         (blocked ? ' · ' + blocked + ' не дозволили боту писати' : '') +
         (skipped ? ' · ' + skipped + ' без даних для міток' : '') +
