@@ -1994,7 +1994,7 @@ input, textarea, select { caret-color: var(--nav); }
 .btools__card { display: none; }
 @media (min-width: 980px) {
   .btools__card:not([hidden]) {
-    display: inline-flex; order: 5; height: 40px; padding: 0 18px; color: #fff; border: 0;
+    display: inline-flex; order: 3; height: 40px;   /* ліворуч від пошуку — пошук не зсувається */ padding: 0 18px; color: #fff; border: 0;
     background: linear-gradient(135deg, #4a9112 0%, #2b660a 100%); background-origin: border-box; background-repeat: no-repeat;
     box-shadow: 0 6px 16px rgba(43, 102, 10, 0.25);
   }
