@@ -1420,7 +1420,7 @@ function broadcast_(ss, sh, r, test) {
 
     bcStatus_(sh, r, '⏳ Надсилаю… 0 з ' + list.length);
     SpreadsheetApp.flush();
-    var sent = 0, blocked = 0, failed = 0, skipped = 0, vs = ss.getSheetByName(VISITS_SHEET);
+    var sent = 0, blocked = 0, noStart = 0, gone = 0, failed = 0, skipped = 0, errs = {}, vs = ss.getSheetByName(VISITS_SHEET);
     var send = function (chatId, body, markup) {
       var html = bcHtml_(body);
       if (!photo) return tgApi_('sendMessage', { chat_id: chatId, text: html, parse_mode: 'HTML', reply_markup: markup, disable_web_page_preview: true });
@@ -1453,10 +1453,15 @@ function broadcast_(ss, sh, r, test) {
       if (res && res.ok) {
         sent++;
         if (vs && x.visitRow && !test) vs.getRange(x.visitRow, VISITS_COL_WRITE).setValue('так');
-      } else if (res && (res.error_code === 403 || res.error_code === 400)) {   // не дозволив боту писати / заблокував
-        blocked++;
-        if (vs && x.visitRow && !test) vs.getRange(x.visitRow, VISITS_COL_WRITE).setValue('ні');
-      } else failed++;
+      } else {
+        // Розрізняємо причину за текстом помилки Telegram
+        var why = bcWhy_(res);
+        if (why === 'blocked') blocked++;
+        else if (why === 'nostart') noStart++;
+        else if (why === 'gone') gone++;
+        else { failed++; var d = String((res && res.description) || 'немає відповіді').replace(/^Bad Request:\s*/i, ''); errs[d] = (errs[d] || 0) + 1; }
+        if (why && vs && x.visitRow && !test) vs.getRange(x.visitRow, VISITS_COL_WRITE).setValue('ні');
+      }
       if (i % 10 === 9) { bcStatus_(sh, r, '⏳ Надсилаю… ' + (i + 1) + ' з ' + list.length); SpreadsheetApp.flush(); }
       Utilities.sleep(60);   // ~15 повідомлень за секунду — з запасом до ліміту Telegram
     }
@@ -1469,9 +1474,11 @@ function broadcast_(ss, sh, r, test) {
         ? (sent ? '✅ ' + now() + ' · надіслано в чат ' + BC_CHAT + (pic.name ? ' (фото «' + pic.name + '»)' : '')
                 : '⚠️ ' + now() + ' · у чат ' + BC_CHAT + ' не надіслано: додайте бота в чат адміністратором з правом надсилати повідомлення')
       : '✅ ' + now() + ' · ' + (toReg ? 'учасникам' : 'усім, хто відкривав') + (pic.name ? ' (фото «' + pic.name + '»)' : '') + ': надіслано ' + sent + ' з ' + total +
-        (blocked ? ' · ' + blocked + ' не дозволили боту писати' : '') +
+        (noStart ? ' · ' + noStart + ' ще не натискали Start у боті' : '') +
+        (blocked ? ' · ' + blocked + ' заблокували бота' : '') +
+        (gone ? ' · ' + gone + ' видалили акаунт' : '') +
         (skipped ? ' · ' + skipped + ' без даних для міток' : '') +
-        (failed ? ' · ' + failed + ' помилка' : '');
+        (failed ? ' · ' + failed + ' помилка (' + Object.keys(errs).slice(0, 2).join('; ') + ')' : '');
     bcStatus_(sh, r, msg);
     // Після справжньої розсилки «Кому» знову порожнє — щоб наступну не надіслати випадково не тим
     if (!test) sh.getRange(r + BC_TO, 2).setValue(BC_TO_NONE);
@@ -1481,6 +1488,17 @@ function broadcast_(ss, sh, r, test) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/** Чому Telegram не доставив: 'blocked' | 'nostart' | 'gone' | '' (інша помилка) */
+function bcWhy_(res) {
+  if (!res || res.ok) return '';
+  var d = String(res.description || '').toLowerCase();
+  if (/blocked by the user/.test(d)) return 'blocked';
+  if (/deactivated/.test(d)) return 'gone';
+  if (/can't initiate|chat not found|have no rights to send a message|bot can't send messages to bots/.test(d)) return 'nostart';
+  if (res.error_code === 403) return 'nostart';
+  return '';
 }
 
 function tgApi_(method, payload) {
@@ -1521,6 +1539,14 @@ function handleTelegramUpdate_(e) {
   }
   // Будь-яке повідомлення боту (Start, текст, дозвіл із застосунку) означає, що писати можна
   upsertTgUser_(ss, user, { canWrite: true, names: regNamesFor_(ss, user.id) });
+  if (/^\/start\s+notify\b/.test(String(msg.text || ''))) {   // натиснули кнопку «Отримувати повідомлення» з чату
+    tgApi_('sendMessage', {
+      chat_id: from.id,
+      text: '🔔 Готово! Тепер я надсилатиму вам нагадування перед турніром і ваші результати.',
+      reply_markup: { inline_keyboard: [[{ text: 'Відкрити TM APP', web_app: { url: SETTINGS.SITE_URL } }]] }
+    });
+    return;
+  }
   if (/^\/start\b/.test(String(msg.text || '')) && SETTINGS.BOT_GREETING) {
     tgApi_('sendMessage', {
       chat_id: from.id,
