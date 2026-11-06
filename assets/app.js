@@ -1739,8 +1739,9 @@
       .then(function (res) {
         if (res && res.ok && res.canWrite === true) state.canWrite = true;
         if (res && res.ok && Array.isArray(res.names)) applyMyNames(res.names);
+        nbarReady();
       })
-      .catch(function () { /* не вийшло — нічого страшного */ });
+      .catch(function () { nbarReady(); /* не вийшло — нічого страшного */ });
   }
   document.addEventListener('tm-tg-ready', whoAmI);
 
@@ -1817,6 +1818,41 @@
         }
       });
     } catch (e) { renderNotify('none'); }
+  });
+
+  // Плашка над таблицею «Результати — у Telegram»: для всіх у ТГ, хто ще не дозволив боту писати.
+  // Показуємо лише після відповіді «Хто я?» (щоб не блимала тим, кому вже можна писати). Хрестик ховає на 14 днів.
+  var LS_NBAR = 'tm:nbarHideUntil', nbarOk = false;
+  function nbarReady() { nbarOk = true; renderNbar(); }
+  function renderNbar() {
+    var el = $('nbar');
+    if (!el) return;
+    var hideUntil = Number(store.get(LS_NBAR, 0)) || 0;
+    el.hidden = !(nbarOk && IN_TG && canOfferNotify() && Date.now() > hideUntil);
+  }
+  $('nbarX').addEventListener('click', function () {
+    store.set(LS_NBAR, Date.now() + 14 * 864e5);
+    renderNbar();
+  });
+  $('nbarGo').addEventListener('click', function () {
+    var tg = tgApp();
+    if (!tg) return;
+    try {
+      tg.requestWriteAccess(function (granted) {
+        if (granted) {
+          state.canWrite = true;
+          store.set(LS_WRITE, true);
+          sendWriteAccess(true);
+          var el = $('nbar');
+          el.classList.add('is-done');
+          $('nbarTxt').innerHTML = '<b>🔔 Готово!</b><small>Результати прийдуть у Telegram</small>';
+          setTimeout(function () { el.hidden = true; el.classList.remove('is-done'); }, 2600);
+        } else {
+          store.set(LS_NBAR, Date.now() + 14 * 864e5);
+          renderNbar();
+        }
+      });
+    } catch (e) { /* */ }
   });
 
   window.addEventListener('popstate', function (e) {

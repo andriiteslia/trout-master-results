@@ -1889,3 +1889,19 @@ input, textarea, select { caret-color: var(--nav); }
 /* Ховер «Поділитися» у перегляді: лишається зеленим, лише трохи світлішає (а не сіріє, як звичайна кнопка) */
 @media (hover: hover) { .story__share:hover { background: linear-gradient(135deg, #52a014 0%, #30720b 100%); color: #fff; border-color: transparent; } }
 .story__share:active { background: linear-gradient(135deg, #3f7d0f 0%, #245708 100%); color: #fff; }
+
+/* Плашка «Результати — у Telegram» над таблицею (лише в ТГ, поки бот не може писати) */
+.nbar { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; margin: 0 0 12px; padding: 14px 12px 14px 14px; border-radius: 20px; background: linear-gradient(135deg, #f1f8e6 0%, #e6f2d6 100%); border: 1px solid #d5e8bd; }
+.nbar[hidden] { display: none; }
+.nbar__ic { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, #4a9112 0%, #2b660a 100%); color: #fff; }
+.nbar__ic svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.nbar__txt b { display: block; font-size: 15px; line-height: 1.25; color: var(--text); }
+.nbar__txt small { display: block; margin-top: 2px; font-size: 13px; line-height: 1.3; color: var(--text-4); }
+.nbar__x { align-self: start; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #667085; display: grid; place-items: center; cursor: pointer; }
+.nbar__x svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.nbar__go { grid-column: 1 / -1; height: 44px; border: 0; border-radius: 999px; background: linear-gradient(135deg, #4a9112 0%, #2b660a 100%); background-origin: border-box; color: #fff; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+.nbar__go:active { background: linear-gradient(135deg, #3f7d0f 0%, #245708 100%); }
+@media (hover: hover) { .nbar__go:hover { background: linear-gradient(135deg, #52a014 0%, #30720b 100%); } }
+.nbar.is-done .nbar__go, .nbar.is-done .nbar__x { display: none; }
+@supports (corner-shape: squircle) { .nbar__ic, .nbar__x { corner-shape: round; } }
+@media (min-width: 980px) { .nbar { margin: 16px 24px; grid-template-columns: auto 1fr auto auto; } .nbar__go { grid-column: auto; grid-row: 1; grid-column-start: 3; padding: 0 22px; } .nbar__x { grid-column-start: 4; align-self: center; } }

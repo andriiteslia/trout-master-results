@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
   <link rel="preload" href="assets/fonts/fixel-cyrillic-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fish.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="assets/style.css?v=20261106w">
-  <script src="config.js?v=20261106w"></script>
+  <link rel="stylesheet" href="assets/style.css?v=20261106x">
+  <script src="config.js?v=20261106x"></script>
   <script>
     // Запитуємо результати одразу, паралельно з завантаженням решти сторінки
     (function () {
@@ -24,7 +24,7 @@
       } catch (e) { window.__tmEarly = null; }
     })();
   </script>
-  <script src="assets/app.js?v=20261106w" defer></script>
+  <script src="assets/app.js?v=20261106x" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -107,6 +107,12 @@
           <button type="button" class="selbar__x" id="selClear" aria-label="Зняти вибір">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
           </button>
+        </div>
+        <div class="nbar" id="nbar" hidden>
+          <span class="nbar__ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 10a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg></span>
+          <span class="nbar__txt" id="nbarTxt"><b>Результати — у Telegram</b><small>Бот напише ваше місце й підсумки після турніру</small></span>
+          <button type="button" class="nbar__x" id="nbarX" aria-label="Закрити"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button type="button" class="nbar__go" id="nbarGo">Отримувати результати</button>
         </div>
         <section class="board" id="board" role="tabpanel" aria-label="Таблиця результатів"></section>
       </section>
