@@ -2222,12 +2222,22 @@
       // фон: глибокий чорний, м'яке зелене світло, ледь помітна форель (голова праворуч)
       c.fillStyle = '#08090a'; c.fillRect(0, 0, W, H);
       var g = c.createRadialGradient(L.glowX, L.glowY, 20, L.glowX, L.glowY, wide ? 700 : 820);
-      g.addColorStop(0, 'rgba(118,177,29,0.20)'); g.addColorStop(0.55, 'rgba(118,177,29,0.06)'); g.addColorStop(1, 'rgba(118,177,29,0)');
+      g.addColorStop(0, 'rgba(118,177,29,0.16)'); g.addColorStop(0.3, 'rgba(118,177,29,0.10)'); g.addColorStop(0.6, 'rgba(118,177,29,0.04)'); g.addColorStop(1, 'rgba(118,177,29,0)');
       c.fillStyle = g; c.fillRect(0, 0, W, H);
       if (fish) {
         var fh = L.fishW * fish.height / fish.width;
         c.globalAlpha = 0.07; c.drawImage(fish, L.fishX, L.fishY, L.fishW, fh); c.globalAlpha = 1;
       }
+      // Дизеринг: ледь помітний «шум» на фоні, щоб плавне світло не розпадалося на смуги
+      // після стиснення в Instagram/Telegram
+      try {
+        var img = c.getImageData(0, 0, W, H), px8 = img.data;
+        for (var k = 0; k < px8.length; k += 4) {
+          var n = (Math.random() + Math.random() - 1) * 5;
+          px8[k] += n; px8[k + 1] += n; px8[k + 2] += n;
+        }
+        c.putImageData(img, 0, 0);
+      } catch (e) { /* */ }
       c.textAlign = 'center'; c.textBaseline = 'alphabetic';
 
       // лого й назва турніру
