@@ -2968,17 +2968,30 @@
     clearTimeout(toastT);
     toastT = setTimeout(function () { v2.toast.hidden = true; }, 2600);
   }
-  // Перемикач мови в шапці: вибір запам'ятовується, сторінка перезавантажується
+  // Перемикач мови в шапці: без перезавантаження — i18n.js міняє тексти на місці, а ми перемальовуємо блоки
   (function () {
     var sw = document.getElementById('langSw');
     if (!sw) return;
-    var cur = I18N.lang || 'uk';
-    [].forEach.call(sw.querySelectorAll('[data-lang]'), function (b) {
-      b.setAttribute('aria-pressed', String(b.getAttribute('data-lang') === cur));
-      b.addEventListener('click', function () {
-        var l = b.getAttribute('data-lang');
-        if (l !== cur && I18N.setLang) I18N.setLang(l);
-      });
+    var btns = [].slice.call(sw.querySelectorAll('[data-lang]'));
+    function mark() { btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-lang') === (I18N.lang || 'uk'))); }); }
+    mark();
+    btns.forEach(function (b) {
+      b.addEventListener('click', function () { if (I18N.setLang) I18N.setLang(b.getAttribute('data-lang')); });
+    });
+    window.addEventListener('tm:lang', function () {
+      mark();
+      var y = window.scrollY;
+      try {
+        renderStatus(false);
+        if (state.payload) renderAll();
+        renderSelbar(); renderSide(); renderTimer();
+        if (v2.selbar.hidden) v2.selName.textContent = '';
+        // приховані екрани (картка/статистика) перемалюються при наступному відкритті
+        if (state.view !== 'card' && pc && pc.body) pc.body.innerHTML = '';
+        if (state.view !== 'stats' && ts && ts.body) ts.body.innerHTML = '';
+        if (story && story.el && !story.el.hidden) renderStory();
+      } catch (e) { /* */ }
+      window.scrollTo(0, y);   // лишаємось на тому самому місці
     });
   })();
 

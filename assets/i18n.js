@@ -34,9 +34,17 @@
   document.documentElement.lang = EN ? 'en' : 'uk';
   if (EN) document.documentElement.classList.add('lang-en');
 
+  // Перемикання без перезавантаження: перекладаємо/повертаємо тексти на місці, апка перемальовує свої блоки
   function setLang(l) {
+    if (l !== 'en' && l !== 'uk') return;
     try { localStorage.setItem(LS, l); } catch (e) { /* */ }
-    location.reload();
+    if (l === pick) return;
+    pick = l; EN = l === 'en';
+    API.lang = pick; API.en = EN;
+    document.documentElement.lang = l;
+    document.documentElement.classList.toggle('lang-en', EN);
+    if (EN) start(); else restore();
+    try { window.dispatchEvent(new CustomEvent('tm:lang', { detail: l })); } catch (e) { /* */ }
   }
 
   // ---------- Транслітерація (КМУ № 55 від 27.01.2010) ----------
@@ -274,14 +282,20 @@
 
   // ---------- Сторінка: перекладаємо тексти й підписи ----------
   var ATTRS = ['aria-label', 'title', 'placeholder', 'alt', 'content'];
-  var busy = false;
+  var busy = false, observing = false;
+  var ORIG = new WeakMap(), ORIG_A = new WeakMap();   // українські оригінали — щоб повернути без перезавантаження
+  function setAttr(el, name, val) {
+    var o = ORIG_A.get(el) || {};
+    o[name] = val; ORIG_A.set(el, o);
+    el.setAttribute(name, tr(val));
+  }
   function fixNode(n) {
     if (n.nodeType === 3) {
       var v = n.nodeValue;
       if (v && NEED.test(v)) {
         var p = n.parentNode && n.parentNode.nodeName;
         if (p === 'SCRIPT' || p === 'STYLE' || p === 'TEXTAREA') return;
-        var t = tr(v); if (t !== v) n.nodeValue = t;
+        var t = tr(v); if (t !== v) { ORIG.set(n, v); n.nodeValue = t; }
       }
       return;
     }
@@ -289,15 +303,26 @@
     if (n.nodeName === 'SCRIPT' || n.nodeName === 'STYLE') return;
     for (var i = 0; i < ATTRS.length; i++) {
       var a = n.getAttribute(ATTRS[i]);
-      if (a && NEED.test(a)) n.setAttribute(ATTRS[i], tr(a));
+      if (a && NEED.test(a)) setAttr(n, ATTRS[i], a);
     }
     for (var c = n.firstChild; c; c = c.nextSibling) fixNode(c);
   }
+  function restore() {
+    busy = true;
+    var w = document.createTreeWalker(document.documentElement, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT), n;
+    while ((n = w.nextNode())) {
+      if (n.nodeType === 3) { if (ORIG.has(n)) { n.nodeValue = ORIG.get(n); ORIG.delete(n); } }
+      else if (ORIG_A.has(n)) { var o = ORIG_A.get(n); for (var k in o) n.setAttribute(k, o[k]); ORIG_A.delete(n); }
+    }
+    busy = false;
+  }
   function start() {
     if (!EN) return;
-    fixNode(document.documentElement);
+    busy = true; fixNode(document.documentElement); busy = false;
+    if (observing) return;
+    observing = true;
     new MutationObserver(function (list) {
-      if (busy) return;
+      if (busy || !EN) return;
       busy = true;
       for (var i = 0; i < list.length; i++) {
         var m = list[i];
@@ -305,7 +330,7 @@
         else if (m.type === 'characterData') fixNode(m.target);
         else if (m.type === 'attributes') {
           var a = m.target.getAttribute(m.attributeName);
-          if (a && NEED.test(a)) m.target.setAttribute(m.attributeName, tr(a));
+          if (a && NEED.test(a)) setAttr(m.target, m.attributeName, a);
         }
       }
       busy = false;
@@ -323,7 +348,7 @@
     return f ? (Math.abs(n) === 1 ? f[0] : f[1]) : null;
   }
 
-  window.TM_I18N = {
+  var API = window.TM_I18N = {
     lang: pick, en: EN, misses: misses, tr: tr, translit: translit, plural: plural, setLang: setLang, start: start, ord: ord,
     setEvent: function (ev) {
       if (!ev) return;
