@@ -1,5 +1,7 @@
 (function () {
   'use strict';
+  // Мова інтерфейсу (assets/i18n.js): апка рендерить українською, англійську підставляє i18n.js
+  var I18N = window.TM_I18N || { en: false, tr: function (s) { return s; }, translit: function (s) { return s; }, plural: function () { return null; } };
 
   // ---------- Автооновлення апки ----------
   // Telegram і браузери інколи тримають стару версію сторінки в кеші. Тому апка сама перевіряє,
@@ -149,6 +151,7 @@
   var MONTHS = ['січ.', 'лют.', 'бер.', 'кві.', 'тра.', 'чер.', 'лип.', 'сер.', 'вер.', 'жов.', 'лис.', 'гру.'];
   function isToday(d) { return d.toDateString() === new Date().toDateString(); }
   function plural(n, one, few, many) {
+    if (I18N.en) { var en = I18N.plural(n, one, few, many); if (en) return en; }
     var a = Math.abs(n) % 100, b = a % 10;
     if (a > 10 && a < 20) return many;
     if (b > 1 && b < 5) return few;
@@ -415,7 +418,11 @@
       text = 'Оновлено ' + (isToday(new Date(at)) ? '\u2013 ' : '') + fmtTime(at);
     }
     el.status.dataset.state = s;
-    el.statusText.textContent = text;
+    // На вузькому телефоні слово «Оновлено» ховаємо (лишається зелена крапка й час), щоб у шапку влазив перемикач мови
+    var mw = s === 'live' && text.match(/^(Оновлено (?:\u2013 )?)(.*)$/);
+    if (mw) el.statusText.innerHTML = '<span class="st-w">' + esc(mw[1]) + '</span>' + esc(mw[2]);
+    else el.statusText.textContent = text;
+    el.status.setAttribute('aria-label', text);
     if (pulse && s === 'live') {
       el.status.classList.remove('is-pulse');
       void el.status.offsetWidth;
@@ -464,6 +471,7 @@
       state.changeTime = d.any ? Date.now() : 0;
     }
     state.payload = p;
+    if (p && p.event && I18N.setEvent) I18N.setEvent(p.event);
     state.models = models;
     state.fromCache = !!opts.cached;
     if (!opts.cached) store.set(LS.data, p);
@@ -624,7 +632,7 @@
     return k ? String(k).replace(/ #\d+$/, '') : null;
   }
   function num(v) { var n = parseFloat(String(v == null ? '' : v).replace(',', '.').replace(/[^\d.\-]/g, '')); return isNaN(n) ? null : n; }
-  function fmt1(v) { return (Math.round(v * 10) / 10).toString().replace('.', ','); }
+  function fmt1(v) { return (Math.round(v * 10) / 10).toString().replace('.', I18N.en ? '.' : ','); }
   function fishWord(n) { return plural(Math.round(n), 'риба', 'риби', 'риб'); }
 
   // Аркуш турів із публікації → { rounds, byName: { ім'я: {...} }, tourAvg: [...], totalFish, avgPerTour }
@@ -2153,7 +2161,7 @@
       (!p.mode && (p.sheets || []).length === 1 && /учасник/i.test(p.sheets[0].name || '')));
   }
   function tabLabel(name) { return /результат/i.test(name) ? 'Підсумок' : /^тур/i.test(String(name).trim()) ? 'По турах' : name; }
-  function initials(n) { return String(n || '').split(/\s+/).filter(Boolean).slice(0, 2).map(function (s) { return s.charAt(0); }).join('').toUpperCase(); }
+  function initials(n) { if (I18N.en) n = I18N.translit(n); return String(n || '').split(/\s+/).filter(Boolean).slice(0, 2).map(function (s) { return s.charAt(0); }).join('').toUpperCase(); }
   // ----- Фото учасників (assets/players/players.json: «прізвище ім'я» малими літерами → файл) -----
   // Кого немає у списку або чиє фото не завантажилось — показуємо ініціали.
   var PHOTOS = {};
@@ -2179,8 +2187,13 @@
     })
     .catch(function () { /* без фото — лишаються ініціали */ });
   function colBy(m, re) { return m.cols.find(function (k) { return k.role !== 'name' && k.role !== 'place' && re.test(k.label); }) || null; }
-  function fmtInt(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
-  function matchQuery(name) { var q = state.query.trim().toLowerCase(); return !q || String(name).toLowerCase().indexOf(q) !== -1; }
+  function fmtInt(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, I18N.en ? ',' : ' '); }
+  function matchQuery(name) {
+    var q = state.query.trim().toLowerCase();
+    if (!q) return true;
+    if (String(name).toLowerCase().indexOf(q) !== -1) return true;
+    return I18N.en && I18N.translit(String(name)).toLowerCase().indexOf(q) !== -1;   // англійською шукають латиницею
+  }
   function resultsModel() { return state.models.find(function (m) { return /результат/i.test(m.name); }) || null; }
   function placeByName() {
     var m = resultsModel(), map = {};
@@ -2299,6 +2312,11 @@
       var W = wide ? 1440 : 1080, H = wide ? 1080 : 1920, cv = document.createElement('canvas');
       cv.width = W; cv.height = H;
       var c = cv.getContext('2d');
+      if (I18N.en) {   // англійська: усі підписи на картинці перекладаємо так само, як на сторінці
+        var _ft = c.fillText.bind(c), _mt = c.measureText.bind(c);
+        c.fillText = function (s, x, y, w) { return w == null ? _ft(I18N.tr(String(s)), x, y) : _ft(I18N.tr(String(s)), x, y, w); };
+        c.measureText = function (s) { return _mt(I18N.tr(String(s))); };
+      }
       var track = function (px) { try { c.letterSpacing = px + 'px'; } catch (e) { /* */ } };
       var font = function (w, size) { c.font = w + ' ' + size + 'px ' + F; };
       var place = st.played > 0 ? st.place : null;
@@ -2950,7 +2968,22 @@
     clearTimeout(toastT);
     toastT = setTimeout(function () { v2.toast.hidden = true; }, 2600);
   }
+  // Перемикач мови в шапці: вибір запам'ятовується, сторінка перезавантажується
+  (function () {
+    var sw = document.getElementById('langSw');
+    if (!sw) return;
+    var cur = I18N.lang || 'uk';
+    [].forEach.call(sw.querySelectorAll('[data-lang]'), function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-lang') === cur));
+      b.addEventListener('click', function () {
+        var l = b.getAttribute('data-lang');
+        if (l !== cur && I18N.setLang) I18N.setLang(l);
+      });
+    });
+  })();
+
   function shareLink(url, text) {
+    text = I18N.tr(text);
     var tg = window.Telegram && window.Telegram.WebApp;
     try {
       if (tg && tg.initData && tg.openTelegramLink) {

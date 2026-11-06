@@ -1952,3 +1952,21 @@ input, textarea, select { caret-color: var(--nav); }
   background-origin: border-box !important; background-repeat: no-repeat !important; background-clip: border-box !important;
   border-width: 0 !important;   /* без рамки взагалі — Safari/Telegram на iPhone не малює смужку на краю */
 }
+
+/* Перемикач мови УКР / ENG у шапці */
+.topbar__inner .status { margin-left: auto; }
+.lang { display: flex; flex: none; gap: 2px; padding: 3px; border-radius: 999px; background: #1a1a1a; }
+.lang button {
+  appearance: none; border: 0; background: transparent; color: #98a2b3; min-width: 40px; height: 26px; padding: 0 9px;
+  border-radius: 999px; font: inherit; font-size: 12px; font-weight: 650; letter-spacing: 0.02em; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.lang button[aria-pressed="true"] { background: #fff; color: #0a0a0a; }
+@media (hover: hover) { .lang button:not([aria-pressed="true"]):hover { color: #fff; } }
+@media (max-width: 979px) { .topbar__inner { gap: 8px; } .lang button { min-width: 36px; padding: 0 7px; } }
+@media (min-width: 980px) { .lang button { height: 30px; min-width: 46px; font-size: 13px; } }
+@media (max-width: 979px) {
+  .topbar__inner .status { min-width: 0; flex: 0 1 auto; }
+  #statusText { overflow: hidden; text-overflow: ellipsis; }
+}
+@media (max-width: 374px) { .lang button { min-width: 32px; padding: 0 6px; font-size: 11px; } .topbar__inner .status { padding: 0 9px; font-size: 12px; } }
+@media (max-width: 419px) { .st-w { display: none; } }

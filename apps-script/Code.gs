@@ -497,6 +497,24 @@ function viewsWithRanges_(sh, views) {
 }
 
 /** Скільки секторів на водоймі (B13 на аркуші «Сайт»); null — не вказано. */
+/** Переклад українського тексту англійською (для перемикача ENG на сайті). Кешується у властивостях скрипта. */
+function trEn_(text) {
+  text = String(text || '').trim();
+  if (!text || !/[А-Яа-яІіЇїЄєҐґ]/.test(text)) return text;
+  var key = 'tr_en_' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, text, Utilities.Charset.UTF_8));
+  var props = PropertiesService.getScriptProperties();
+  var hit = props.getProperty(key);
+  if (hit) return hit;
+  try {
+    var out = String(LanguageApp.translate(text, 'uk', 'en') || '').trim();
+    if (out) props.setProperty(key, out);
+    return out;
+  } catch (err) {
+    console.error('Переклад не вдався: ' + err);
+    return '';
+  }
+}
+
 function sectors_(sh) {
   if (!sh) return null;
   var n = parseInt(String(sh.getRange(CELL_SECTORS).getDisplayValue()).replace(/\s/g, ''), 10);
@@ -511,6 +529,9 @@ function publish_(ss) {
     title: (sh && String(sh.getRange(CELL_TITLE).getDisplayValue()).trim()) || SETTINGS.EVENT_TITLE,
     subtitle: (sh && String(sh.getRange(CELL_SUBTITLE).getDisplayValue()).trim()) || SETTINGS.EVENT_SUBTITLE
   };
+  // Англійська версія сайту: назву й підзаголовок перекладає Google Translate (результат запам'ятовується)
+  event.titleEn = trEn_(event.title);
+  event.subtitleEn = trEn_(event.subtitle);
   var draw = null;
   try { draw = readDraw_(ss); syncDrawNames_(ss, draw); } catch (err) { console.error(err); }
   var showCard = !sh || String(sh.getRange(CELL_CARD).getDisplayValue()).trim() !== CARD_OFF;
