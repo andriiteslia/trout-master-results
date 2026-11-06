@@ -2162,80 +2162,92 @@
     var ev = (state.payload && state.payload.event) || {};
     var photo = PHOTOS[normName(st.name)];
     var total = cardPlayersCount();
+    var F = 'Fixel, system-ui, sans-serif';
     return Promise.all([
       loadImg('assets/logo.svg?v=3'),
       loadImg(photo ? 'assets/players/' + encodeURIComponent(photo) : null),
       loadImg('assets/fish.webp'),
-      document.fonts && document.fonts.load ? Promise.all([document.fonts.load('800 80px Fixel'), document.fonts.load('600 34px Fixel')]).catch(function () {}) : null
+      document.fonts && document.fonts.load ? Promise.all([document.fonts.load('700 80px Fixel'), document.fonts.load('500 30px Fixel')]).catch(function () {}) : null
     ]).then(function (r) {
       var logo = r[0], face = r[1], fish = r[2];
       var W = 1080, H = 1920, cv = document.createElement('canvas');
       cv.width = W; cv.height = H;
       var c = cv.getContext('2d');
-      try { c.fontStretch = 'normal'; } catch (e) { /* */ }
-      // фон
-      c.fillStyle = '#0a0a0a'; c.fillRect(0, 0, W, H);
-      var g = c.createRadialGradient(W / 2, 520, 40, W / 2, 520, 900);
-      g.addColorStop(0, 'rgba(118,177,29,0.30)'); g.addColorStop(1, 'rgba(118,177,29,0)');
-      c.fillStyle = g; c.fillRect(0, 0, W, H);
-      if (fish) { c.globalAlpha = 0.07; var fw = 1300, fh = fw * fish.height / fish.width; c.drawImage(fish, W - fw * 0.78, H - fh - 120, fw, fh); c.globalAlpha = 1; }
-      c.textAlign = 'center'; c.textBaseline = 'alphabetic';
-      // лого і турнір
-      if (logo) { var lw = 440, lh = lw * 306 / 1020; c.drawImage(logo, (W - lw) / 2, 210, lw, lh); }
-      c.fillStyle = '#d0d5dd'; fitText(c, ev.title || 'TROUT MASTER', 900, 42, 650); c.fillText(ev.title || 'TROUT MASTER', W / 2, 404);
-      if (ev.subtitle) { c.fillStyle = '#8a93a3'; fitText(c, ev.subtitle, 900, 32, 500); c.fillText(ev.subtitle, W / 2, 450); }
-      // фото / ініціали з обідком кольору місця
+      var track = function (px) { try { c.letterSpacing = px + 'px'; } catch (e) { /* */ } };
+      var font = function (w, size) { c.font = w + ' ' + size + 'px ' + F; };
       var place = st.played > 0 ? st.place : null;
-      var ring = place === 1 ? '#e8b931' : place === 2 ? '#c0c7d2' : place === 3 ? '#d08a52' : '#76b11d';
-      var cx = W / 2, cy = 676, R = 132;
-      c.beginPath(); c.arc(cx, cy, R + 12, 0, Math.PI * 2); c.fillStyle = ring; c.fill();
-      c.beginPath(); c.arc(cx, cy, R + 4, 0, Math.PI * 2); c.fillStyle = '#0a0a0a'; c.fill();
+      var accent = place === 1 ? '#e8c35a' : place === 2 ? '#c9d0da' : place === 3 ? '#d79a6a' : '#8fd12a';
+
+      // фон: глибокий чорний, м'яке зелене світло зверху, ледь помітна форель унизу (голова видно праворуч)
+      c.fillStyle = '#08090a'; c.fillRect(0, 0, W, H);
+      var g = c.createRadialGradient(W / 2, 560, 20, W / 2, 560, 820);
+      g.addColorStop(0, 'rgba(118,177,29,0.20)'); g.addColorStop(0.55, 'rgba(118,177,29,0.06)'); g.addColorStop(1, 'rgba(118,177,29,0)');
+      c.fillStyle = g; c.fillRect(0, 0, W, H);
+      if (fish) {
+        var fw = 1180, fh = fw * fish.height / fish.width;
+        c.globalAlpha = 0.07; c.drawImage(fish, W - fw - 10, 1240, fw, fh); c.globalAlpha = 1;
+      }
+      c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+
+      // лого й назва турніру
+      if (logo) { var lw = 340, lh = lw * 306 / 1020; c.drawImage(logo, (W - lw) / 2, 214, lw, lh); }
+      track(5); font(500, 26); c.fillStyle = '#9aa3b2';
+      var title = String(ev.title || 'TROUT MASTER').toUpperCase();
+      c.fillText(title, W / 2, 390);
+      track(0);
+      if (ev.subtitle) { font(400, 28); c.fillStyle = '#6b7380'; c.fillText(ev.subtitle, W / 2, 434); }
+
+      // фото: тонкий обідок кольору місця з повітрям
+      var cx = W / 2, cy = 640, R = 118;
+      c.beginPath(); c.arc(cx, cy, R + 14, 0, Math.PI * 2); c.lineWidth = 3; c.strokeStyle = accent; c.stroke();
       c.save(); c.beginPath(); c.arc(cx, cy, R, 0, Math.PI * 2); c.clip();
       if (face) c.drawImage(face, cx - R, cy - R, R * 2, R * 2);
-      else { c.fillStyle = '#1c1f24'; c.fillRect(cx - R, cy - R, R * 2, R * 2); c.fillStyle = '#e4e7ec'; c.font = '800 110px Fixel, system-ui, sans-serif'; c.textBaseline = 'middle'; c.fillText(initials(st.name), cx, cy + 6); c.textBaseline = 'alphabetic'; }
+      else {
+        c.fillStyle = '#16181c'; c.fillRect(cx - R, cy - R, R * 2, R * 2);
+        font(600, 84); c.fillStyle = '#d0d5dd'; c.textBaseline = 'middle'; c.fillText(initials(st.name), cx, cy + 4); c.textBaseline = 'alphabetic';
+      }
       c.restore();
       if (place) {
-        var bx = cx + R * 0.74, by = cy + R * 0.74, br = 48;
-        var medal = { 1: ['#fbefc6', '#6b4d00'], 2: ['#e9edf2', '#344054'], 3: ['#f6e3d2', '#7a3f12'] }[place] || ['#1f3d0a', '#ffffff'];
-        c.beginPath(); c.arc(bx, by, br + 8, 0, Math.PI * 2); c.fillStyle = '#0a0a0a'; c.fill();
-        c.beginPath(); c.arc(bx, by, br, 0, Math.PI * 2); c.fillStyle = medal[0]; c.fill();
-        c.lineWidth = 6; c.strokeStyle = ring; c.stroke();
-        c.fillStyle = medal[1]; c.font = '800 ' + (place > 9 ? 50 : 60) + 'px Fixel, system-ui, sans-serif'; c.textBaseline = 'middle'; c.fillText(String(place), bx, by + 4); c.textBaseline = 'alphabetic';
+        var bx = cx + (R + 14) * 0.7071, by = cy + (R + 14) * 0.7071, br = 34;
+        c.beginPath(); c.arc(bx, by, br + 6, 0, Math.PI * 2); c.fillStyle = '#08090a'; c.fill();
+        c.beginPath(); c.arc(bx, by, br, 0, Math.PI * 2); c.fillStyle = accent; c.fill();
+        font(700, place > 9 ? 30 : 36); c.fillStyle = '#0b0c0e'; c.textBaseline = 'middle'; c.fillText(String(place), bx, by + 2); c.textBaseline = 'alphabetic';
       }
-      // ім'я
-      c.fillStyle = '#ffffff'; fitText(c, st.name, 960, 96, 800); c.fillText(st.name, W / 2, 960);
-      // «1 місце з 28»
+
+      // ім'я і місце
+      c.fillStyle = '#ffffff'; track(-1); fitText(c, st.name, 920, 78, 700); c.fillText(st.name, W / 2, 878); track(0);
       if (place) {
         var pt = place + ' місце' + (total ? ' з ' + total : '');
-        c.font = '700 44px Fixel, system-ui, sans-serif';
-        var pw = c.measureText(pt).width + 72;
-        rrect(c, (W - pw) / 2, 992, pw, 74, 37);
-        c.fillStyle = place <= 3 ? 'rgba(232,185,49,0.16)' : 'rgba(118,177,29,0.16)'; c.fill();
-        c.fillStyle = place <= 3 ? '#f2cf5b' : '#9bd83a'; c.fillText(pt, W / 2, 1044);
+        track(1); font(500, 32); c.fillStyle = accent; c.fillText(pt, W / 2, 936); track(0);
       }
-      // плитки 2×2
-      var tiles = [
-        ['Бали', st.points != null ? String(st.points) : '—', st.cnt.w + 'В · ' + st.cnt.d + 'РН · ' + st.cnt.z + 'БН · ' + st.cnt.l + 'П'],
-        ['Улов', st.fish + ' ' + fishWord(st.fish), st.avg != null ? fmt1(st.avg) + ' за тур' : ''],
-        ['Перемоги', st.winRate != null ? Math.round(st.winRate * 100) + '%' : '—', st.streak ? 'серія — ' + st.streak + ' ' + plural(st.streak, 'тур', 'тури', 'турів') : st.cnt.w + ' з ' + st.played],
+
+      // панель статистики: одна скляна картка 2×2 з тонкими роздільниками
+      var stats = [
+        ['БАЛИ', st.points != null ? String(st.points) : '—', st.cnt.w + 'В · ' + st.cnt.d + 'РН · ' + st.cnt.z + 'БН · ' + st.cnt.l + 'П'],
+        ['УЛОВ', String(st.fish), fishWord(st.fish) + (st.avg != null ? ' · ' + fmt1(st.avg) + ' за тур' : '')],
+        ['ПЕРЕМОГИ', st.winRate != null ? Math.round(st.winRate * 100) + '%' : '—', st.streak ? 'серія ' + st.streak + ' ' + plural(st.streak, 'тур', 'тури', 'турів') : st.cnt.w + ' з ' + st.played],
         st.vsOpp
-          ? ['Проти суперників', st.vsOpp.mine + ' : ' + st.vsOpp.theirs, (st.vsOpp.mine - st.vsOpp.theirs > 0 ? '+' : '') + (st.vsOpp.mine - st.vsOpp.theirs) + ' ' + fishWord(Math.abs(st.vsOpp.mine - st.vsOpp.theirs))]
-          : ['Найкращий тур', st.best ? st.best.fish + ' ' + fishWord(st.best.fish) : '—', st.best ? 'тур ' + st.best.n + (st.best.sector ? ', сектор ' + st.best.sector : '') : '']
+          ? ['ПРОТИ СУПЕРНИКІВ', st.vsOpp.mine + ':' + st.vsOpp.theirs, (st.vsOpp.mine - st.vsOpp.theirs > 0 ? '+' : '') + (st.vsOpp.mine - st.vsOpp.theirs) + ' ' + fishWord(Math.abs(st.vsOpp.mine - st.vsOpp.theirs))]
+          : ['НАЙКРАЩИЙ ТУР', st.best ? String(st.best.fish) : '—', st.best ? fishWord(st.best.fish) + ' · тур ' + st.best.n : '']
       ];
-      var tw = 450, th = 208, gx = 22, x0 = (W - tw * 2 - gx) / 2, y0 = 1104;
-      tiles.forEach(function (t, i) {
-        var x = x0 + (i % 2) * (tw + gx), y = y0 + Math.floor(i / 2) * (th + gx);
-        rrect(c, x, y, tw, th, 40); c.fillStyle = 'rgba(255,255,255,0.06)'; c.fill();
-        c.lineWidth = 2; c.strokeStyle = 'rgba(255,255,255,0.08)'; c.stroke();
+      var px = 90, py = 1010, pw = W - px * 2, ph = 520, cw = pw / 2, ch = ph / 2;
+      rrect(c, px, py, pw, ph, 44);
+      c.fillStyle = 'rgba(255,255,255,0.035)'; c.fill();
+      c.lineWidth = 1.5; c.strokeStyle = 'rgba(255,255,255,0.10)'; c.stroke();
+      c.strokeStyle = 'rgba(255,255,255,0.08)'; c.lineWidth = 1.5;
+      c.beginPath(); c.moveTo(px + cw, py + 36); c.lineTo(px + cw, py + ph - 36); c.moveTo(px + 36, py + ch); c.lineTo(px + pw - 36, py + ch); c.stroke();
+      stats.forEach(function (t, i) {
+        var x = px + (i % 2) * cw + 48, y = py + Math.floor(i / 2) * ch;
         c.textAlign = 'left';
-        c.fillStyle = '#98a2b3'; c.font = '600 34px Fixel, system-ui, sans-serif'; c.fillText(t[0], x + 40, y + 60);
-        c.fillStyle = '#ffffff'; fitText(c, t[1], tw - 80, 66, 800); c.fillText(t[1], x + 40, y + 136);
-        if (t[2]) { c.fillStyle = '#8a93a3'; fitText(c, t[2], tw - 80, 30, 500); c.fillText(t[2], x + 40, y + 184); }
+        track(3); font(500, 22); c.fillStyle = '#7d8696'; c.fillText(t[0], x, y + 72); track(0);
+        c.fillStyle = '#ffffff'; track(-1); fitText(c, t[1], cw - 96, 68, 650); c.fillText(t[1], x, y + 160); track(0);
+        if (t[2]) { c.fillStyle = '#8a93a3'; fitText(c, t[2], cw - 96, 26, 400); c.fillText(t[2], x, y + 206); }
         c.textAlign = 'center';
       });
-      // низ
-      c.fillStyle = '#8a93a3'; c.font = '500 34px Fixel, system-ui, sans-serif'; c.fillText('Результати й статистика — у Telegram', W / 2, 1600);
-      c.fillStyle = '#9bd83a'; c.font = '800 46px Fixel, system-ui, sans-serif'; c.fillText('@troutmasterua_bot', W / 2, 1654);
+
+      // підпис
+      track(4); font(500, 22); c.fillStyle = '#6b7380'; c.fillText('РЕЗУЛЬТАТИ Й СТАТИСТИКА', W / 2, 1600); track(0);
+      font(600, 36); c.fillStyle = '#9bd83a'; c.fillText('@troutmasterua_bot', W / 2, 1648);
       return cv;
     });
   }
