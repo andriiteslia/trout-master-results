@@ -106,7 +106,7 @@
     'Онлайн-результати Trout Master. Оновлюються автоматично під час змагань.': 'Trout Master live results. Updated automatically during the competition.',
     'Розділи': 'Sections', 'Результати': 'Results', 'Статистика': 'Statistics', 'Завантаження…': 'Loading…',
     'Назад': 'Back', 'Поділитися': 'Share', 'Зареєструватися': 'Register', 'Підсумки': 'Summary',
-    'Підсумкова таблиця': 'Standings', 'Вигляд': 'View', 'Знайти учасника': 'Find a participant',
+    'Підсумкова таблиця': 'Standings', 'Вигляд': 'View', 'Знайти учасника': 'Find a participant', 'Очистити пошук': 'Clear search',
     'Вибрано в таблиці': 'Selected in the table', 'Картка учасника': 'Player card', 'Зняти вибір': 'Clear selection',
     'Результати — у Telegram': 'Results on Telegram', 'Бот напише ваше місце й підсумки після турніру': 'The bot will send you your place and results after the tournament',
     'Закрити': 'Close', 'Отримувати результати': 'Get results', 'Таблиця результатів': 'Results table',

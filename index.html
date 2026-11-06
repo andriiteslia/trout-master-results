@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
   <link rel="preload" href="assets/fonts/fixel-cyrillic-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fish.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="assets/style.css?v=20261106zn">
-  <script src="config.js?v=20261106zn"></script>
+  <link rel="stylesheet" href="assets/style.css?v=20261106zo">
+  <script src="config.js?v=20261106zo"></script>
   <script>
     // Запитуємо результати одразу, паралельно з завантаженням решти сторінки
     (function () {
@@ -24,8 +24,8 @@
       } catch (e) { window.__tmEarly = null; }
     })();
   </script>
-  <script src="assets/i18n.js?v=20261106zn"></script>
-  <script src="assets/app.js?v=20261106zn" defer></script>
+  <script src="assets/i18n.js?v=20261106zo"></script>
+  <script src="assets/app.js?v=20261106zo" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -102,6 +102,9 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
             <span class="visually-hidden">Знайти учасника</span>
             <input type="search" id="search" placeholder="Знайти учасника" autocomplete="off">
+            <button type="button" class="search__clear" id="searchClear" aria-label="Очистити пошук" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8l8 8M16 8l-8 8"/></svg>
+            </button>
           </label>
           <button type="button" class="btn2 btools__card" id="cardOpenD" hidden>
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6"/></svg>

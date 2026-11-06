@@ -2955,7 +2955,15 @@
   function renderInfo() { if (el.info) el.info.hidden = true; }
 
   // ----- Події нового дизайну -----
-  v2.search.addEventListener('input', function () { state.query = v2.search.value; renderBoard(); });
+  var searchClear = document.getElementById('searchClear');
+  function syncClear() { if (searchClear) searchClear.hidden = !v2.search.value; }
+  v2.search.addEventListener('input', function () { state.query = v2.search.value; syncClear(); renderBoard(); });
+  if (searchClear) searchClear.addEventListener('click', function (e) {
+    e.preventDefault();   // кнопка всередині <label> — не даємо кліку піти далі
+    v2.search.value = '';
+    v2.search.dispatchEvent(new Event('input', { bubbles: true }));
+    v2.search.focus();
+  });
   v2.navList.addEventListener('click', function () { goList(); });
   document.getElementById('heroBack').addEventListener('click', function () { goList(); });
   v2.navStats.addEventListener('click', function () { goStats(); });
