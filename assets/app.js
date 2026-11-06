@@ -2207,6 +2207,25 @@
     q.slice().reverse().forEach(function (p) { ctx.lineTo(x + w - r + r * p[0], y + h - r + r * p[1]); });
     ctx.closePath();
   }
+  // Розмиття малої копії: кілька проходів box-blur по горизонталі й вертикалі ≈ гаусове розмиття
+  function boxBlur(ctx, w, h, r, passes) {
+    var im = ctx.getImageData(0, 0, w, h), a = im.data, b = new Float32Array(a.length), t = new Float32Array(a.length);
+    for (var i = 0; i < a.length; i++) b[i] = a[i];
+    function pass(src, dst, horiz) {
+      var len = horiz ? w : h, lines = horiz ? h : w;
+      for (var l = 0; l < lines; l++) for (var ch = 0; ch < 4; ch++) {
+        var sum = 0, idx = function (k) { k = k < 0 ? 0 : k >= len ? len - 1 : k; return ((horiz ? l * w + k : k * w + l) * 4) + ch; };
+        for (var k = -r; k <= r; k++) sum += src[idx(k)];
+        for (var k2 = 0; k2 < len; k2++) {
+          dst[idx(k2)] = sum / (2 * r + 1);
+          sum += src[idx(k2 + r + 1)] - src[idx(k2 - r)];
+        }
+      }
+    }
+    for (var p = 0; p < passes; p++) { pass(b, t, true); pass(t, b, false); }
+    for (var j = 0; j < a.length; j++) a[j] = b[j];
+    ctx.putImageData(im, 0, 0);
+  }
   function fitText(ctx, text, maxW, size, weight) {
     var s = size;
     do { ctx.font = weight + ' ' + s + 'px Fixel, system-ui, sans-serif'; s -= 1; } while (ctx.measureText(text).width > maxW && s > 12);
@@ -2249,6 +2268,16 @@
         var fh = L.fishW * fish.height / fish.width;
         c.globalAlpha = 0.07; c.drawImage(fish, L.fishX, L.fishY, L.fishW, fh); c.globalAlpha = 1;
       }
+      // Знімок фону під панеллю ще без шуму → справжнє гаусоподібне розмиття (3 проходи box-blur на зменшеній копії)
+      var glass = null;
+      try {
+        var gm = 80, gs = 6, gx = L.px - gm, gy = L.py - gm, gw = L.pw + gm * 2, gh = L.ph + gm * 2;
+        glass = document.createElement('canvas'); glass.width = Math.round(gw / gs); glass.height = Math.round(gh / gs);
+        var gc = glass.getContext('2d'); gc.imageSmoothingEnabled = true; gc.imageSmoothingQuality = 'high';
+        gc.drawImage(cv, gx, gy, gw, gh, 0, 0, glass.width, glass.height);
+        boxBlur(gc, glass.width, glass.height, 5, 3);
+        glass._x = gx; glass._y = gy; glass._w = gw; glass._h = gh;
+      } catch (e) { glass = null; }
       // Дизеринг: ледь помітний «шум» на фоні, щоб плавне світло не розпадалося на смуги
       // після стиснення в Instagram/Telegram
       try {
@@ -2304,14 +2333,10 @@
       ];
       var px = L.px, py = L.py, pw = L.pw, ph = L.ph, cw = pw / 2, ch = ph / 2;
       // «Скло»: розмитий фон під панеллю (зменшили й розтягнули назад — працює в усіх браузерах), світла плівка, тонка рамка
-      try {
-        var sm = document.createElement('canvas'), sw = Math.max(8, Math.round(pw / 14)), shh = Math.max(8, Math.round(ph / 14));
-        sm.width = sw; sm.height = shh;
-        var sc = sm.getContext('2d'); sc.imageSmoothingEnabled = true; sc.imageSmoothingQuality = 'high';
-        sc.drawImage(cv, px, py, pw, ph, 0, 0, sw, shh);
+      if (glass) try {
         c.save(); sqPath(c, px, py, pw, ph, 64); c.clip();
         c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
-        c.drawImage(sm, 0, 0, sw, shh, px, py, pw, ph);
+        c.drawImage(glass, glass._x, glass._y, glass._w, glass._h);
         c.restore();
       } catch (e) { /* без розмиття */ }
       sqPath(c, px, py, pw, ph, 64);
@@ -2321,6 +2346,13 @@
       sheen.addColorStop(0, 'rgba(255,255,255,0.06)'); sheen.addColorStop(0.45, 'rgba(255,255,255,0.01)');
       sheen.addColorStop(0.55, 'rgba(0,0,0,0)'); sheen.addColorStop(1, 'rgba(0,0,0,0.16)');
       c.fillStyle = sheen; c.fill();
+      try {
+        var pd = c.getImageData(px, py, pw, ph), d8 = pd.data;
+        for (var q = 0; q < d8.length; q += 4) { var nn = (Math.random() + Math.random() - 1) * 4; d8[q] += nn; d8[q + 1] += nn; d8[q + 2] += nn; }
+        var tmp = document.createElement('canvas'); tmp.width = pw; tmp.height = ph; tmp.getContext('2d').putImageData(pd, 0, 0);
+        c.save(); sqPath(c, px, py, pw, ph, 64); c.clip(); c.drawImage(tmp, px, py); c.restore();
+      } catch (e) { /* */ }
+      sqPath(c, px, py, pw, ph, 64);
       c.lineWidth = 2; c.strokeStyle = 'rgba(255,255,255,0.16)'; c.stroke();
       c.strokeStyle = 'rgba(255,255,255,0.08)'; c.lineWidth = 1.5;
       c.beginPath(); c.moveTo(px + cw, py + 36); c.lineTo(px + cw, py + ph - 36); c.moveTo(px + 36, py + ch); c.lineTo(px + pw - 36, py + ch); c.stroke();
