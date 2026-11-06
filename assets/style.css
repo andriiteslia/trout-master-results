@@ -1979,7 +1979,7 @@ input, textarea, select { caret-color: var(--nav); }
 }
 @media (max-width: 979px) {
   .kpi__v:has(.tt) { font-size: 17px; letter-spacing: -0.01em; }
-  .kpi .tt { gap: 0; margin-right: 2px; }
+  .kpi .tt { gap: 0; margin-right: 4px; }
 }
 @media (max-width: 374px) { .kpi__v:has(.tt) { font-size: 15px; } }
 
