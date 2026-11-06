@@ -1822,14 +1822,16 @@
 
   // Кнопка партнера над нижньою кнопкою (лише в ТГ на телефоні): відкриває канал усередині Telegram
   (function () {
-    var a = document.getElementById('partner');
-    if (!a) return;
-    a.addEventListener('click', function (e) {
-      var tg = tgApp();
-      if (!tg || typeof tg.openTelegramLink !== 'function') return;   // звичайний браузер — просте посилання
-      e.preventDefault();
-      try { tg.HapticFeedback && tg.HapticFeedback.impactOccurred('light'); } catch (er) { /* */ }
-      tg.openTelegramLink(a.href);
+    ['partner', 'partnerWeb'].forEach(function (id) {
+      var a = document.getElementById(id);
+      if (!a) return;
+      a.addEventListener('click', function (e) {
+        var tg = tgApp();
+        if (!IN_TG || !tg || typeof tg.openTelegramLink !== 'function') return;   // звичайний браузер — просте посилання
+        e.preventDefault();
+        try { tg.HapticFeedback && tg.HapticFeedback.impactOccurred('light'); } catch (er) { /* */ }
+        tg.openTelegramLink(a.href);
+      });
     });
   })();
 

@@ -1930,3 +1930,16 @@ input, textarea, select { caret-color: var(--nav); }
 @keyframes partner-float { from { transform: translateY(0); } to { transform: translateY(-6px); } }
 @media (prefers-reduced-motion: reduce) { .partner { animation: none !important; } }
 @supports (corner-shape: squircle) { .partner { corner-shape: round; } }
+
+/* Партнер на вебі/компʼютері: кругла кнопка поруч із «Поділитися» */
+.partner-web {
+  flex: none; display: grid; place-items: center; width: 76px; height: 44px; border-radius: 999px;
+  background: radial-gradient(120% 120% at 25% 15%, #86aeea 0%, #5b8fe0 45%, #3a72d4 100%);
+  box-shadow: 0 4px 12px rgba(37, 88, 184, 0.28); -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.partner-web img { width: auto; height: 40px; display: block; pointer-events: none; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18)); }
+@media (hover: hover) { .partner-web:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(37, 88, 184, 0.36); } .partner-web:hover img { transform: rotate(-5deg) scale(1.06); } }
+.partner-web img { transition: transform 0.2s ease; }
+.partner-web:active { transform: scale(0.94); }
+.partner-web:focus-visible { outline: 3px solid rgba(58, 114, 212, 0.45); outline-offset: 3px; }
