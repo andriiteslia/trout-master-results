@@ -1022,6 +1022,7 @@ var BC_TEXT = 1, BC_PHOTO = 2, BC_BTN = 3, BC_TO = 4, BC_TESTID = 5, BC_ACTION =
 // Табличка «Картинки для розсилки» (назва | посилання) — під блоком розсилки
 var BC_PICS_TITLE = 'Картинки для розсилки';
 var BC_PICS_ROWS = 20;   // скільки рядків табличка дає під назви
+var BC_NO_PHOTO = 'Без фото';
 var BC_PICS_DEFAULT = ['Реєстрацію відкрито!', 'Реєстрація завершена', 'Проміжні результати', 'Підсумкові результати'];
 
 /** Рядок заголовка «Розсилка в Telegram» на аркуші «Сайт» (0 — блоку немає). */
@@ -1084,17 +1085,15 @@ function setupBroadcast_(sh) {
   sh.getRange(p + 2, 1, BC_PICS_ROWS, 1).setBackground('#f7f8fa');
   sh.getRange(p + 2, 2, BC_PICS_ROWS, 1).setBackground('#e3f0fa').setWrap(false);
   var photo = sh.getRange(r + BC_PHOTO, 2);
-  photo.clearDataValidations();
-  photo.setDataValidation(SpreadsheetApp.newDataValidation()
-    .requireValueInRange(sh.getRange(p + 2, 1, BC_PICS_ROWS, 1), true).setAllowInvalid(false)
-    .setHelpText('Порожньо — без фото. Список — з таблички «' + BC_PICS_TITLE + '» нижче.').build())
-    .setFontWeight('bold').setBackground('#e3f0fa');
+  bcPhotoRule_(sh, r, p);
+  photo.setFontWeight('bold').setBackground('#e3f0fa');
+  if (!String(photo.getDisplayValue()).trim()) photo.setValue(BC_NO_PHOTO);
 
   var help = sh.getRange(r + BC_HELP, 1, 1, 2);
   help.merge().setWrap(true).setFontColor('#475467').setVerticalAlignment('top');
   help.setValue('Посилання в тексті: [Правила турніру](https://…) — учасник побачить клікабельні слова «Правила турніру». Звичайне посилання теж стає клікабельним. ' +
     '\n«Кнопка» — друга кнопка під повідомленням поруч із «' + BC_BUTTON + '»: у B — текст (напр. 📍 Маршрут), у C — посилання. Порожньо — без неї. ' +
-    '\n«Фото» — картинка з таблички «' + BC_PICS_TITLE + '» нижче (порожньо — лише текст). Текст стає підписом під фото; якщо він довший за 1024 символи — бот надішле фото, а за ним текст окремим повідомленням. ' +
+    '\n«Фото» — картинка з таблички «' + BC_PICS_TITLE + '» нижче або «' + BC_NO_PHOTO + '» (лише текст). Текст стає підписом під фото; якщо він довший за 1024 символи — бот надішле фото, а за ним текст окремим повідомленням. ' +
     '\n«Кому» спершу «—»: поки не оберете отримувачів, «' + BC_SEND + '» нічого не надішле (тест собі працює завжди). Після розсилки «Кому» знову стає «—». ' +
     '\n«' + BC_TO_REG + '» — основний склад з аркуша «Учасники» (стільки, скільки вказано в «Кількість місць»; резерв не отримує). ' +
     '«' + BC_TO_CHAT + '» — одне повідомлення в чат турніру (бот має бути доданий туди адміністратором з правом надсилати повідомлення; мітки {ім\'я}, {місце} там не працюють). ' +
@@ -1129,10 +1128,22 @@ function bcPicsRow_(sh) {
   return 0;
 }
 
+/** Список у «Фото»: «Без фото» + назви з таблички. Оновлюється, коли змінюєте назви в табличці. */
+function bcPhotoRule_(sh, r, p) {
+  p = p || bcPicsRow_(sh);
+  var names = p ? sh.getRange(p + 2, 1, BC_PICS_ROWS, 1).getDisplayValues()
+    .map(function (x) { return String(x[0]).trim(); }).filter(function (n) { return n && n !== BC_NO_PHOTO; }) : [];
+  var photo = sh.getRange(r + BC_PHOTO, 2);
+  photo.clearDataValidations();
+  photo.setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInList([BC_NO_PHOTO].concat(names), true).setAllowInvalid(false)
+    .setHelpText('«' + BC_NO_PHOTO + '» — лише текст. Інші — картинки з таблички «' + BC_PICS_TITLE + '» нижче.').build());
+}
+
 /** Посилання на картинку за назвою з таблички (або '' якщо фото не обрано). */
 function bcPhotoLink_(sh, r) {
   var name = String(sh.getRange(r + BC_PHOTO, 2).getDisplayValue()).trim();
-  if (!name) return { name: '', link: '' };
+  if (!name || name === BC_NO_PHOTO) return { name: '', link: '' };
   var p = bcPicsRow_(sh);
   if (!p) return { name: name, link: '' };
   var rows = sh.getRange(p + 2, 1, BC_PICS_ROWS, 2).getDisplayValues();
@@ -1353,7 +1364,11 @@ function plural_(n, one, few, many) {
 /** Правка в блоці розсилки. Повертає true, якщо правка стосувалась блоку. */
 function handleBroadcastEdit_(e, sh) {
   var r = bcRow_(sh);
-  if (!r || e.range.getColumn() !== 2 || e.range.getNumRows() !== 1) return false;
+  if (!r) return false;
+  // Змінили назви в табличці «Картинки для розсилки» — оновлюємо список у «Фото»
+  var pr = e.range.getColumn() === 1 ? bcPicsRow_(sh) : 0;
+  if (pr && e.range.getLastRow() >= pr + 2 && e.range.getRow() <= pr + 1 + BC_PICS_ROWS) { bcPhotoRule_(sh, r, pr); return true; }
+  if (e.range.getColumn() !== 2 || e.range.getNumRows() !== 1) return false;
   var row = e.range.getRow();
   if (row < r + BC_TEXT || row > r + BC_STATUS) return false;
   var ss = e.source || sh.getParent();
