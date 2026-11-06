@@ -1416,6 +1416,9 @@
     reg.open.hidden = !showReg;
     ts.open.hidden = !showStats;
     pc.open.hidden = !showCard;
+    // Веб, список учасників: кнопка картки поруч із пошуком (у результатах на вебі є смужка «Вибрано в таблиці»)
+    var cardD = document.getElementById('cardOpenD');
+    if (cardD) cardD.hidden = !(showCard && isListMode());
     pc.openText.textContent = other ? 'Картка учасника' : 'Картка учасника · ' + player;
     pc.open.classList.toggle('btn-primary', !other);
     pc.open.classList.toggle('btn-secondary', other);
@@ -2110,6 +2113,7 @@
 
   reg.open.addEventListener('click', goReg);
   pc.open.addEventListener('click', goCard);
+  (function () { var b = document.getElementById('cardOpenD'); if (b) b.addEventListener('click', goCard); })();
   pc.back.addEventListener('click', goList);
   pc.body.addEventListener('click', function (e) {
     var b = e.target.closest('[data-act]');
