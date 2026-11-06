@@ -1092,7 +1092,7 @@ function setupBroadcast_(sh) {
   var help = sh.getRange(r + BC_HELP, 1, 1, 2);
   help.merge().setWrap(true).setFontColor('#475467').setVerticalAlignment('top');
   help.setValue('Посилання в тексті: [Правила турніру](https://…) — учасник побачить клікабельні слова «Правила турніру». Звичайне посилання теж стає клікабельним. ' +
-    '\n«Кнопка» — друга кнопка під повідомленням поруч із «' + BC_BUTTON + '»: у B — текст (напр. 📍 Маршрут), у C — посилання. Порожньо — без неї. ' +
+    '\n«Кнопка» — друга кнопка під повідомленням поруч із «' + BC_BUTTON + '»: у B — текст (напр. 📍 Маршрут), у C — посилання. Порожньо — без неї. У чаті @troutmasterua своя кнопка йде замість «' + BC_BUTTON + '». ' +
     '\n«Фото» — картинка з таблички «' + BC_PICS_TITLE + '» нижче або «' + BC_NO_PHOTO + '» (лише текст). Текст стає підписом під фото; якщо він довший за 1024 символи — бот надішле фото, а за ним текст окремим повідомленням. ' +
     '\n«Кому» спершу «—»: поки не оберете отримувачів, «' + BC_SEND + '» нічого не надішле (тест собі працює завжди). Після розсилки «Кому» знову стає «—». ' +
     '\n«' + BC_TO_REG + '» — основний склад з аркуша «Учасники» (стільки, скільки вказано в «Кількість місць»; резерв не отримує). ' +
@@ -1458,8 +1458,12 @@ function broadcast_(ss, sh, r, test) {
       var res0 = x.person && results ? results[x.person.name.toLowerCase()] : null;
       var played = res0 && res0.place > 0 && (Number(String(res0.pts).replace(',', '.')) > 0 || Number(res0.fish) > 0);
       // У групах і каналах Telegram не дозволяє кнопку-апку — там звичайне посилання на апку
-      var row0 = [x.chat ? { text: BC_BUTTON, url: BC_APP_LINK } : { text: played ? BC_BUTTON_ME : BC_BUTTON, web_app: { url: url } }];
-      if (extraBtn) row0.push(extraBtn);
+      // У чаті: якщо задана своя «Кнопка» — лише вона (без «Відкрити TM APP»). В особистих — апка + своя кнопка.
+      // Тест собі при «Кому: у чат» показує кнопки так, як їх побачать у чаті
+      var chatLike = x.chat || (test && toChat);
+      var row0 = chatLike && extraBtn ? [extraBtn]
+        : [chatLike ? { text: BC_BUTTON, url: BC_APP_LINK } : { text: played ? BC_BUTTON_ME : BC_BUTTON, web_app: { url: url } }];
+      if (extraBtn && !chatLike) row0.push(extraBtn);
       var markup = { inline_keyboard: [row0] };
       var res = send(x.id, body, markup);
       if (res && !res.ok && res.error_code === 429) {   // Telegram просить зачекати
