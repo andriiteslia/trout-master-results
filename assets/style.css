@@ -1912,3 +1912,21 @@ input, textarea, select { caret-color: var(--nav); }
   .btools .tabs, .btools .tab, .search { border-radius: 999px; }
   .search { padding: 0 16px; }
 }
+
+/* Партнер FISH.ME.FISH: кругла кнопка, що «левітує» над нижньою кнопкою — лише в ТГ на телефоні, на головному екрані */
+.partner { display: none; }
+@media (max-width: 979px) {
+  html.tg:not(.view-reg):not(.view-card):not(.view-stats) .partner {
+    position: absolute; right: calc(max(16px, env(safe-area-inset-right)) + 8px); bottom: calc(100% - 6px);
+    display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%;
+    background: radial-gradient(120% 120% at 25% 15%, #86aeea 0%, #5b8fe0 45%, #3a72d4 100%);
+    box-shadow: 0 10px 24px rgba(37, 88, 184, 0.35), 0 2px 6px rgba(16, 24, 40, 0.12);
+    pointer-events: auto; -webkit-tap-highlight-color: transparent;
+    animation: partner-float 3.2s ease-in-out infinite alternate;
+  }
+}
+.partner img { width: 78%; height: auto; display: block; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18)); pointer-events: none; }
+.partner:active { animation-play-state: paused; transform: scale(0.94); }
+@keyframes partner-float { from { transform: translateY(0); } to { transform: translateY(-6px); } }
+@media (prefers-reduced-motion: reduce) { .partner { animation: none !important; } }
+@supports (corner-shape: squircle) { .partner { corner-shape: round; } }

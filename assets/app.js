@@ -1820,6 +1820,19 @@
     } catch (e) { renderNotify('none'); }
   });
 
+  // Кнопка партнера над нижньою кнопкою (лише в ТГ на телефоні): відкриває канал усередині Telegram
+  (function () {
+    var a = document.getElementById('partner');
+    if (!a) return;
+    a.addEventListener('click', function (e) {
+      var tg = tgApp();
+      if (!tg || typeof tg.openTelegramLink !== 'function') return;   // звичайний браузер — просте посилання
+      e.preventDefault();
+      try { tg.HapticFeedback && tg.HapticFeedback.impactOccurred('light'); } catch (er) { /* */ }
+      tg.openTelegramLink(a.href);
+    });
+  })();
+
   // Плашка над таблицею «Результати — у Telegram»: для всіх у ТГ, хто ще не дозволив боту писати.
   // Показуємо лише після відповіді «Хто я?» (щоб не блимала тим, кому вже можна писати). Хрестик ховає на 14 днів.
   var LS_NBAR = 'tm:nbarHideUntil', nbarOk = false;
