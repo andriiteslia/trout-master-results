@@ -1052,7 +1052,7 @@ function setupBroadcast_(sh) {
   sh.getRange(r + BC_TEXT, 1, 7, 1).setValues([['Текст повідомлення'], ['Фото'], ['Кнопка (текст | посилання)'], ['Кому'], ['Тест — мій Telegram ID'], ['Дія'], ['Остання розсилка']])
     .setFontWeight('bold');
   sh.getRange(r + BC_BTN, 2, 1, 2).clearDataValidations();   // вставлений рядок міг успадкувати список «Фото» — тут вільний текст
-  sh.getRange(r + BC_BTN, 2).setBackground('#e3f0fa').setNote('Текст другої кнопки під повідомленням, напр. 📍 Маршрут. Порожньо — лише «' + BC_BUTTON + '».');
+  sh.getRange(r + BC_BTN, 2).setBackground('#e3f0fa').setNote('Текст своєї кнопки під повідомленням (замість «' + BC_BUTTON + '»), напр. 📍 Маршрут. Порожньо — «' + BC_BUTTON + '».');
   sh.getRange(r + BC_BTN, 3).setBackground('#e3f0fa').setNote('Посилання для кнопки, напр. https://maps.app.goo.gl/…');
   var text = sh.getRange(r + BC_TEXT, 2);
   text.setWrap(true).setVerticalAlignment('top').setBackground('#fffbe8');
@@ -1093,7 +1093,7 @@ function setupBroadcast_(sh) {
   var help = sh.getRange(r + BC_HELP, 1, 1, 2);
   help.merge().setWrap(true).setFontColor('#475467').setVerticalAlignment('top');
   help.setValue('Посилання в тексті: [Правила турніру](https://…) — учасник побачить клікабельні слова «Правила турніру». Звичайне посилання теж стає клікабельним. ' +
-    '\n«Кнопка» — друга кнопка під повідомленням поруч із «' + BC_BUTTON + '»: у B — текст (напр. 📍 Маршрут), у C — посилання. Порожньо — без неї. У чаті @troutmasterua своя кнопка йде замість «' + BC_BUTTON + '». ' +
+    '\n«Кнопка» — своя кнопка під повідомленням замість «' + BC_BUTTON + '»: у B — текст (напр. 📍 Маршрут), у C — посилання. Порожньо — кнопка «' + BC_BUTTON + '» (учасникам — «' + BC_BUTTON_ME + '»). ' +
     '\n«Фото» — картинка з таблички «' + BC_PICS_TITLE + '» нижче або «' + BC_NO_PHOTO + '» (лише текст). Текст стає підписом під фото; якщо він довший за 1024 символи — бот надішле фото, а за ним текст окремим повідомленням. ' +
     '\n«Кому» спершу «—»: поки не оберете отримувачів, «' + BC_SEND + '» нічого не надішле (тест собі працює завжди). Після розсилки «Кому» знову стає «—». ' +
     '\n«' + BC_TO_REG + '» — основний склад з аркуша «Учасники» (стільки, скільки вказано в «Кількість місць»; резерв не отримує). ' +
@@ -1462,13 +1462,12 @@ function broadcast_(ss, sh, r, test) {
       var res0 = x.person && results ? results[x.person.name.toLowerCase()] : null;
       var played = res0 && res0.place > 0 && (Number(String(res0.pts).replace(',', '.')) > 0 || Number(res0.fish) > 0);
       // У групах і каналах Telegram не дозволяє кнопку-апку — там звичайне посилання на апку
-      // У чаті: якщо задана своя «Кнопка» — лише вона (без «Відкрити TM APP»). В особистих — апка + своя кнопка.
-      // Тест собі при «Кому: у чат» показує кнопки так, як їх побачать у чаті
+      // Заповнена своя «Кнопка» — під повідомленням лише вона (і в чаті, і в особистих).
+      // Порожня — кнопка апки: в особистих «Моя картка» / «Відкрити TM APP», у чаті — посилання на апку.
       var chatLike = x.chat || (test && toChat);
-      var row0 = chatLike && extraBtn ? [extraBtn]
-        : [chatLike ? { text: BC_BUTTON, url: BC_APP_LINK } : { text: played ? BC_BUTTON_ME : BC_BUTTON, web_app: { url: url } }];
-      // Своя кнопка — окремим рядком під кнопкою апки, щоб довгі назви не обрізались
-      var markup = { inline_keyboard: extraBtn && !chatLike ? [row0, [extraBtn]] : [row0] };
+      var markup = { inline_keyboard: [[extraBtn ? extraBtn
+        : chatLike ? { text: BC_BUTTON, url: BC_APP_LINK }
+        : { text: played ? BC_BUTTON_ME : BC_BUTTON, web_app: { url: url } }]] };
       var res = send(x.id, body, markup);
       if (res && !res.ok && res.error_code === 429) {   // Telegram просить зачекати
         Utilities.sleep(((res.parameters && res.parameters.retry_after) || 1) * 1000 + 200);
