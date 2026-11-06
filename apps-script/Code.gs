@@ -1487,7 +1487,7 @@ function broadcast_(ss, sh, r, test) {
     }
     var total = list.length;
     var msg = test
-      ? '🧪 ' + now() + ' · ' + (sent ? 'тест надіслано собі' + (pic.name ? ' з фото «' + pic.name + '»' : '') + (list[0].person && hasTags ? ' (з даними: ' + list[0].person.name + ')' : '')
+      ? '🧪 ' + now() + ' · ' + (sent ? 'тест надіслано собі ' + (toChat ? '(вигляд як у чаті ' + BC_CHAT + ')' : '(вигляд особистого повідомлення)') + (pic.name ? ' з фото «' + pic.name + '»' : '') + (list[0].person && hasTags ? ' (з даними: ' + list[0].person.name + ')' : '')
           : skipped ? 'тест не надіслано: для «' + (list[0].person ? list[0].person.name : 'вас') + '» немає даних для міток (місце/бали — спершу опублікуйте результати)'
           : 'тест не дійшов — перевірте ID і чи натиснули ви Start у боті')
       : toChat
