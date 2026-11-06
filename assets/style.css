@@ -2009,7 +2009,7 @@ input, textarea, select { caret-color: var(--nav); }
   background: #eaecf0; color: #475467; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background-color 0.15s ease, color 0.15s ease;
 }
 .search__clear[hidden] { display: none; }
-.search .search__clear svg { width: 12px; height: 12px; stroke-width: 2.2; }
+.search .search__clear svg { width: 14px; height: 14px; stroke-width: 2.2; }
 @media (hover: hover) { .search__clear:hover { background: #d0d5dd; color: #101828; } }
 .search__clear:active { transform: scale(0.92); }
 @supports (corner-shape: squircle) { .search__clear { corner-shape: round; } }
