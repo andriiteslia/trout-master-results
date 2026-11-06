@@ -2311,7 +2311,7 @@
         '<div class="story__fmt" role="radiogroup" aria-label="Формат картинки">' +
           '<button type="button" role="radio" data-fmt="story" aria-checked="true">Сторіс 9:16</button>' +
           '<button type="button" role="radio" data-fmt="wide" aria-checked="false">Допис 4:3</button></div>' +
-        '<p class="story__hint" hidden>Утримуй картинку, щоб зберегти її в Фото, а далі — додай у сторіс.</p>' +
+        '<p class="story__hint" hidden>Утримуй картинку, щоб зберегти її. Якщо не виходить — відкрий апку в браузері.</p>' +
         '<div class="story__acts"><button type="button" class="btn btn-primary story__share">Поділитися</button>' +
         '<a class="btn btn-secondary story__save" download>Зберегти</a>' +
         '<button type="button" class="btn btn-secondary story__close">Закрити</button></div></div>';
@@ -2356,7 +2356,8 @@
         var save = story.el.querySelector('.story__save');
         save.href = story.url; save.setAttribute('download', fname);
         save.hidden = IN_TG && canShare;   // у Telegram «Зберегти» через посилання не працює — є «Поділитися» → «Зберегти зображення»
-        story.el.querySelector('.story__hint').hidden = !IN_TG;   // у Telegram зберегти можна, утримуючи картинку
+        // Підказка «утримуй» — лише там, де немає системного «Поділитися» (у Telegram утримання часто нічого не дає)
+        story.el.querySelector('.story__hint').hidden = canShare || !IN_TG;
       }, 'image/png');
     });
   }
