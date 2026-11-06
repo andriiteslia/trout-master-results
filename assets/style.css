@@ -953,12 +953,12 @@ tbody tr.reserve-sep th {
    Кружечки й «пігулки» (радіус 50% / 999px) лишаються круглими, як і в iOS. */
 @supports (corner-shape: squircle) {
   *, *::before, *::after { corner-shape: superellipse(1.5); }
-  .av, .btn, .btn.is-loading .spinner, .btn2, .btn:focus-visible, .chip, .err::before, .hm-sec__b,
-  .pc, .pc-back, .pc-chips li, .pc-hero .pc-place, .pc-ibtn, .pc-place, .pc-share, .pc-share--m,
+  /* кнопки-«пігулки» (.btn, .btn2, «Назад», «Поділитися», меню) навмисно лишаються супереліпсом */
+  .av, .btn.is-loading .spinner, .chip, .err::before, .hm-sec__b,
+  .pc, .pc-chips li, .pc-hero .pc-place, .pc-place, .pc-share--m,
   .pcard .pc-chips li, .pcard .pc-tour__n .hm-sec__b, .pill, .pill i, .pk__badge, .pond-chip,
   .pond-water span, .pt__new, .reg-live, .reg-live__dot, .reg-live__dot::after, .selbar__place,
-  .selbar__x, .status, .status__dot, .swipe-back, .toast, .topnav, .topnav button, .tr-head .t-c b,
-  .view-reg .hero-back {
+  .selbar__x, .status, .status__dot, .swipe-back, .toast, .tr-head .t-c b {
     corner-shape: round;
   }
 }
@@ -1820,7 +1820,7 @@ input, textarea, select { caret-color: var(--nav); }
 .story__acts [hidden] { display: none; }
 .story__share { background: linear-gradient(135deg, #4a9112 0%, #2b660a 100%); color: #fff; border-color: transparent; }
 .story-open body { overflow: hidden; }
-@supports (corner-shape: squircle) { .story, .story * { corner-shape: round; } }   /* супереліпс тут ламає малювання затемнення в Chrome */
+@supports (corner-shape: squircle) { .story, .story__box, .story__img, .story__img img, .story__spin { corner-shape: round; } }   /* супереліпс тут ламає малювання затемнення в Chrome */
 .story__acts a.btn { text-decoration: none; }
 /* відступи кнопки «Поділитися результатом» — як між іншими блоками картки */
 .pc-story { margin: 0 0 12px; }
