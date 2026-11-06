@@ -2173,7 +2173,7 @@
   // ----- Фото учасників (assets/players/players.json: «прізвище ім'я» малими літерами → файл) -----
   // Кого немає у списку або чиє фото не завантажилось — показуємо ініціали.
   var PHOTOS = {};
-  var PHOTO_V = 3;   // збільшити, коли фото замінено на нові (щоб Telegram і браузери не тримали старі)
+  var PHOTO_V = 4;   // збільшити, коли фото замінено на нові (щоб Telegram і браузери не тримали старі)
   function avatarHtml(name) {
     var f = PHOTOS[normName(name)];
     return '<span class="av' + (f ? ' av--ph' : '') + '" aria-hidden="true">' + esc(initials(name)) +
