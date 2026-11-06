@@ -2186,6 +2186,27 @@
     if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
     else { ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
   }
+  // Прямокутник із кутами-супереліпсом (як «згладжування кутів» в iOS): |x|^n + |y|^n = 1
+  function sqPath(ctx, x, y, w, h, r, n) {
+    n = n || 4.2; r = Math.min(r, w / 2, h / 2);
+    var steps = 18, pts = [];
+    function corner(cx, cy, sx, sy, from) {
+      for (var i = 0; i <= steps; i++) {
+        var t = (from + i / steps) * Math.PI / 2;
+        var ct = Math.cos(t), st = Math.sin(t);
+        pts.push([cx + sx * r * Math.sign(ct) * Math.pow(Math.abs(ct), 2 / n), cy + sy * r * Math.sign(st) * Math.pow(Math.abs(st), 2 / n)]);
+      }
+    }
+    // правий верхній, правий нижній, лівий нижній, лівий верхній
+    var q = [];
+    for (var i = 0; i <= steps; i++) { var t = i / steps * Math.PI / 2; q.push([Math.pow(Math.cos(t), 2 / n), Math.pow(Math.sin(t), 2 / n)]); }
+    ctx.beginPath();
+    q.forEach(function (p, i) { var px = x + w - r + r * p[0], py = y + r - r * p[1]; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
+    q.slice().reverse().forEach(function (p) { ctx.lineTo(x + r - r * p[0], y + r - r * p[1]); });
+    q.forEach(function (p) { ctx.lineTo(x + r - r * p[0], y + h - r + r * p[1]); });
+    q.slice().reverse().forEach(function (p) { ctx.lineTo(x + w - r + r * p[0], y + h - r + r * p[1]); });
+    ctx.closePath();
+  }
   function fitText(ctx, text, maxW, size, weight) {
     var s = size;
     do { ctx.font = weight + ' ' + s + 'px Fixel, system-ui, sans-serif'; s -= 1; } while (ctx.measureText(text).width > maxW && s > 12);
@@ -2282,9 +2303,23 @@
           : ['НАЙКРАЩИЙ ТУР', st.best ? String(st.best.fish) : '—', st.best ? fishWord(st.best.fish) + ' · тур ' + st.best.n : '']
       ];
       var px = L.px, py = L.py, pw = L.pw, ph = L.ph, cw = pw / 2, ch = ph / 2;
-      rrect(c, px, py, pw, ph, 44);
-      c.fillStyle = 'rgba(255,255,255,0.035)'; c.fill();
-      c.lineWidth = 1.5; c.strokeStyle = 'rgba(255,255,255,0.10)'; c.stroke();
+      // «Скло»: розмитий фон під панеллю (зменшили й розтягнули назад — працює в усіх браузерах), світла плівка, тонка рамка
+      try {
+        var sm = document.createElement('canvas'), sw = Math.max(8, Math.round(pw / 14)), shh = Math.max(8, Math.round(ph / 14));
+        sm.width = sw; sm.height = shh;
+        var sc = sm.getContext('2d'); sc.imageSmoothingEnabled = true; sc.imageSmoothingQuality = 'high';
+        sc.drawImage(cv, px, py, pw, ph, 0, 0, sw, shh);
+        c.save(); sqPath(c, px, py, pw, ph, 64); c.clip();
+        c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+        c.drawImage(sm, 0, 0, sw, shh, px, py, pw, ph);
+        c.restore();
+      } catch (e) { /* без розмиття */ }
+      sqPath(c, px, py, pw, ph, 64);
+      c.fillStyle = 'rgba(255,255,255,0.075)'; c.fill();
+      var sheen = c.createLinearGradient(px, py, px + pw * 0.6, py + ph);
+      sheen.addColorStop(0, 'rgba(255,255,255,0.07)'); sheen.addColorStop(0.5, 'rgba(255,255,255,0.015)'); sheen.addColorStop(1, 'rgba(255,255,255,0)');
+      c.fillStyle = sheen; c.fill();
+      c.lineWidth = 2; c.strokeStyle = 'rgba(255,255,255,0.16)'; c.stroke();
       c.strokeStyle = 'rgba(255,255,255,0.08)'; c.lineWidth = 1.5;
       c.beginPath(); c.moveTo(px + cw, py + 36); c.lineTo(px + cw, py + ph - 36); c.moveTo(px + 36, py + ch); c.lineTo(px + pw - 36, py + ch); c.stroke();
       stats.forEach(function (t, i) {
