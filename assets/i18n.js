@@ -35,9 +35,34 @@
   if (EN) document.documentElement.classList.add('lang-en');
 
   // Перемикання без перезавантаження: перекладаємо/повертаємо тексти на місці, апка перемальовує свої блоки
+  // Вибір пам'ятаємо в браузері, а в Telegram — ще й у хмарі Telegram (не губиться, якщо Telegram почистив кеш, і однаковий на всіх пристроях)
+  function cloud() {
+    var tg = window.Telegram && window.Telegram.WebApp;
+    try { return tg && tg.CloudStorage && tg.isVersionAtLeast && tg.isVersionAtLeast('6.9') ? tg.CloudStorage : null; } catch (e) { return null; }
+  }
+  function remember(l) {
+    try { localStorage.setItem(LS, l); } catch (e) { /* */ }
+    var cs = cloud();
+    if (cs) try { cs.setItem('tm_lang', l, function () {}); } catch (e) { /* */ }
+  }
+  // Після завантаження Telegram: беремо збережену в хмарі мову (якщо в браузері її немає або вона інша)
+  function syncCloud() {
+    var cs = cloud();
+    if (!cs) return;
+    try {
+      cs.getItem('tm_lang', function (err, v) {
+        if (err || (v !== 'en' && v !== 'uk')) { if (stored()) remember(stored()); return; }   // у хмарі порожньо — збережемо поточний вибір
+        try { localStorage.setItem(LS, v); } catch (e) { /* */ }
+        if (v !== pick) apply(v);
+      });
+    } catch (e) { /* */ }
+  }
   function setLang(l) {
     if (l !== 'en' && l !== 'uk') return;
-    try { localStorage.setItem(LS, l); } catch (e) { /* */ }
+    remember(l);
+    apply(l);
+  }
+  function apply(l) {
     if (l === pick) return;
     pick = l; EN = l === 'en';
     API.lang = pick; API.en = EN;
@@ -349,7 +374,7 @@
   }
 
   var API = window.TM_I18N = {
-    lang: pick, en: EN, misses: misses, tr: tr, translit: translit, plural: plural, setLang: setLang, start: start, ord: ord,
+    lang: pick, en: EN, misses: misses, tr: tr, translit: translit, plural: plural, setLang: setLang, syncCloud: syncCloud, start: start, ord: ord,
     setEvent: function (ev) {
       if (!ev) return;
       if (ev.title && ev.titleEn) extra[String(ev.title).trim()] = ev.titleEn;

@@ -49,6 +49,7 @@
       if (!tg) return;
       var at = function (v) { try { return tg.isVersionAtLeast(v); } catch (e) { return false; } };
       try { tg.ready(); } catch (e) { /* */ }
+      try { if (window.TM_I18N && window.TM_I18N.syncCloud) window.TM_I18N.syncCloud(); } catch (e) { /* */ }   // мова, збережена в Telegram
       try { tg.expand(); } catch (e) { /* */ }
       try { if (at('7.7')) tg.disableVerticalSwipes(); } catch (e) { /* */ }
       try {
