@@ -1922,7 +1922,7 @@ input, textarea, select { caret-color: var(--nav); }
     background: radial-gradient(120% 120% at 25% 15%, #86aeea 0%, #5b8fe0 45%, #3a72d4 100%);
     box-shadow: 0 10px 24px rgba(37, 88, 184, 0.35), 0 2px 6px rgba(16, 24, 40, 0.12);
     pointer-events: auto; -webkit-tap-highlight-color: transparent;
-    animation: partner-float 3.2s ease-in-out infinite alternate;
+    animation: partner-float 2s ease-in-out infinite alternate;
   }
 }
 .partner img { width: 78%; height: auto; display: block; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18)); pointer-events: none; }
