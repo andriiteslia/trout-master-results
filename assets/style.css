@@ -1982,3 +1982,10 @@ input, textarea, select { caret-color: var(--nav); }
   .kpi .tt { gap: 0; margin-right: 2px; }
 }
 @media (max-width: 374px) { .kpi__v:has(.tt) { font-size: 15px; } }
+
+/* Перегляд картинки на телефоні: кнопки на тій самій висоті, що й нижня кнопка сторінки;
+   нижні кнопки сторінки й кнопку партнера під затемненням ховаємо, щоб нічого не накладалось */
+@media (max-width: 719px) {
+  .story { padding-bottom: calc(24px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px))); }
+}
+.story-open .regbar, .story-open .pc-storybar, .story-open .partner { visibility: hidden; }
