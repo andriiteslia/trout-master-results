@@ -1463,8 +1463,8 @@ function broadcast_(ss, sh, r, test) {
       var chatLike = x.chat || (test && toChat);
       var row0 = chatLike && extraBtn ? [extraBtn]
         : [chatLike ? { text: BC_BUTTON, url: BC_APP_LINK } : { text: played ? BC_BUTTON_ME : BC_BUTTON, web_app: { url: url } }];
-      if (extraBtn && !chatLike) row0.push(extraBtn);
-      var markup = { inline_keyboard: [row0] };
+      // Своя кнопка — окремим рядком під кнопкою апки, щоб довгі назви не обрізались
+      var markup = { inline_keyboard: extraBtn && !chatLike ? [row0, [extraBtn]] : [row0] };
       var res = send(x.id, body, markup);
       if (res && !res.ok && res.error_code === 429) {   // Telegram просить зачекати
         Utilities.sleep(((res.parameters && res.parameters.retry_after) || 1) * 1000 + 200);
