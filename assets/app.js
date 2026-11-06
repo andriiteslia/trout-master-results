@@ -786,7 +786,7 @@
       '<div class="pc-hero__main">' +
       // Є фото — кружечок із фото, а місце маленьким значком у куті; немає — кружечок із місцем, як раніше
       (PHOTOS[normName(st.name)]
-        ? '<div class="pc-ava" aria-hidden="true"><img src="assets/players/lg/' + encodeURIComponent(PHOTOS[normName(st.name)]) + '" alt="" decoding="async" onerror="this.onerror=null;this.src=this.src.replace(\'/lg/\',\'/\')">' +
+        ? '<div class="pc-ava" aria-hidden="true"><img src="assets/players/lg/' + encodeURIComponent(PHOTOS[normName(st.name)]) + '?v=' + PHOTO_V + '" alt="" decoding="async" onerror="this.onerror=null;this.src=this.src.replace(\'/lg/\',\'/\')">' +
             (started && st.place ? '<span class="pc-place pc-place--badge' + medal + '">' + st.place + '</span>' : '') + '</div>'
         : (started && st.place ? '<div class="pc-place' + medal + '" aria-hidden="true">' + st.place + '</div>' : '')) +
       '<div class="pc-head__txt"><h1 class="title" id="pcTitle" tabindex="-1">' + esc(st.name) + '</h1>' +
@@ -2075,10 +2075,11 @@
   // ----- Фото учасників (assets/players/players.json: «прізвище ім'я» малими літерами → файл) -----
   // Кого немає у списку або чиє фото не завантажилось — показуємо ініціали.
   var PHOTOS = {};
+  var PHOTO_V = 2;   // збільшити, коли фото замінено на нові (щоб Telegram і браузери не тримали старі)
   function avatarHtml(name) {
     var f = PHOTOS[normName(name)];
     return '<span class="av' + (f ? ' av--ph' : '') + '" aria-hidden="true">' + esc(initials(name)) +
-      (f ? '<img src="assets/players/' + encodeURIComponent(f) + '" alt="" loading="lazy" decoding="async">' : '') + '</span>';
+      (f ? '<img src="assets/players/' + encodeURIComponent(f) + '?v=' + PHOTO_V + '" alt="" loading="lazy" decoding="async">' : '') + '</span>';
   }
   document.addEventListener('error', function (e) {
     var t = e.target;
@@ -2168,7 +2169,7 @@
     return Promise.all([
       loadImg('assets/logo.svg?v=3'),
       // для картинки — фото у більшій якості (assets/players/lg), якщо його немає — звичайне
-      loadImg(photo ? 'assets/players/lg/' + encodeURIComponent(photo) : null).then(function (im) { return im || loadImg(photo ? 'assets/players/' + encodeURIComponent(photo) : null); }),
+      loadImg(photo ? 'assets/players/lg/' + encodeURIComponent(photo) + '?v=' + PHOTO_V : null).then(function (im) { return im || loadImg(photo ? 'assets/players/' + encodeURIComponent(photo) + '?v=' + PHOTO_V : null); }),
       loadImg('assets/fish.webp'),
       document.fonts && document.fonts.load ? Promise.all([document.fonts.load('700 80px Fixel'), document.fonts.load('500 30px Fixel')]).catch(function () {}) : null
     ]).then(function (r) {
