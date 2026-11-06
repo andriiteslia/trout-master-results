@@ -2629,6 +2629,20 @@
     return '<div class="kpi ' + cls + '"><span class="kpi__l"><span class="l-d">' + label + '</span><span class="l-m">' + (labelM || label) + '</span></span>' +
       '<span class="kpi__v">' + valHtml + '</span>' + (extra || '') + '</div>';
   }
+  // Дата турніру з підзаголовка («21 листопада • …») → скільки днів до старту
+  function daysToStart() {
+    var ev = state.payload && state.payload.event, sub = String((ev && ev.subtitle) || '');
+    var m = sub.match(new RegExp('(\\d{1,2})\\s+(' + MONTHS_FULL.join('|') + ')', 'i'));
+    if (!m) return null;
+    var now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var d = new Date(now.getFullYear(), MONTHS_FULL.indexOf(m[2].toLowerCase()), parseInt(m[1], 10));
+    if (d - today < -60 * 864e5) d.setFullYear(d.getFullYear() + 1);   // напр. зараз грудень, турнір у січні
+    var days = Math.round((d - today) / 864e5);
+    if (days < 0) return null;   // турнір уже минув
+    var v = days === 0 ? 'Сьогодні' : days === 1 ? 'Завтра'
+      : days + ' <small>' + plural(days, 'день', 'дні', 'днів') + '</small>';
+    return { v: v, date: m[1] + ' ' + m[2].toLowerCase() };
+  }
   function renderKpis() {
     var p = state.payload, h = '';
     if (!p) { v2.kpis.innerHTML = ''; return; }
@@ -2637,7 +2651,11 @@
       var pct = seats ? Math.min(100, Math.round(n / seats * 100)) : 0;
       h += kpi('', 'Зареєстровано', 'Учасників', n + (seats ? ' <small>/ ' + seats + '</small>' : ''),
         seats ? '<span class="kpi__bar" role="img" aria-label="' + n + ' з ' + seats + ' місць зайнято"><span style="width:' + pct + '%"></span></span>' : '');
-      if (seats) {
+      var start = regOpenNow() ? null : daysToStart();
+      if (seats && start) {
+        // Реєстрацію закрито — замість «Вільно» показуємо, скільки лишилось до турніру
+        h += kpi('k-green', 'До старту', 'До старту', start.v, '<span class="kpi__s l-d">' + esc(start.date) + '</span>');
+      } else if (seats) {
         h += n < seats
           ? kpi('k-green', 'Вільних місць', 'Вільно', (seats - n) + ' <small class="l-m">' + plural(seats - n, 'місце', 'місця', 'місць') + '</small>', '<span class="kpi__s l-d">далі — резерв</span>')
           : kpi('', 'Резерв', 'Резерв', (n - seats) + ' <small>' + plural(n - seats, 'учасник', 'учасники', 'учасників') + '</small>', '<span class="kpi__s l-d">усі місця зайняті</span>');
