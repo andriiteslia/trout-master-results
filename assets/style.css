@@ -2013,3 +2013,5 @@ input, textarea, select { caret-color: var(--nav); }
 @media (hover: hover) { .search__clear:hover { background: #d0d5dd; color: #101828; } }
 .search__clear:active { transform: scale(0.92); }
 @supports (corner-shape: squircle) { .search__clear { corner-shape: round; } }
+/* Картка учасника на телефоні: більше повітря між шапкою і фото */
+@media (max-width: 979px) { .pc-hero { padding-top: 18px; } }
