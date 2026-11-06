@@ -1024,6 +1024,7 @@ var BC_TEXT = 1, BC_PHOTO = 2, BC_BTN = 3, BC_TO = 4, BC_TESTID = 5, BC_ACTION =
 var BC_PICS_TITLE = 'Картинки для розсилки';
 var BC_PICS_ROWS = 20;   // скільки рядків табличка дає під назви
 var BC_NO_PHOTO = 'Без фото';
+var BC_CARD_PICS = ['Проміжні результати', 'Підсумкові результати'];   // лише з цими фото кнопка — «Моя картка в TM APP»
 var BC_PICS_DEFAULT = ['Реєстрацію відкрито!', 'Реєстрація завершена', 'Проміжні результати', 'Підсумкові результати'];
 
 /** Рядок заголовка «Розсилка в Telegram» на аркуші «Сайт» (0 — блоку немає). */
@@ -1093,7 +1094,7 @@ function setupBroadcast_(sh) {
   var help = sh.getRange(r + BC_HELP, 1, 1, 2);
   help.merge().setWrap(true).setFontColor('#475467').setVerticalAlignment('top');
   help.setValue('Посилання в тексті: [Правила турніру](https://…) — учасник побачить клікабельні слова «Правила турніру». Звичайне посилання теж стає клікабельним. ' +
-    '\n«Кнопка» — своя кнопка під повідомленням замість «' + BC_BUTTON + '»: у B — текст (напр. 📍 Маршрут), у C — посилання. Порожньо — кнопка «' + BC_BUTTON + '» (учасникам — «' + BC_BUTTON_ME + '»). ' +
+    '\n«Кнопка» — своя кнопка під повідомленням замість «' + BC_BUTTON + '»: у B — текст (напр. 📍 Маршрут), у C — посилання. Порожньо — кнопка «' + BC_BUTTON + '» (з фото «' + BC_CARD_PICS.join('» / «') + '» учасникам — «' + BC_BUTTON_ME + '»). ' +
     '\n«Фото» — картинка з таблички «' + BC_PICS_TITLE + '» нижче або «' + BC_NO_PHOTO + '» (лише текст). Текст стає підписом під фото; якщо він довший за 1024 символи — бот надішле фото, а за ним текст окремим повідомленням. ' +
     '\n«Кому» спершу «—»: поки не оберете отримувачів, «' + BC_SEND + '» нічого не надішле (тест собі працює завжди). Після розсилки «Кому» знову стає «—». ' +
     '\n«' + BC_TO_REG + '» — основний склад з аркуша «Учасники» (стільки, скільки вказано в «Кількість місць»; резерв не отримує). ' +
@@ -1465,9 +1466,12 @@ function broadcast_(ss, sh, r, test) {
       // Заповнена своя «Кнопка» — під повідомленням лише вона (і в чаті, і в особистих).
       // Порожня — кнопка апки: в особистих «Моя картка» / «Відкрити TM APP», у чаті — посилання на апку.
       var chatLike = x.chat || (test && toChat);
+      // «Моя картка» — лише з фото «Проміжні / Підсумкові результати» і коли в учасника вже є місце
+      var myCard = played && BC_CARD_PICS.indexOf(pic.name) !== -1;
       var markup = { inline_keyboard: [[extraBtn ? extraBtn
         : chatLike ? { text: BC_BUTTON, url: BC_APP_LINK }
-        : { text: played ? BC_BUTTON_ME : BC_BUTTON, web_app: { url: url } }]] };
+        : myCard ? { text: BC_BUTTON_ME, web_app: { url: url } }
+        : { text: BC_BUTTON, web_app: { url: SETTINGS.SITE_URL } }]] };
       var res = send(x.id, body, markup);
       if (res && !res.ok && res.error_code === 429) {   // Telegram просить зачекати
         Utilities.sleep(((res.parameters && res.parameters.retry_after) || 1) * 1000 + 200);
