@@ -2316,8 +2316,10 @@
       } catch (e) { /* без розмиття */ }
       sqPath(c, px, py, pw, ph, 64);
       c.fillStyle = 'rgba(255,255,255,0.075)'; c.fill();
-      var sheen = c.createLinearGradient(px, py, px + pw * 0.6, py + ph);
-      sheen.addColorStop(0, 'rgba(255,255,255,0.07)'); sheen.addColorStop(0.5, 'rgba(255,255,255,0.015)'); sheen.addColorStop(1, 'rgba(255,255,255,0)');
+      // ледь помітний діагональний перехід: світліше зверху зліва → темніше знизу справа
+      var sheen = c.createLinearGradient(px, py, px + pw, py + ph);
+      sheen.addColorStop(0, 'rgba(255,255,255,0.06)'); sheen.addColorStop(0.45, 'rgba(255,255,255,0.01)');
+      sheen.addColorStop(0.55, 'rgba(0,0,0,0)'); sheen.addColorStop(1, 'rgba(0,0,0,0.16)');
       c.fillStyle = sheen; c.fill();
       c.lineWidth = 2; c.strokeStyle = 'rgba(255,255,255,0.16)'; c.stroke();
       c.strokeStyle = 'rgba(255,255,255,0.08)'; c.lineWidth = 1.5;
