@@ -1943,3 +1943,12 @@ input, textarea, select { caret-color: var(--nav); }
 .partner-web img { transition: transform 0.2s ease; }
 .partner-web:active { transform: scale(0.94); }
 .partner-web:focus-visible { outline: 3px solid rgba(58, 114, 212, 0.45); outline-offset: 3px; }
+
+/* Зелені градієнтні кнопки: градієнт від зовнішнього краю рамки й без повторів — інакше по краях
+   видно тонку смужку «протилежного» кольору (шорткат background у станах :hover/:active скидав це) */
+#cardOpen, .regbar #cardOpen, #selCard, .pc-story, .pc-storybtn, .story__share, .pc-sharestory,
+#cardOpen:hover, #cardOpen:active, .regbar #cardOpen:hover, .regbar #cardOpen:active, #selCard:hover, #selCard:active,
+.story__share:hover, .story__share:active, .pc-storybtn:hover, .pc-storybtn:active, .pc-sharestory:hover, .pc-sharestory:active {
+  background-origin: border-box !important; background-repeat: no-repeat !important; background-clip: border-box !important;
+  border-width: 0 !important;   /* без рамки взагалі — Safari/Telegram на iPhone не малює смужку на краю */
+}
