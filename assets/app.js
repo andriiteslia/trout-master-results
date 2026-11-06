@@ -1369,7 +1369,7 @@
     reg.timer.hidden = !on;
     if (!on) { clearInterval(timerId); timerId = null; return; }
     var left = d.getTime() - Date.now();
-    if (left <= 0) { clearInterval(timerId); timerId = null; renderReg(); return; }   // час вийшов: ховаємо кнопку
+    if (left <= 0) { clearInterval(timerId); timerId = null; renderReg(); renderKpis(); return; }   // час вийшов: ховаємо кнопку, картка → «Закрита»
     reg.timerTxt.innerHTML = 'до кінця ' + fmtLeft(left).replace(/\d/g, '<span class="dg">$&</span>');
     ['kTimer', 'rTimer'].forEach(function (id) { var kt = document.getElementById(id); if (kt) kt.innerHTML = kTimerHtml(left); });
     var sr = 'Реєстрація триває до ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' +
@@ -2643,6 +2643,7 @@
           : kpi('', 'Резерв', 'Резерв', (n - seats) + ' <small>' + plural(n - seats, 'учасник', 'учасники', 'учасників') + '</small>', '<span class="kpi__s l-d">усі місця зайняті</span>');
       }
       if (regOpenNow() && regDeadline()) h += kpi('k-dark', 'До закриття реєстрації', 'До закриття', '<span id="kTimer"></span>');
+      else if (!regOpenNow()) h += kpi('k-dark k-closed', 'Реєстрація', 'Реєстрація', 'Закрита');   // картка лишається — без порожнього місця
       v2.kpis.innerHTML = h;
       v2.kpis.hidden = false;
       renderTimer();
