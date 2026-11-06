@@ -1367,8 +1367,9 @@
     var t = Math.max(0, Math.floor(ms / 1000));
     var d = Math.floor(t / 86400), h = Math.floor(t % 86400 / 3600), m = Math.floor(t % 3600 / 60), sec = t % 60;
     var parts = d ? [[d, 'д', 'д'], [h, 'год', 'г'], [pad2(m), 'хв', 'хв']] : [[h, 'год', 'г'], [pad2(m), 'хв', 'хв'], [pad2(sec), 'с', 'с']];
+    if (d) parts.push([pad2(sec), 'с', 'с', ' d-only']);   // на вебі — ще й секунди (на телефоні лишаємо три плитки)
     return '<span class="visually-hidden">' + (d ? d + ' д ' : '') + h + ' год ' + m + ' хв</span>' + parts.map(function (x, i) {
-      return '<span class="tt' + (i === 2 ? ' tt-3' : '') + '" aria-hidden="true"><b>' + x[0] + '</b><span class="l-d">' + x[1] + '</span><span class="l-m">' + x[2] + '</span></span>';
+      return '<span class="tt' + (i === 2 ? ' tt-3' : '') + (x[3] || '') + '" aria-hidden="true"><b>' + x[0] + '</b><span class="l-d">' + x[1] + '</span><span class="l-m">' + x[2] + '</span></span>';
     }).join('');
   }
   function renderTimer() {
