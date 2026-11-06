@@ -1049,6 +1049,7 @@ function setupBroadcast_(sh) {
   sh.getRange(r, 1).setValue(BC_TITLE).setFontWeight('bold').setFontSize(12);
   sh.getRange(r + BC_TEXT, 1, 7, 1).setValues([['Текст повідомлення'], ['Фото'], ['Кнопка (текст | посилання)'], ['Кому'], ['Тест — мій Telegram ID'], ['Дія'], ['Остання розсилка']])
     .setFontWeight('bold');
+  sh.getRange(r + BC_BTN, 2, 1, 2).clearDataValidations();   // вставлений рядок міг успадкувати список «Фото» — тут вільний текст
   sh.getRange(r + BC_BTN, 2).setBackground('#e3f0fa').setNote('Текст другої кнопки під повідомленням, напр. 📍 Маршрут. Порожньо — лише «' + BC_BUTTON + '».');
   sh.getRange(r + BC_BTN, 3).setBackground('#e3f0fa').setNote('Посилання для кнопки, напр. https://maps.app.goo.gl/…');
   var text = sh.getRange(r + BC_TEXT, 2);
