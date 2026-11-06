@@ -1366,8 +1366,10 @@
   function kTimerHtml(ms) {
     var t = Math.max(0, Math.floor(ms / 1000));
     var d = Math.floor(t / 86400), h = Math.floor(t % 86400 / 3600), m = Math.floor(t % 3600 / 60), sec = t % 60;
-    var parts = d ? [[d, 'д', 'д'], [h, 'год', 'г'], [pad2(m), 'хв', 'хв']] : [[h, 'год', 'г'], [pad2(m), 'хв', 'хв'], [pad2(sec), 'с', 'с']];
-    if (d) parts.push([pad2(sec), 'с', 'с', ' d-only']);   // на вебі — ще й секунди (на телефоні лишаємо три плитки)
+    // підписи: [повний (веб), короткий (телефон)]; англійською на телефоні — «m», щоб влізли хвилини
+    var U = I18N.en ? { d: ['d', 'd'], h: ['h', 'h'], m: ['min', 'm'], s: ['s', 's'] } : { d: ['д', 'д'], h: ['год', 'г'], m: ['хв', 'хв'], s: ['с', 'с'] };
+    var parts = d ? [[d, U.d[0], U.d[1]], [h, U.h[0], U.h[1]], [pad2(m), U.m[0], U.m[1]]] : [[h, U.h[0], U.h[1]], [pad2(m), U.m[0], U.m[1]], [pad2(sec), U.s[0], U.s[1]]];
+    if (d) parts.push([pad2(sec), U.s[0], U.s[1], ' d-only']);   // на вебі — ще й секунди (на телефоні лишаємо три плитки)
     return '<span class="visually-hidden">' + (d ? d + ' д ' : '') + h + ' год ' + m + ' хв</span>' + parts.map(function (x, i) {
       return '<span class="tt' + (i === 2 ? ' tt-3' : '') + (x[3] || '') + '" aria-hidden="true"><b>' + x[0] + '</b><span class="l-d">' + x[1] + '</span><span class="l-m">' + x[2] + '</span></span>';
     }).join('');

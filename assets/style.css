@@ -1970,3 +1970,15 @@ input, textarea, select { caret-color: var(--nav); }
 }
 @media (max-width: 374px) { .lang button { min-width: 32px; padding: 0 6px; font-size: 11px; } .topbar__inner .status { padding: 0 9px; font-size: 12px; } }
 @media (max-width: 419px) { .st-w { display: none; } }
+/* Телефон: у відліку три плитки (дні · години · хвилини), трохи щільніше */
+@media (max-width: 979px) {
+  .tt-3 { display: inline-flex; }
+  .kpi .tt { margin-right: 3px; }
+  .kpi .tt:last-child { margin-right: 0; }
+  .kpi .tt span { font-size: 10px; }
+}
+@media (max-width: 979px) {
+  .kpi__v:has(.tt) { font-size: 17px; letter-spacing: -0.01em; }
+  .kpi .tt { gap: 0; margin-right: 2px; }
+}
+@media (max-width: 374px) { .kpi__v:has(.tt) { font-size: 15px; } }
