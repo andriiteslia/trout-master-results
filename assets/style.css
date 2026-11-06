@@ -1905,3 +1905,10 @@ input, textarea, select { caret-color: var(--nav); }
 .nbar.is-done .nbar__go, .nbar.is-done .nbar__x { display: none; }
 @supports (corner-shape: squircle) { .nbar__ic, .nbar__x { corner-shape: round; } }
 @media (min-width: 980px) { .nbar { margin: 16px 24px; grid-template-columns: auto 1fr auto auto; } .nbar__go { grid-column: auto; grid-row: 1; grid-column-start: 3; padding: 0 22px; } .nbar__x { grid-column-start: 4; align-self: center; } }
+
+/* Сегментед-контроли й пошук — «пігулки» з кутами-супереліпсом, як кнопки */
+.tabs, .btools .tabs, .tab, .btools .tab, .tab[aria-selected="true"], .btools .tab[aria-selected="true"], .search { border-radius: 999px; }
+@media (min-width: 980px) {
+  .btools .tabs, .btools .tab, .search { border-radius: 999px; }
+  .search { padding: 0 16px; }
+}
