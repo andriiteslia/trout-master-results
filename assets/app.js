@@ -1,6 +1,37 @@
 (function () {
   'use strict';
 
+  // ---------- Автооновлення апки ----------
+  // Telegram і браузери інколи тримають стару версію сторінки в кеші. Тому апка сама перевіряє,
+  // чи на сервері новіша версія (номер ?v= у index.html), і якщо так — тихо перезавантажується.
+  (function autoUpdate() {
+    var me = document.currentScript && /[?&]v=([\w.-]+)/.exec(document.currentScript.src);
+    var MY_V = me ? me[1] : null;
+    if (!MY_V || !window.fetch) return;
+    var busy = false;
+    function check() {
+      if (busy || document.hidden) return;
+      busy = true;
+      fetch(location.pathname + '?_=' + Date.now(), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.text() : ''; })
+        .then(function (html) {
+          var m = /assets\/app\.js\?v=([\w.-]+)/.exec(html || '');
+          var v = m ? m[1] : null;
+          if (!v || v === MY_V) return;
+          var key = 'tm:reloadedTo';
+          try { if (sessionStorage.getItem(key) === v) return; sessionStorage.setItem(key, v); } catch (e) { /* */ }
+          // нова адреса з ?v=… — так Telegram точно не візьме сторінку з кешу; дані Telegram у # зберігаються
+          var q = location.search.replace(/([?&])v=[^&]*&?/, '$1').replace(/[?&]$/, '');
+          location.replace(location.pathname + (q ? q + '&' : '?') + 'v=' + encodeURIComponent(v) + location.hash);
+        })
+        .catch(function () { /* немає мережі — перевіримо пізніше */ })
+        .then(function () { busy = false; });
+    }
+    setTimeout(check, 3000);                       // одразу після відкриття
+    setInterval(check, 5 * 60 * 1000);             // і раз на 5 хвилин, поки апка відкрита
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });   // повернулися в апку
+  })();
+
   // ---------- Telegram Mini App ----------
   // Лише коли сторінку відкрито як міні-застосунок Telegram: на весь екран,
   // без закриття свайпом вниз (закривається тільки кнопкою Telegram).
