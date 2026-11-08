@@ -28,16 +28,16 @@ const out = {
 };
 
 const check = process.argv.includes('--check');
-let stale = [];
+let stale = [], wrote = 0;
 for (const [file, text] of Object.entries(out)) {
   const p = path.join(ROOT, file);
   const cur = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null;
   if (cur === text) continue;
   if (check) stale.push(file);
-  else { fs.writeFileSync(p, text); console.log('зібрано ' + file + ' (' + text.split('\n').length + ' рядків)'); }
+  else { wrote++; fs.writeFileSync(p, text); console.log('зібрано ' + file + ' (' + text.split('\n').length + ' рядків)'); }
 }
 if (check && stale.length) {
   console.error('Не зібрано з src/: ' + stale.join(', ') + ' — запустіть node tools/build.js');
   process.exit(1);
 }
-if (!check && !stale.length) console.log('assets/ уже актуальні');
+if (!check && !wrote) console.log('assets/ уже актуальні');

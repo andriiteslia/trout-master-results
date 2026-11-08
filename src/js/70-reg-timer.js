@@ -60,7 +60,9 @@
     reg.open.hidden = !showReg;
     ts.open.hidden = !showStats;
     pc.open.hidden = !showCard;
-    pc.openText.textContent = other ? 'Картка учасника' : 'Картка учасника · ' + player;
+    var pair = showCard ? cmpPair() : null;   // виділено двох — кнопка порівняння замість картки
+    pc.open.classList.toggle('is-cmp', !!pair);
+    pc.openText.textContent = pair ? (other ? 'Порівняти' : 'Порівняти учасників') : other ? 'Картка учасника' : 'Картка учасника · ' + player;
     pc.open.classList.toggle('btn-primary', !other);
     pc.open.classList.toggle('btn-secondary', other);
     reg.bar.classList.toggle('two', other && showCard);
@@ -157,7 +159,7 @@
     if (state.view === v) return;
     state.view = v;
     if (v !== 'card' && state.cardPending) { state.cardPending = false; state.wantPlayer = null; }   // пішли з картки, поки вона вантажилась
-    if (v !== 'card') countedCard = '';   // наступне відкриття картки — знову з «докручуванням»
+    if (v !== 'card') { countedCard = ''; state.cmpOpen = false; }   // наступне відкриття картки — знову з «докручуванням»
     if (v !== 'stats') grownStats = false;
     if (formLift.spacer) setFormSpacer(0);
     renderReg();

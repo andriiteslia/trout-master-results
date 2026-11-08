@@ -206,7 +206,7 @@
   });
 
   reg.open.addEventListener('click', goReg);
-  pc.open.addEventListener('click', goCard);
+  pc.open.addEventListener('click', function () { if (cmpPair()) goCompare(); else goCard(); });
   pc.back.addEventListener('click', goList);
   pc.body.addEventListener('click', function (e) {
     var b = e.target.closest('[data-act]');

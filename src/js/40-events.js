@@ -44,19 +44,20 @@
 
   // Виділено лише одного гравця (діє на всіх вкладках)
   function selectOnly(key) {
+    state.cmpKey = null;   // другий для порівняння знімається разом
     state.selected = new Set(key ? [key] : []);
     store.set(LS.sel, Array.from(state.selected));
     if (typeof renderReg === 'function' && reg) renderReg();   // кнопка «Картка учасника»
   }
 
-  // Тап по рядку: виділити цього гравця (інших — зняти) / повторний тап — зняти виділення
+  // Тап по рядку: виділити гравця / повторний тап — зняти. У результатах тап по другому рядку
+  // додає його до порівняння (tapRow у 57-compare.js)
   el.board.addEventListener('click', function (e) {
     var tr = e.target.closest('.r[data-key], tbody tr[data-key]');
     if (!tr) return;
-    var key = tr.getAttribute('data-key');
-    selectOnly(state.selected.has(key) ? null : key);
+    tapRow(tr.getAttribute('data-key'));
     Array.prototype.forEach.call(el.board.querySelectorAll('[data-key]'), function (row) {
-      var on = state.selected.has(row.getAttribute('data-key'));
+      var on = isSel(row.getAttribute('data-key'));
       row.classList.toggle('is-sel', on);
       if (row.hasAttribute('aria-selected')) row.setAttribute('aria-selected', String(on));
       var btn = row.querySelector('button.nm');

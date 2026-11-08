@@ -27,8 +27,8 @@
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
   <link rel="preload" href="assets/fonts/fixel-cyrillic-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fish.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="assets/style.css?v=20261109a">
-  <script src="config.js?v=20261109a"></script>
+  <link rel="stylesheet" href="assets/style.css?v=20261109c">
+  <script src="config.js?v=20261109c"></script>
   <script>
     // Запитуємо результати одразу, паралельно з завантаженням решти сторінки
     (function () {
@@ -44,8 +44,8 @@
     // Посилання на картку (…/#p9, startapp=p9): з першого кадру ховаємо головну, щоб не блимав список до картки
     if (/(?:tgWebAppStartParam=|#)p\d+(?:&|$)/.test(location.hash + '&' + location.search.slice(1))) document.documentElement.className += ' view-card deep-wait';
   </script>
-  <script src="assets/i18n.js?v=20261109a"></script>
-  <script src="assets/app.js?v=20261109a" defer></script>
+  <script src="assets/i18n.js?v=20261109c"></script>
+  <script src="assets/app.js?v=20261109c" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -134,10 +134,12 @@
         <div class="fillcard" id="fillCard" hidden></div>
         <div class="selbar" id="selbar" hidden>
           <span class="selbar__place" id="selPlace" hidden></span>
+          <span class="selbar__place selbar__place--2" id="selPlace2" hidden></span>
           <span class="selbar__txt"><small id="selLbl">Вибрано в таблиці</small><b id="selName"></b></span>
           <button type="button" class="btn2 btn2-white" id="selCard">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6"/></svg>
-            <span>Картка учасника</span>
+            <svg class="ic-card" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6"/></svg>
+            <svg class="ic-cmp" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M17 4v16M3 8l4-4 4 4M13 16l4 4 4-4"/></svg>
+            <span id="selCardText">Картка учасника</span>
           </button>
           <button type="button" class="selbar__x" id="selClear" aria-label="Зняти вибір">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
@@ -244,7 +246,8 @@
       <img src="assets/partners/fishmefish.svg?v=1" alt="" width="288" height="288" decoding="async">
     </a>
     <button type="button" class="btn btn-primary" id="cardOpen" hidden>
-      <svg class="btn__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6"/></svg>
+      <svg class="btn__icon ic-card" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6"/></svg>
+      <svg class="btn__icon ic-cmp" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M17 4v16M3 8l4-4 4 4M13 16l4 4 4-4"/></svg>
       <span class="btn__text" id="cardOpenText">Картка учасника</span>
     </button>
     <button type="button" class="btn btn-primary" id="regOpen">Зареєструватися</button>

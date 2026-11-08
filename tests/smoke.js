@@ -105,6 +105,50 @@ const TESTS = {
     await t.ctx.close(); return t.errors;
   },
 
+  'compare desktop: два рядки → «Порівняти» → двобій; третій замінює другого': async (b) => {
+    const t = await page(b, DESK, 'results');
+    const rows = t.p.locator('#board [data-key]');
+    await rows.nth(0).click(); await t.p.waitForTimeout(400);
+    await rows.nth(4).click(); await t.p.waitForTimeout(600);
+    assert((await t.p.locator('#board .is-sel').count()) === 2, 'виділено не двох');
+    assert(await visible(t.p, '#selbar.is-cmp'), 'таблетка не в режимі порівняння');
+    assert((await t.p.locator('#selCardText').innerText()) === 'Порівняти', 'на кнопці не «Порівняти»');
+    const k3 = await rows.nth(7).getAttribute('data-key');
+    await rows.nth(7).click(); await t.p.waitForTimeout(500);
+    assert((await t.p.locator('#board .is-sel').count()) === 2, 'після третього тапу виділено не двох');
+    assert(await t.p.locator('#board .is-sel[data-key="' + k3.replace(/"/g, '\\"') + '"]').count() === 1, 'третій не замінив другого');
+    await shot(t.p, 'desk-cmp-sel');
+    await t.p.click('#selCard'); await t.p.waitForTimeout(1500);
+    assert(await visible(t.p, '#pcBody .cmp-duel'), 'екран порівняння не відкрився');
+    assert((await t.p.locator('#pcBody .cmp-row').count()) >= 12, 'мало показників');
+    await shot(t.p, 'desk-cmp');
+    await t.p.locator('#pcBody [data-act="back"]').first().click(); await t.p.waitForTimeout(800);
+    assert((await t.p.locator('#board .is-sel').count()) === 2, 'після «Назад» вибір загубився');
+    await rows.nth(0).click(); await t.p.waitForTimeout(500);   // зняли першого — другий стає першим
+    assert((await t.p.locator('#board .is-sel').count()) === 1 && !(await visible(t.p, '#selbar.is-cmp')), 'зняття першого працює не так');
+    await t.ctx.close(); return t.errors;
+  },
+
+  'compare mobile: «Порівняти» внизу → двобій': async (b) => {
+    const t = await page(b, MOB, 'results');
+    await t.p.locator('#board [data-key]').nth(1).click(); await t.p.waitForTimeout(400);
+    await t.p.locator('#board [data-key]').nth(3).click(); await t.p.waitForTimeout(600);
+    assert(/Порівняти/.test(await t.p.locator('#cardOpen').innerText()), 'внизу не «Порівняти»');
+    await shot(t.p, 'mob-cmp-sel');
+    await t.p.click('#cardOpen'); await t.p.waitForTimeout(1500);
+    assert(await visible(t.p, '#pcBody .cmp-duel'), 'екран порівняння не відкрився');
+    await shot(t.p, 'mob-cmp');
+    await t.ctx.close(); return t.errors;
+  },
+
+  'compare list: у списку учасників другий тап замінює (без порівняння)': async (b) => {
+    const t = await page(b, DESK, 'list');
+    await t.p.locator('#board [data-key]').nth(1).click(); await t.p.waitForTimeout(300);
+    await t.p.locator('#board [data-key]').nth(5).click(); await t.p.waitForTimeout(500);
+    assert((await t.p.locator('#board .is-sel').count()) === 1, 'у списку виділено більше одного');
+    await t.ctx.close(); return t.errors;
+  },
+
   'desktop stats: екран статистики': async (b) => {
     const t = await page(b, DESK, 'results');
     await t.p.click('#navStats'); await t.p.waitForTimeout(1200);

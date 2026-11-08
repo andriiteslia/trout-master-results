@@ -98,7 +98,7 @@
     var isList = pl.mode === 'Список учасників' || /учасник/i.test(m.name);
     var reserveAt = isList && seats > 0 && m.rows.length > seats ? seats : -1;
     var body = m.rows.map(function (row, idx) {
-      var sel = state.selected.has(row.key);
+      var sel = isSel(row.key);
       var opts = { sel: sel, move: moves[row.key] || 0, flash: flashOn ? changed[row.key] : null };
       var rc = [];
       if (sel) rc.push('is-sel');

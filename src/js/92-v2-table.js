@@ -134,7 +134,7 @@
       '<span class="c-win d-only" role="columnheader">Перемоги</span>' +
       '<span class="c-fish d-only" role="columnheader">Риби' + (fishTotal ? ' (' + fmtInt(fishTotal) + ')' : '') + '</span></div>';
     var body = rows.map(function (r, i) {
-      var sel = state.selected.has(r.key);
+      var sel = isSel(r.key);
       var cls = 'rk-row r' + (ZEBRA && i % 2 ? ' z' : '') + (sel ? ' is-sel' : '') + medalCls(r.place, started) +
         (flashOn && changed[r.key] ? ' flash' : '') + (hasT ? '' : ' no-t');
       var form = r.form.map(function (c) { return '<span class="fb fb-' + c + '" title="' + RC[c][1] + '">' + RC[c][0] + '</span>'; }).join('');
@@ -179,7 +179,7 @@
       tot.map(function (f, i) { return '<span class="t-c"><b>' + (i + 1) + '</b><small>' + (f != null ? f : '') + '</small></span>'; }).join('') +
       '<span class="t-s d-only">Бали</span><span class="t-s d-only">Перем.</span><span class="t-s d-only">Риби</span></div>';
     var body = list.map(function (x, i) {
-      var st = x._st, key = st ? st.key : x.name, sel = state.selected.has(key);
+      var st = x._st, key = st ? st.key : x.name, sel = isSel(key);
       var cells = x.tours.map(function (c) {
         if (!c.code) return '<span class="t-c"><span class="tc tc-none" title="Тур ' + c.n + ': ще не зіграно">–</span></span>';
         return '<span class="t-c"><span class="tc tc-' + c.code + '" title="Тур ' + c.n + ': ' + RC[c.code][1] + ', ' + c.fish + ' ' + fishWord(c.fish) + '">' +
@@ -213,7 +213,7 @@
     function z2(j) { return (j % half) % 2 ? ' z2' : ''; }
     function olOpen(count) { half = Math.max(1, Math.ceil(count / 2)); return '<ol class="plist" style="--rows:' + half + '">'; }
     function item(p, j) {
-      var sel = state.selected.has(p.key);
+      var sel = isSel(p.key);
       return '<li class="pt r' + (j % 2 ? ' z1' : '') + z2(j) + (sel ? ' is-sel' : '') + '" data-key="' + esc(p.key) + '">' +
         '<span class="pt__n">' + esc(p.n) + '</span>' + avatarHtml(p.name) +
         '<span class="pt__nm">' + esc(p.name) + '</span>' + (p.i >= newest && p.i > 0 && all.length > 3 ? '<span class="pt__new">new</span>' : '') + '</li>';

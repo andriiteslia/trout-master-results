@@ -2208,3 +2208,90 @@ input, textarea, select { caret-color: var(--nav); }
 
 /* Посилання на картку: поки app.js не відкрив картку, порожній «аркуш» картки замість головної */
 .deep-wait #pcard[hidden] { display: block !important; min-height: 60vh; }
+/* ===== src/css/97-compare.css ===== */
+/* Порівняння двох учасників («Двобій») — у контейнері картки (.pcard) */
+
+/* Кнопки: іконка картки ↔ іконка порівняння */
+.ic-cmp { display: none; }
+#cardOpen.is-cmp .ic-card, .selbar.is-cmp .ic-card { display: none; }
+#cardOpen.is-cmp .ic-cmp, .selbar.is-cmp .ic-cmp { display: block; }
+#selCard svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Таблетка на комп'ютері: два кружечки місць внахлест */
+@media (min-width: 980px) {
+  .selbar .selbar__place--2 { margin-left: -22px; box-shadow: 0 0 0 3px var(--nav); }
+  .selbar.is-cmp .selbar__txt b { max-width: 46vw; }
+}
+@supports (corner-shape: squircle) { .cmp-vs, .cmp-ava > img { corner-shape: round; } }
+
+/* Шапка: двоє з фото, між ними «VS» */
+.cmp-duel { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; gap: 6px; padding: 6px 0 4px; text-align: center; }
+.cmp-p { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
+.cmp-hero .pc-ava.cmp-ava { width: 76px; height: 76px; }
+.cmp-hero .pc-ava--ini .pc-ini { font-size: 24px; }
+.cmp-nm { font-size: 17px; font-weight: 750; line-height: 1.15; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.cmp-sub { font-size: 13px; font-weight: 550; color: rgba(255, 255, 255, 0.62); }
+.cmp-vs {
+  align-self: start; margin-top: 22px; width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 12px; font-weight: 800; letter-spacing: 0.06em;
+  background: rgba(255, 255, 255, 0.1); color: #fff;
+}
+@media (min-width: 980px) {
+  .cmp-hero .pc-hero__bar { margin-bottom: 8px; }
+  .cmp-duel { max-width: 880px; margin: 0 auto; gap: 24px; }
+  .cmp-hero .pc-ava.cmp-ava { width: 104px; height: 104px; }
+  .cmp-hero .pc-ava--ini .pc-ini { font-size: 32px; }
+  .cmp-nm { font-size: 24px; }
+  .cmp-sub { color: var(--muted); font-size: 14px; }
+  .cmp-vs { margin-top: 32px; width: 44px; height: 44px; font-size: 13px; background: #eef1f5; color: var(--text); }
+}
+
+/* Підсумок: «рахунок» кращих показників */
+.cmp-wrap { max-width: 880px; margin: 0 auto; }
+.pcard .cmp-sum { text-align: center; padding: 18px 16px; }
+.cmp-score { display: flex; justify-content: center; align-items: baseline; gap: 14px; font-size: 44px; font-weight: 800; font-stretch: 100%; line-height: 1; letter-spacing: -0.02em; }
+.cmp-score b { color: var(--text); min-width: 1.2ch; }
+.cmp-score b.is-win { color: var(--brand-ink); }
+.cmp-score span { color: #c3c9d3; font-weight: 700; }
+.cmp-sum__t { margin: 10px 0 0; font-size: 15px; font-weight: 650; }
+.cmp-sum__s { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+
+/* Показники: значення зліва й справа, назва по центру, смужка-шкала під ними */
+.cmp-cols { display: grid; gap: 0; }
+@media (min-width: 980px) { .cmp-cols { grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; } }
+.pcard .cmp-cols .pc-block { padding-bottom: 6px; }
+.cmp-rows { margin: 0 -16px; }
+.cmp-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr); align-items: start;
+  column-gap: 10px; padding: 11px 16px 12px; border-top: 1px solid var(--row-line);
+}
+.cmp-row:first-child { border-top: 0; padding-top: 4px; }
+.cmp-l { align-self: center; text-align: center; font-size: 13px; font-weight: 600; color: var(--muted); line-height: 1.2; max-width: 150px; }
+.cmp-v { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cmp-v--a { align-items: flex-start; text-align: left; }
+.cmp-v--b { align-items: flex-end; text-align: right; }
+.cmp-v b { font-size: 19px; font-weight: 750; line-height: 1.15; font-stretch: 100%; white-space: nowrap; color: var(--text); }
+.cmp-v small { font-size: 12px; font-weight: 550; color: var(--muted); white-space: nowrap; }
+.cmp-v.is-win b { color: var(--brand-ink); }
+.cmp-v.is-win b { display: inline-flex; align-items: center; gap: 6px; }
+.cmp-v.is-win b::after { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--brand); }
+.cmp-v--b.is-win b { flex-direction: row-reverse; }
+.cmp-row.is-info .cmp-v b { font-size: 16px; font-weight: 650; }
+.cmp-bar { grid-column: 1 / -1; display: flex; gap: 3px; height: 6px; margin-top: 9px; }
+.cmp-bar i { min-width: 4px; border-radius: 3px; background: #e4e7ec; }
+.cmp-bar i.is-win { background: var(--brand); }
+.cmp-bar i.is-neutral { background: #d5dbe3; }
+.cmp-bar__a { transform-origin: right center; }
+.cmp-bar__b { transform-origin: left center; }
+@media (min-width: 980px) {
+  .cmp-rows { margin: 0 -24px; }
+  .cmp-row { padding: 12px 24px 13px; }
+  .cmp-v b { font-size: 20px; }
+  .cmp-l { max-width: 180px; }
+}
+
+/* Поява: смужки виростають від центру */
+@keyframes cmp-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.cmp-anim .cmp-bar i { animation: cmp-grow 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.cmp-anim .cmp-cols .pc-block:last-child .cmp-bar i { animation-delay: 0.12s; }
+@media (prefers-reduced-motion: reduce) { .cmp-anim .cmp-bar i { animation: none; } }

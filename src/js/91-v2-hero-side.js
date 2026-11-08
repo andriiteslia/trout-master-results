@@ -209,6 +209,21 @@
     var on = !!name && cardOn && hasCardData(name);
     selShow(on);
     if (!on) return;
+    var pair = cmpPair();
+    v2.selbar.classList.toggle('is-cmp', !!pair);
+    v2.selPlace2.hidden = true;
+    v2.selCardText.textContent = pair ? 'Порівняти' : 'Картка учасника';
+    if (pair) {   // виділено двох: два кружечки місць, «Порівняння», імена через «vs»
+      var sr = standingsRows();
+      [[v2.selPlace, pair[0]], [v2.selPlace2, pair[1]]].forEach(function (x) {
+        var r = sr && sr.rows.find(function (y) { return normName(y.name) === normName(x[1]); });
+        x[0].hidden = !(r && r.place);
+        if (r && r.place) { x[0].textContent = r.place; x[0].className = 'selbar__place' + (x[0] === v2.selPlace2 ? ' selbar__place--2' : '') + (r.place <= 3 ? ' medal-' + r.place : ''); }
+      });
+      v2.selLbl.textContent = 'Порівняння';
+      v2.selName.textContent = pair[0] + '  vs  ' + pair[1];
+      return;
+    }
     if (isListMode()) {   // список учасників: у кружечку номер, без балів
       var m = state.models[0], key = Array.from(state.selected)[0];
       var row = m && m.rows.find(function (x) { return x.key === key; });

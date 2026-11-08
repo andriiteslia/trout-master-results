@@ -4,7 +4,7 @@
     hero: $('hero'), pill: $('heroPill'), kpis: $('kpis'), share: $('shareBtn'),
     heroStats: $('heroStats'), heroReg: $('heroReg'), topnav: $('topnav'), navList: $('navList'), navStats: $('navStats'),
     bcard: $('bcard'), bTitle: $('boardTitle'), bSub: $('boardSub'), legend: $('legend'), search: $('search'), searchBox: $('searchBox'),
-    selbar: $('selbar'), selPlace: $('selPlace'), selName: $('selName'), selCard: $('selCard'), selClear: $('selClear'), selLbl: $('selLbl'),
+    selbar: $('selbar'), selPlace: $('selPlace'), selName: $('selName'), selCard: $('selCard'), selClear: $('selClear'), selLbl: $('selLbl'), selPlace2: $('selPlace2'), selCardText: $('selCardText'),
     side: $('side'), toast: $('toast')
   };
   var SHARE_URL = 'https://t.me/troutmasterua_bot?startapp';

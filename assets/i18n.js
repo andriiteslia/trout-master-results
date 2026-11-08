@@ -185,7 +185,7 @@
     'У клітинці — результат і улов учасника в турі': 'Each cell — the participant’s result and catch in the round',
     'Бали → перемоги → риба': 'Points → wins → fish', 'Місце': 'Place', 'Останні 5': 'Last 5', 'Нікого не знайдено': 'No one found',
     'Спробуйте інше прізвище.': 'Try another surname.', 'Перем.': 'Wins', 'гортайте →': 'scroll →', 'Вільне місце': 'Free place',
-    'Посилання скопійовано': 'Link copied', '✓ Посилання скопійовано': '✓ Link copied', 'Берег': 'Bank', 'Сектори': 'Sectors', 'Жеребкування': 'Draw',
+    'TROUT MASTER — результати онлайн': 'TROUT MASTER — live results', 'Таблиця, тури, картки учасників і статистика турніру з ловлі форелі. Оновлюється наживо.': 'Standings, rounds, player cards and stats of the trout fishing tournament. Updated live.', 'Завантаження картки…': 'Loading card…', 'Порівняти': 'Compare', 'Порівняти учасників': 'Compare players', 'Порівняння': 'Comparison', 'Основне': 'Main', 'Підсумок порівняння': 'Comparison summary', 'Посилання скопійовано': 'Link copied', '✓ Посилання скопійовано': '✓ Link copied', 'Берег': 'Bank', 'Сектори': 'Sectors', 'Жеребкування': 'Draw',
     'Наш партнер FISH.ME.FISH': 'Our partner FISH.ME.FISH', 'Наш партнер FISH.ME.FISH у Telegram': 'Our partner FISH.ME.FISH on Telegram',
     'В': 'W', 'РН': 'FD', 'БН': 'ND', 'П': 'L', 'Л': 'L', 'В · РН · БН · П': 'W · FD · ND · L',
     'лівий': 'left', 'правий': 'right', 'турів': 'rounds', 'тури': 'rounds', 'туру': 'round', 'риби': 'fish', 'риб': 'fish', 'риба': 'fish',
@@ -212,6 +212,15 @@
 
   // Фрази з числами — по черзі, до словника фраз
   var RULES = [
+    // Порівняння учасників (src/js/57-compare.js)
+    [/^([^,]+), краще: /, function (m, l) { return (EXACT[l] || l) + ', better: '; }],
+    [/^([^,]+), порівну$/, function (m, l) { return (EXACT[l] || l) + ', tie'; }],
+    [/^Порівняння: (.+) і (.+)$/, 'Comparison: $1 and $2'],
+    [/ — краще у (\d+) з (\d+) показник\S*/, ' — better in $1 of $2 metrics'],
+    [/^Порівну: по (\d+) кращ\S* показник\S*/, 'Even: $1 better metrics each'],
+    [/, порівну — (\d+)$/, ', tied in $1'],
+    [/^Різниця: /, 'Difference: '],
+    [/^тур (\d+)$/, 'round $1'],
     [/^Оновлено\s+(.+)$/, function (m, a) { return 'Updated ' + a; }],
     [/(\d+)\s?(РН|БН|В|П)(?=\s|$|·|,|\))/g, function (m, n, c) { return n + CODE[c]; }],
     [/(\d+) перемог, (\d+) рибних нічиїх, (\d+) безрибних, (\d+) поразок/, '$1 wins, $2 fish draws, $3 no-fish draws, $4 losses'],

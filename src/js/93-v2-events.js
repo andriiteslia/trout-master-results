@@ -14,7 +14,7 @@
   v2.navStats.addEventListener('click', function () { goStats(); });
   v2.heroStats.addEventListener('click', function () { goStats(); });
   v2.heroReg.addEventListener('click', function () { goReg(); });
-  v2.selCard.addEventListener('click', function () { goCard(); });
+  v2.selCard.addEventListener('click', function () { if (cmpPair()) goCompare(); else goCard(); });
   v2.selClear.addEventListener('click', function () {
     selectOnly(null);
     Array.prototype.forEach.call(el.board.querySelectorAll('[data-key]'), function (row) {
