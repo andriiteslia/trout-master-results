@@ -2018,3 +2018,55 @@ input, textarea, select { caret-color: var(--nav); }
 /* Карта водойми: береги можуть мати різну кількість секторів (напр. 6 і 8) — кожен берег на всю ширину водойми */
 .pond-row { display: flex; }
 .pond-row .pond-sec { flex: 1 1 0; min-width: 0; }
+
+/* Скелетони завантаження: м'який перелив, мінімум деталей */
+.skel { padding: 8px 16px 16px; }
+.skel__row { display: flex; align-items: center; gap: 12px; height: 52px; border-bottom: 1px solid #f2f4f7; }
+.skel__row:last-child { border-bottom: 0; }
+.skel__dot, .skel__bar, .skel__num { display: block; border-radius: 999px; background: #eef0f3; position: relative; overflow: hidden; }
+.skel__dot { width: 32px; height: 32px; flex: none; border-radius: 50%; }
+.skel__bar { height: 12px; }
+.skel__bar--lg { height: 22px; margin-top: 12px; border-radius: 8px; }
+.skel__num { width: 28px; height: 12px; margin-left: auto; flex: none; }
+.skel__dot::after, .skel__bar::after, .skel__num::after {
+  content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+  animation: skel-shine 1.4s ease-in-out infinite;
+}
+.skel-kpi { min-height: 96px; }
+/* на телефоні плитки в темній шапці — скелетон ледь світліший за фон */
+@media (max-width: 979px) {
+  .skel-kpi .skel__bar { background: rgba(255, 255, 255, 0.07); }
+  .skel-kpi .skel__bar::after { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent); }
+}
+@keyframes skel-shine { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .skel__dot::after, .skel__bar::after, .skel__num::after { animation: none; } }
+@supports (corner-shape: squircle) { .skel__dot, .skel__bar, .skel__num { corner-shape: round; } }
+@media (min-width: 980px) { .skel { padding: 8px 24px 20px; } .skel__row { height: 60px; } }
+
+/* Перемикачі з «таблеткою», що їде до вибраного пункту */
+.has-seg { position: relative; }
+.seg-ind {
+  position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none; border-radius: 999px; background: #fff;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.1), 0 1px 2px rgba(16, 24, 40, 0.06);
+  transition: transform 0.32s cubic-bezier(0.3, 0.7, 0.2, 1), width 0.32s cubic-bezier(0.3, 0.7, 0.2, 1), opacity 0.2s ease;
+}
+.has-seg > button { position: relative; z-index: 1; transition: color 0.2s ease; }
+.has-seg > .tab[aria-selected="true"], .has-seg > button[aria-pressed="true"] { background: transparent !important; box-shadow: none !important; }
+.lang .seg-ind { box-shadow: none; }
+@media (prefers-reduced-motion: reduce) { .seg-ind { transition: none; } }
+
+/* Фінал: конфеті поверх усього і коротке сяйво медалі */
+.confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 300; }
+.is-glow { animation: medal-glow 0.85s ease-in-out 3; }
+@keyframes medal-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(232, 185, 49, 0); filter: brightness(1); }
+  50% { box-shadow: 0 0 0 6px rgba(232, 185, 49, 0.35), 0 0 26px 6px rgba(245, 197, 66, 0.55); filter: brightness(1.08); }
+}
+@media (prefers-reduced-motion: reduce) { .is-glow { animation: none; } }
+
+/* Живі оновлення: рядок, що «переїжджає», трохи піднятий над іншими; стрілка місця коротко пульсує */
+[data-key].is-moving { position: relative; z-index: 2; box-shadow: 0 8px 22px rgba(16, 24, 40, 0.12); }
+.rk-row.flash .mv { display: inline-block; animation: mv-pop 0.6s ease-out 3; }
+@keyframes mv-pop { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.3); } }
+@media (prefers-reduced-motion: reduce) { .rk-row.flash .mv { animation: none; } }

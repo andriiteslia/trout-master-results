@@ -308,6 +308,13 @@
     return '<td class="' + cls.join(' ') + '">' + inner + '</td>';
   }
 
+  // Скелетон, поки вантажаться дані: лише обриси рядків (кружечок, ім'я, число) — легкий, без деталей
+  function skeletonRows() {
+    var w = [62, 48, 70, 54, 66, 44, 58];
+    return '<div class="skel" role="status" aria-live="polite"><span class="visually-hidden">Завантаження результатів…</span>' +
+      w.map(function (x) { return '<div class="skel__row" aria-hidden="true"><i class="skel__dot"></i><i class="skel__bar" style="width:' + x + '%"></i><i class="skel__num"></i></div>'; }).join('') +
+      '</div>';
+  }
   function renderTable() {
     var m = currentModel();
     var prevScroller = el.board.querySelector('.bs');
@@ -317,10 +324,7 @@
     if (!m) {
       el.board.innerHTML = state.error
         ? '<div class="empty"><strong>Не вдалося завантажити результати</strong>Сторінка повторить спробу автоматично.</div>'
-        : '<div class="empty is-loading">' +
-            '<picture><source srcset="assets/fish.webp" type="image/webp">' +
-            '<img class="loader-fish" src="assets/fish.png" width="120" height="58" alt=""></picture>' +
-            '<strong>Завантаження результатів…</strong></div>';
+        : skeletonRows();
       return;
     }
     if (!m.rows.length) {
@@ -454,6 +458,7 @@
     if (state.view === 'card') renderCard();
     if (state.view === 'stats') renderStats();
     revealFocusRow();
+    celebrateFinal();
   }
 
   // ---------- Data ----------
@@ -793,6 +798,111 @@
     var t = toursData();
     return t ? Object.keys(t.byName).length : 0;
   }
+  // ---------- «Одометр»: числа рахують від 0 до значення ----------
+  var countedCard = '';
+  var REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function countUp(els, ms) {
+    if (REDUCED || !els || !els.length) return;
+    ms = ms || 900;
+    var items = [];
+    [].forEach.call(els, function (el) {
+      // лише власний текст (без <small> і прихованих підписів)
+      [].forEach.call(el.childNodes, function (n) {
+        if (n.nodeType !== 3 || !/\d/.test(n.nodeValue)) return;
+        var parts = [], re = /(\d+(?:[.,]\d+)?)/g, last = 0, m, src = n.nodeValue;
+        while ((m = re.exec(src))) {
+          parts.push(src.slice(last, m.index));
+          var txt = m[1], dec = (txt.split(/[.,]/)[1] || '').length;
+          parts.push({ to: parseFloat(txt.replace(',', '.')), dec: dec, sep: txt.indexOf(',') !== -1 ? ',' : '.' });
+          last = m.index + txt.length;
+        }
+        parts.push(src.slice(last));
+        items.push({ node: n, parts: parts });
+      });
+    });
+    if (!items.length) return;
+    var t0 = null;
+    function frame(ts) {
+      if (t0 === null) t0 = ts;
+      var k = Math.min(1, (ts - t0) / ms), e = 1 - Math.pow(1 - k, 3);   // плавне сповільнення в кінці
+      items.forEach(function (it) {
+        if (!it.node.isConnected) return;
+        it.node.nodeValue = it.parts.map(function (p) {
+          if (typeof p === 'string') return p;
+          var v = p.to * e;
+          return (p.dec ? v.toFixed(p.dec) : String(Math.round(v))).replace('.', p.sep);
+        }).join('');
+      });
+      if (k < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- Конфеті: короткий «вжух» (без бібліотек) ----------
+  function confetti(from) {
+    if (REDUCED) return;
+    var cv = document.createElement('canvas'), dpr = Math.min(2, window.devicePixelRatio || 1);
+    var W = window.innerWidth, H = window.innerHeight;
+    cv.className = 'confetti'; cv.width = W * dpr; cv.height = H * dpr;
+    document.body.appendChild(cv);
+    var c = cv.getContext('2d'); c.scale(dpr, dpr);
+    var r = from && from.getBoundingClientRect ? from.getBoundingClientRect() : null;
+    var ox = r ? r.left + r.width / 2 : W / 2, oy = r ? r.top + r.height / 2 : H * 0.28;
+    var COLORS = ['#f5c542', '#e8b931', '#76b12d', '#4a9112', '#ffffff', '#5b8fe0', '#e0675c'];
+    var parts = [];
+    for (var i = 0; i < 150; i++) {
+      var a = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.1, sp = 7 + Math.random() * 9;
+      parts.push({
+        x: ox, y: oy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 2,
+        w: 6 + Math.random() * 6, h: 4 + Math.random() * 6, rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.35,
+        col: COLORS[i % COLORS.length], round: Math.random() < 0.25
+      });
+    }
+    var t0 = null, DUR = 2600;
+    (function frame(ts) {
+      if (t0 === null) t0 = ts;
+      var k = (ts - t0) / DUR;
+      c.clearRect(0, 0, W, H);
+      parts.forEach(function (p) {
+        p.vx *= 0.985; p.vy = p.vy * 0.985 + 0.32; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+        c.save(); c.globalAlpha = Math.max(0, 1 - Math.max(0, k - 0.7) / 0.3);
+        c.translate(p.x, p.y); c.rotate(p.rot); c.fillStyle = p.col;
+        if (p.round) { c.beginPath(); c.arc(0, 0, p.w / 2.4, 0, 6.28); c.fill(); }
+        else c.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.rot * 2)) + 1);
+        c.restore();
+      });
+      if (k < 1) requestAnimationFrame(frame); else cv.remove();
+    })(performance.now());
+  }
+  function glow(el) {
+    if (!el) return;
+    el.classList.remove('is-glow'); void el.offsetWidth; el.classList.add('is-glow');
+    setTimeout(function () { el.classList.remove('is-glow'); }, 2600);
+  }
+  // Турнір завершено: усі тури внесено
+  function tournamentDone() {
+    var S = tournamentStats();
+    return !!(S && S.rounds && S.played >= S.rounds);
+  }
+  // Святкування — один раз на пристрої для кожного турніру (щоб не набридало при кожному відкритті)
+  function onceOnDevice(k) {
+    try { if (localStorage.getItem(k)) return false; localStorage.setItem(k, '1'); return true; } catch (e) { return true; }
+  }
+  function finKey() { var ev = state.payload && state.payload.event; return 'tm:fin:' + ((ev && ev.title) || '') + '|' + ((ev && ev.subtitle) || ''); }
+  // Підсумкові результати: раз за сеанс — конфеті з переможця на подіумі (або над таблицею) і сяйво медалі
+  function celebrateFinal() {
+    if (state.view !== 'list' || isListMode() || !tournamentDone()) return;
+    var m = currentModel();
+    if (!m || !/результат/i.test(m.name)) return;
+    if (!onceOnDevice(finKey())) return;
+    setTimeout(function () {
+      var p1 = v2.side && !v2.side.hidden ? v2.side.querySelector('.p1') : null;
+      var row1 = el.board.querySelector('.rk-row.medal-1 .pc');
+      confetti(p1 && p1.offsetWidth ? p1.querySelector('.podium__av') || p1 : row1);
+      glow(p1 && p1.offsetWidth ? p1.querySelector('.podium__bar') : row1);
+    }, 450);
+  }
+
   function renderCard() {
     var name = selectedPlayerName();
     if (!name || !hasCardData(name)) { pc.body.innerHTML = '<div class="card empty">Виберіть учасника в таблиці.</div>'; return; }
@@ -928,6 +1038,20 @@
       }
     }
     pc.body.innerHTML = h + twoCols(L, R) + '</div>';
+    // Цифри у верхніх плитках «докручуються» від нуля — лише коли картку щойно відкрили (не при кожному оновленні даних)
+    if (state.view === 'card' && countedCard !== name) {
+      countedCard = name;
+      countUp(pc.body.querySelectorAll('.pc-k .pk__v, .pc-k .pk__badge'));
+      // Призер відкрив свою картку після фіналу — привітання конфеті (раз за сеанс)
+      if (started && st.place >= 1 && st.place <= 3 && tournamentDone() && isMine(name)) {
+        var ck = finKey() + ':card:' + normName(name);
+        if (onceOnDevice(ck)) setTimeout(function () {
+          var badge = pc.body.querySelector('.pc-hero .pc-place');
+          confetti(pc.body.querySelector('.pc-hero .pc-ava') || badge);
+          glow(badge);
+        }, 350);
+      }
+    }
 
     function tile(label, val, unit) {
       return '<div class="pc-tile"><span class="pc-tile__label">' + label + '</span><span class="pc-tile__val">' + esc(val) +
@@ -1519,6 +1643,7 @@
   function setView(v) {
     if (state.view === v) return;
     state.view = v;
+    if (v !== 'card') countedCard = '';   // наступне відкриття картки — знову з «докручуванням»
     if (formLift.spacer) setFormSpacer(0);
     renderReg();
     tgBack(v !== 'list');
@@ -1724,7 +1849,13 @@
   // Скрипт таблиці за підписаними даними Telegram знаходить ім'я людини (колонка G → B).
   // Виділяємо кожне ім'я лише один раз: якщо людина зняла виділення, воно не повертається.
   var LS_AUTO = 'tm:autoSel';
+  // Чи це «свій» учасник: зареєстрований із цього акаунта Telegram
+  function isMine(name) {
+    var n = normName(name);
+    return (state.myNames || []).some(function (x) { return normName(x) === n; });
+  }
   function applyMyNames(names) {
+    state.myNames = names.slice();
     var done = store.get(LS_AUTO, []);
     if (state.selFromLink) { names.forEach(function (n) { if (done.indexOf(n) === -1) done.push(n); }); store.set(LS_AUTO, done.slice(-50)); return; }
     // Було старе виділення кількох рядків — ставимо одне: першу реєстрацію з цього акаунта (себе)
@@ -2675,7 +2806,12 @@
   }
   function renderKpis() {
     var p = state.payload, h = '';
-    if (!p) { v2.kpis.innerHTML = ''; return; }
+    if (!p) {   // ще вантажимо: три легкі плитки-скелетони
+      v2.kpis.innerHTML = state.error ? '' : [0, 1, 2].map(function (i) {
+        return '<div class="kpi skel-kpi" aria-hidden="true"><i class="skel__bar" style="width:46%"></i><i class="skel__bar skel__bar--lg" style="width:32%"></i></div>';
+      }).join('');
+      return;
+    }
     if (isListMode()) {
       var m = state.models[0], n = m ? m.rows.length : 0, seats = parseInt(p.seats, 10) || 0;
       var pct = seats ? Math.min(100, Math.round(n / seats * 100)) : 0;
@@ -2775,6 +2911,27 @@
   }
 
   // ----- Вкладки «Залік / По турах» -----
+  // ---------- Перемикачі: біла «таблетка» плавно переїжджає до вибраного пункту ----------
+  function segSlide(box, sel) {
+    if (!box) return;
+    var b = box.querySelector(sel);
+    var ind = box.querySelector('.seg-ind');
+    if (!b || !b.offsetWidth) { if (ind) ind.style.opacity = '0'; return; }
+    if (!ind) { ind = document.createElement('i'); ind.className = 'seg-ind'; ind.setAttribute('aria-hidden', 'true'); box.insertBefore(ind, box.firstChild); }
+    box.classList.add('has-seg');   // спершу position: relative — тоді відступи міряються від самого перемикача
+    var to = { x: b.offsetLeft, y: b.offsetTop, w: b.offsetWidth, h: b.offsetHeight }, from = box._seg;
+    function put(p) { ind.style.transform = 'translate(' + p.x + 'px,' + p.y + 'px)'; ind.style.width = p.w + 'px'; ind.style.height = p.h + 'px'; }
+    if (from && !REDUCED && (from.x !== to.x || from.w !== to.w)) {
+      ind.style.transition = 'none'; put(from); void ind.offsetWidth; ind.style.transition = '';   // стартуємо з попереднього місця
+    } else if (!from) { ind.style.transition = 'none'; put(to); void ind.offsetWidth; ind.style.transition = ''; }
+    put(to); ind.style.opacity = '1';
+    box._seg = to;
+    box.classList.add('has-seg');
+  }
+  function slideTabs() { segSlide(el.tabs, '.tab[aria-selected="true"]'); }
+  window.addEventListener('resize', function () { el.tabs._seg = null; slideTabs(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { el.tabs._seg = null; slideTabs(); });
+
   function renderTabs() {
     var list = isListMode();
     if (state.models.length < 2) el.tabs.innerHTML = '';
@@ -2786,6 +2943,7 @@
           '" aria-selected="' + sel + '" tabindex="' + (sel ? 0 : -1) + '">' + esc(tabLabel(m.name)) + '</button>';
       }).join('');
       el.board.setAttribute('aria-labelledby', 'tab-' + state.models.indexOf(cur));
+      slideTabs();
     }
     renderSide();
     var m = currentModel();
@@ -2815,11 +2973,40 @@
     if (html == null) { renderTable(); return; }
     var sc = el.board.querySelector('.tgrid');
     var x = sc ? sc.scrollLeft : 0;
+    // Живі оновлення: запам'ятовуємо, де стояв кожен рядок, щоб після нових даних він плавно «переїхав»
+    var flip = !REDUCED && state.changeTime && state.flipDone !== state.changeTime && el.board._model === m.name && state.view === 'list';
+    var before = {};
+    if (flip) [].forEach.call(el.board.querySelectorAll('[data-key]'), function (r) { before[r.getAttribute('data-key')] = r.getBoundingClientRect().top; });
     el.board.classList.add('v2');
     el.board.innerHTML = html;
+    el.board._model = m.name;
     var sc2 = el.board.querySelector('.tgrid');
     if (sc2) sc2.scrollLeft = x;
     syncTgridHead();
+    if (flip) { state.flipDone = state.changeTime; flipRows(before); }
+  }
+  // FLIP: рядок, що змінив місце, стартує зі старої позиції й м'яко їде на нову
+  function flipRows(before) {
+    var moved = [];
+    [].forEach.call(el.board.querySelectorAll('[data-key]'), function (r) {
+      var k = r.getAttribute('data-key');
+      if (!(k in before)) return;
+      var dy = before[k] - r.getBoundingClientRect().top;
+      if (Math.abs(dy) < 2) return;
+      r.style.transition = 'none';
+      r.style.transform = 'translateY(' + dy + 'px)';
+      r.classList.add('is-moving');
+      moved.push(r);
+    });
+    if (!moved.length) return;
+    void el.board.offsetWidth;
+    requestAnimationFrame(function () {
+      moved.forEach(function (r, i) {
+        r.style.transition = 'transform 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) ' + Math.min(i * 30, 240) + 'ms';
+        r.style.transform = '';
+        setTimeout(function () { r.classList.remove('is-moving'); r.style.transition = ''; }, 1100 + Math.min(i * 30, 240));
+      });
+    });
   }
   // Прилипла копія шапки «По турах» гортається вбік разом із таблицею
   function syncTgridHead() {
@@ -2993,8 +3180,13 @@
     var sw = document.getElementById('langSw');
     if (!sw) return;
     var btns = [].slice.call(sw.querySelectorAll('[data-lang]'));
-    function mark() { btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-lang') === (I18N.lang || 'uk'))); }); }
+    function mark() {
+      btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-lang') === (I18N.lang || 'uk'))); });
+      segSlide(sw, '[aria-pressed="true"]');
+    }
     mark();
+    window.addEventListener('resize', function () { sw._seg = null; mark(); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { sw._seg = null; mark(); });
     btns.forEach(function (b) {
       b.addEventListener('click', function () { if (I18N.setLang) I18N.setLang(b.getAttribute('data-lang')); });
     });
@@ -3012,6 +3204,7 @@
         if (story && story.el && !story.el.hidden) renderStory();
       } catch (e) { /* */ }
       window.scrollTo(0, y);   // лишаємось на тому самому місці
+      slideTabs();
     });
   })();
 
