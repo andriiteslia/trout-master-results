@@ -2190,3 +2190,6 @@ input, textarea, select { caret-color: var(--nav); }
   .pc-skel .pc-hero .skel__bar, .pc-skel .pc-hero .skel__dot { background: rgba(255, 255, 255, 0.12); }
   .pc-skel .pc-hero .skel__bar::after, .pc-skel .pc-hero .skel__dot::after { opacity: 0.12; }
 }
+
+/* Посилання на картку: поки app.js не відкрив картку, порожній «аркуш» картки замість головної */
+.deep-wait #pcard[hidden] { display: block !important; min-height: 60vh; }

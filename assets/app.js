@@ -1580,6 +1580,7 @@
     var html = document.documentElement;
     html.classList.toggle('view-reg', isReg);
     html.classList.toggle('view-card', state.view === 'card');
+    html.classList.remove('deep-wait');
     html.classList.toggle('view-stats', state.view === 'stats');
     ts.root.hidden = state.view !== 'stats';
     reg.root.hidden = !isReg;
