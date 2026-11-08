@@ -2162,7 +2162,7 @@ input, textarea, select { caret-color: var(--nav); }
   .selbar:not([hidden]) {
     position: fixed; left: 50%; bottom: 24px; z-index: 55;
     flex-wrap: nowrap; gap: 14px; width: max-content; max-width: calc(100vw - 48px);
-    padding: 10px 10px 10px 12px; border-radius: 999px; corner-shape: round;
+    padding: 10px 10px 10px 12px; border-radius: 999px;
     box-shadow: 0 18px 44px rgba(10, 10, 10, 0.28), 0 2px 6px rgba(10, 10, 10, 0.16);
     transform: translate(-50%, calc(100% + 32px)); opacity: 0;
     transition: transform 0.26s cubic-bezier(0.5, 0, 0.75, 0), opacity 0.2s ease;
@@ -2174,7 +2174,7 @@ input, textarea, select { caret-color: var(--nav); }
   .selbar .selbar__place { width: 36px; height: 36px; font-size: 14px; flex: none; }
   .selbar .selbar__txt { margin-right: 14px; min-width: 0; }
   .selbar .selbar__txt b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .selbar #selCard { border-radius: 999px; corner-shape: round; }
+  .selbar #selCard { border-radius: 999px; }
   .selbar .selbar__x { flex: none; }
   .sel-on .main { padding-bottom: 104px; }
 }
