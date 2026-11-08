@@ -2799,6 +2799,7 @@
     v2.navStats.hidden = !stats;
     v2.navList.setAttribute('aria-current', state.view === 'list' ? 'page' : 'false');
     v2.navStats.setAttribute('aria-current', state.view === 'stats' ? 'page' : 'false');
+    segSlide(v2.topnav, '[aria-current="page"]');   // біла «таблетка» плавно їде між «Результати» і «Статистика»
 
     renderSide();
     renderSelbar();
@@ -2947,7 +2948,10 @@
     box.classList.add('has-seg');
   }
   function slideTabs() { segSlide(el.tabs, '.tab[aria-selected="true"]'); }
-  window.addEventListener('resize', function () { el.tabs._seg = null; slideTabs(); });
+  window.addEventListener('resize', function () {
+    el.tabs._seg = null; slideTabs();
+    if (v2.topnav) { v2.topnav._seg = null; segSlide(v2.topnav, '[aria-current="page"]'); }
+  });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { el.tabs._seg = null; slideTabs(); });
 
   function renderTabs() {

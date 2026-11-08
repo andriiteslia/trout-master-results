@@ -2105,3 +2105,5 @@ input, textarea, select { caret-color: var(--nav); }
 }
 /* Шапка на компʼютері: статус, «Оновити» й мови — з тим самим кроком 10px, що й кнопки під заголовком */
 @media (min-width: 980px) { .topbar__inner .refresh, .topbar__inner .lang { margin-left: -22px; } }
+.has-seg > button[aria-current="page"] { background: transparent !important; box-shadow: none !important; }
+.topnav .seg-ind { box-shadow: none; }
