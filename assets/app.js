@@ -1585,9 +1585,6 @@
     reg.open.hidden = !showReg;
     ts.open.hidden = !showStats;
     pc.open.hidden = !showCard;
-    // Веб, список учасників: кнопка картки поруч із пошуком (у результатах на вебі є смужка «Вибрано в таблиці»)
-    var cardD = document.getElementById('cardOpenD');
-    if (cardD) cardD.hidden = !(showCard && isListMode());
     pc.openText.textContent = other ? 'Картка учасника' : 'Картка учасника · ' + player;
     pc.open.classList.toggle('btn-primary', !other);
     pc.open.classList.toggle('btn-secondary', other);
@@ -2290,7 +2287,6 @@
 
   reg.open.addEventListener('click', goReg);
   pc.open.addEventListener('click', goCard);
-  (function () { var b = document.getElementById('cardOpenD'); if (b) b.addEventListener('click', goCard); })();
   pc.back.addEventListener('click', goList);
   pc.body.addEventListener('click', function (e) {
     var b = e.target.closest('[data-act]');
@@ -2332,7 +2328,7 @@
     hero: $('hero'), pill: $('heroPill'), kpis: $('kpis'), share: $('shareBtn'),
     heroStats: $('heroStats'), heroReg: $('heroReg'), topnav: $('topnav'), navList: $('navList'), navStats: $('navStats'),
     bcard: $('bcard'), bTitle: $('boardTitle'), bSub: $('boardSub'), legend: $('legend'), search: $('search'), searchBox: $('searchBox'),
-    selbar: $('selbar'), selPlace: $('selPlace'), selName: $('selName'), selCard: $('selCard'), selClear: $('selClear'),
+    selbar: $('selbar'), selPlace: $('selPlace'), selName: $('selName'), selCard: $('selCard'), selClear: $('selClear'), selLbl: $('selLbl'),
     side: $('side'), toast: $('toast')
   };
   var SHARE_URL = 'https://t.me/troutmasterua_bot?startapp';
@@ -2937,13 +2933,25 @@
     v2.side.innerHTML = h;
   }
 
-  // ----- Смужка «Вибрано в таблиці» (комп'ютер) -----
+  // ----- Смужка «Вибрано в таблиці / у списку» (комп'ютер) -----
   function renderSelbar() {
-    var name = state.view === 'list' && !isListMode() ? selectedPlayerName() : null;
+    var name = state.view === 'list' ? selectedPlayerName() : null;
     var cardOn = !(state.payload && state.payload.showCard === false);
     var on = !!name && cardOn && hasCardData(name);
     selShow(on);
     if (!on) return;
+    if (isListMode()) {   // список учасників: у кружечку номер, без балів
+      var m = state.models[0], key = Array.from(state.selected)[0];
+      var row = m && m.rows.find(function (x) { return x.key === key; });
+      var n = row && m.placeCol ? row.cells[m.placeCol.c] : '';
+      v2.selLbl.textContent = 'Вибрано в списку';
+      v2.selPlace.hidden = !n;
+      v2.selPlace.textContent = n;
+      v2.selPlace.className = 'selbar__place';
+      v2.selName.textContent = name;
+      return;
+    }
+    v2.selLbl.textContent = 'Вибрано в таблиці';
     var s = standingsRows(), r = s && s.rows.find(function (x) { return normName(x.name) === normName(name); });
     v2.selPlace.hidden = !(r && r.place);
     if (r && r.place) {

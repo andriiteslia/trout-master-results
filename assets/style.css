@@ -1990,17 +1990,6 @@ input, textarea, select { caret-color: var(--nav); }
 }
 .story-open .regbar, .story-open .pc-storybar, .story-open .partner { visibility: hidden; }
 
-/* Веб, список учасників: «Картка учасника» поруч із пошуком (коли учасника вибрано) */
-.btools__card { display: none; }
-@media (min-width: 980px) {
-  .btools__card:not([hidden]) {
-    display: inline-flex; order: 3; height: 40px;   /* ліворуч від пошуку — пошук не зсувається */ padding: 0 18px; color: #fff; border: 0;
-    background: linear-gradient(135deg, #4a9112 0%, #2b660a 100%); background-origin: border-box; background-repeat: no-repeat;
-    box-shadow: 0 6px 16px rgba(43, 102, 10, 0.25);
-  }
-  @media (hover: hover) { .btools__card:hover { background: linear-gradient(135deg, #52a014 0%, #30720b 100%); } }
-  .btools__card:active { background: linear-gradient(135deg, #3f7d0f 0%, #245708 100%); }
-}
 
 /* Пошук: своя кнопка «очистити» замість системного синього хрестика */
 .search input::-webkit-search-cancel-button, .search input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }

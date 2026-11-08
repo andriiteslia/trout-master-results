@@ -107,7 +107,7 @@
     'Розділи': 'Sections', 'Результати': 'Results', 'Статистика': 'Statistics', 'Завантаження…': 'Loading…',
     'Назад': 'Back', 'Поділитися': 'Share', 'Зареєструватися': 'Register', 'Підсумки': 'Summary',
     'Підсумкова таблиця': 'Standings', 'Вигляд': 'View', 'Знайти учасника': 'Find a participant', 'Оновити': 'Refresh', 'Не вдалося оновити. Перевірте інтернет': 'Couldn’t refresh. Check your internet connection', '✓ Оновлено: є нові дані': '✓ Updated: new data', '✓ Оновлено — змін немає': '✓ Updated — no changes', 'Оновити дані': 'Refresh data', 'Очистити пошук': 'Clear search',
-    'Вибрано в таблиці': 'Selected in the table', 'Картка учасника': 'Player card', 'Зняти вибір': 'Clear selection',
+    'Вибрано в таблиці': 'Selected in the table', 'Вибрано в списку': 'Selected in the list', 'Картка учасника': 'Player card', 'Зняти вибір': 'Clear selection',
     'Результати — у Telegram': 'Results on Telegram', 'Бот напише ваше місце й підсумки після турніру': 'The bot will send you your place and results after the tournament',
     'Закрити': 'Close', 'Отримувати результати': 'Get results', 'Таблиця результатів': 'Results table',
     'До списку': 'To the list', 'Реєстрація': 'Registration', 'Прізвище та ім’я': 'Surname and first name',
