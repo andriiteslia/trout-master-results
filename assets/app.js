@@ -514,6 +514,7 @@
       .then(function (p) {
         if (!p || p.ok === false) throw new Error((p && p.error) || 'порожня відповідь');
         var changed = applyPayload(p);
+        state.lastLoad = { ok: true, changed: !!changed };
         state.error = null;
         if (changed) renderAll();
         openWantedPlayer();
@@ -521,6 +522,7 @@
       })
       .catch(function (err) {
         state.error = (err && err.message) || 'невідома помилка';
+        state.lastLoad = { ok: false };
         renderStatus(false);
         if (!state.models.length) renderBoard();
       })
@@ -3209,7 +3211,11 @@
     });
     window.addEventListener('tm:loaded', function () {
       if (!b.classList.contains('is-spin')) return;
-      setTimeout(function () { b.classList.remove('is-spin'); }, Math.max(0, 700 - (Date.now() - t0)));   // щоб оберт було видно
+      setTimeout(function () {
+        b.classList.remove('is-spin');
+        var r = state.lastLoad || {};
+        toast(!r.ok ? 'Не вдалося оновити. Перевірте інтернет' : r.changed ? '✓ Оновлено: є нові дані' : '✓ Оновлено — змін немає');
+      }, Math.max(0, 700 - (Date.now() - t0)));   // щоб оберт було видно
     });
   })();
 
