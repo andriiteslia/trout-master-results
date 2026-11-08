@@ -2015,6 +2015,6 @@ input, textarea, select { caret-color: var(--nav); }
 @supports (corner-shape: squircle) { .search__clear { corner-shape: round; } }
 /* Картка учасника на телефоні: більше повітря між шапкою і фото */
 @media (max-width: 979px) { .pc-hero { padding-top: 18px; } }
-/* Карта водойми: береги можуть мати різну кількість секторів (напр. 6 і 8) — плитки однакові, коротший берег по центру */
-.pond-row { display: flex; justify-content: center; }
-.pond-row .pond-sec { flex: 0 0 calc((100% - (var(--pond-n, 7) - 1) * 4px) / var(--pond-n, 7)); min-width: 0; }
+/* Карта водойми: береги можуть мати різну кількість секторів (напр. 6 і 8) — кожен берег на всю ширину водойми */
+.pond-row { display: flex; }
+.pond-row .pond-sec { flex: 1 1 0; min-width: 0; }
