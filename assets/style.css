@@ -2113,19 +2113,16 @@ input, textarea, select { caret-color: var(--nav); }
 /* Перемикання «Підсумок ↔ По турах»: плавний перехід (View Transitions; де не підтримується — як раніше, миттєво) */
 .vt-tabs #bcard { view-transition-name: board-card; }
 .vt-tabs #side { view-transition-name: side-panel; }
-.vt-tabs #tabs { view-transition-name: board-tabs; }
-.vt-tabs #searchBox { view-transition-name: board-search; }
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
-::view-transition-group(board-card), ::view-transition-group(board-tabs), ::view-transition-group(board-search), ::view-transition-group(side-panel) {
-  animation-duration: 0.38s; animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+::view-transition-group(board-card), ::view-transition-group(side-panel) {
+  animation-duration: 0.22s; animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);   /* усе разом і швидко */
 }
 ::view-transition-image-pair(board-card) { overflow: hidden; border-radius: var(--r-card, 20px); }
 ::view-transition-old(board-card), ::view-transition-new(board-card) {
-  width: 100%; height: 100%; object-fit: none; object-position: left top; animation-duration: 0.3s;
+  width: 100%; height: 100%; object-fit: none; object-position: left top; animation-duration: 0.16s;
 }
-::view-transition-old(board-tabs) { display: none; }
-::view-transition-new(board-tabs) { animation: none; }
-::view-transition-old(side-panel) { animation: vt-side-out 0.3s cubic-bezier(0.4, 0, 1, 1) both; }
-::view-transition-new(side-panel) { animation: vt-side-in 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-@keyframes vt-side-out { to { opacity: 0; transform: translateX(48px); } }
-@keyframes vt-side-in { from { opacity: 0; transform: translateX(48px); } }
+/* Бічна панель просто швидко зникає / з'являється, без руху вбік */
+::view-transition-old(side-panel) { animation: vt-fade-out 0.12s linear both; }
+::view-transition-new(side-panel) { animation: vt-fade-in 0.2s ease 0.06s both; }
+@keyframes vt-fade-out { to { opacity: 0; } }
+@keyframes vt-fade-in { from { opacity: 0; } }
