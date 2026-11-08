@@ -967,7 +967,7 @@
   // data-act="back" обробляють і картка, і статистика (goList), тож вийти можна завжди.
   function emptyState(title, text) {
     return '<div class="pc-sheet empty-sheet"><div class="card empty empty-state" role="status">' +
-      '<img class="empty-state__fish" src="assets/fish.webp" alt="" width="320" height="155" decoding="async">' +
+      '<img class="empty-state__fish" src="assets/fish.webp?v=2" alt="" width="640" height="296" decoding="async">' +
       '<strong>' + esc(title) + '</strong><span>' + esc(text) + '</span>' +
       '<button type="button" class="btn btn-primary empty-state__btn" data-act="back">На головну</button></div></div>';
   }
@@ -2748,7 +2748,7 @@
       loadImg('assets/logo.svg?v=3'),
       // для картинки — фото у більшій якості (assets/players/lg), якщо його немає — звичайне
       loadImg(photo ? 'assets/players/lg/' + encodeURIComponent(photo) + '?v=' + PHOTO_V : null).then(function (im) { return im || loadImg(photo ? 'assets/players/' + encodeURIComponent(photo) + '?v=' + PHOTO_V : null); }),
-      loadImg('assets/fish.webp'),
+      loadImg('assets/fish.webp?v=2'),
       document.fonts && document.fonts.load ? Promise.all([document.fonts.load('700 80px Fixel'), document.fonts.load('500 30px Fixel')]).catch(function () {}) : null
     ]).then(function (r) {
       var logo = r[0], face = r[1], fish = r[2];

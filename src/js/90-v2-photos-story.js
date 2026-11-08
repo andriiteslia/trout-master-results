@@ -169,7 +169,7 @@
       loadImg('assets/logo.svg?v=3'),
       // для картинки — фото у більшій якості (assets/players/lg), якщо його немає — звичайне
       loadImg(photo ? 'assets/players/lg/' + encodeURIComponent(photo) + '?v=' + PHOTO_V : null).then(function (im) { return im || loadImg(photo ? 'assets/players/' + encodeURIComponent(photo) + '?v=' + PHOTO_V : null); }),
-      loadImg('assets/fish.webp'),
+      loadImg('assets/fish.webp?v=2'),
       document.fonts && document.fonts.load ? Promise.all([document.fonts.load('700 80px Fixel'), document.fonts.load('500 30px Fixel')]).catch(function () {}) : null
     ]).then(function (r) {
       var logo = r[0], face = r[1], fish = r[2];

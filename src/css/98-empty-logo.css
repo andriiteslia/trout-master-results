@@ -10,8 +10,8 @@
 .empty-sheet { margin-top: 8px; }
 @media (max-width: 979px) { .empty-sheet { min-height: calc(100vh - 60px); min-height: calc(100dvh - 60px); } }
 .empty-state { margin: 0; border-radius: var(--r-card, 20px); }
-.empty-state__fish { width: 132px; height: auto; margin-bottom: 10px; opacity: 0.95; }
+.empty-state__fish { width: 168px; height: auto; margin-bottom: 10px; opacity: 0.95; }
 .empty-state strong { font-size: 18px; font-weight: 750; color: var(--text); margin: 0; }
 .empty-state span { max-width: 340px; font-size: 14px; line-height: 1.45; color: var(--muted); }
 .empty-state__btn.btn { margin-top: 16px; width: auto; min-width: 200px; flex: none; padding-left: 28px; padding-right: 28px; }
-@media (min-width: 980px) { .empty-sheet { margin-top: 32px; } .empty-state { padding: 56px 24px 44px; } .empty-state__fish { width: 160px; } }
+@media (min-width: 980px) { .empty-sheet { margin-top: 32px; } .empty-state { padding: 56px 24px 44px; } .empty-state__fish { width: 200px; } }

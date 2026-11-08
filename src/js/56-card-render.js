@@ -12,7 +12,7 @@
   // data-act="back" обробляють і картка, і статистика (goList), тож вийти можна завжди.
   function emptyState(title, text) {
     return '<div class="pc-sheet empty-sheet"><div class="card empty empty-state" role="status">' +
-      '<img class="empty-state__fish" src="assets/fish.webp" alt="" width="320" height="155" decoding="async">' +
+      '<img class="empty-state__fish" src="assets/fish.webp?v=2" alt="" width="640" height="296" decoding="async">' +
       '<strong>' + esc(title) + '</strong><span>' + esc(text) + '</span>' +
       '<button type="button" class="btn btn-primary empty-state__btn" data-act="back">На головну</button></div></div>';
   }
