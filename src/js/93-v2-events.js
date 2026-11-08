@@ -12,6 +12,13 @@
   v2.navList.addEventListener('click', function () { goList(); });
   document.getElementById('heroBack').addEventListener('click', function () { goList(); });
   v2.navStats.addEventListener('click', function () { goStats(); });
+  // Логотип — на головну (список/результати) з будь-якого екрана; на головній — угору
+  document.getElementById('logoHome').addEventListener('click', function (e) {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;   // нова вкладка — як звичайне посилання
+    e.preventDefault();
+    if (state.view !== 'list') goList();
+    else window.scrollTo({ top: 0, behavior: REDUCED ? 'auto' : 'smooth' });
+  });
   v2.heroStats.addEventListener('click', function () { goStats(); });
   v2.heroReg.addEventListener('click', function () { goReg(); });
   v2.selCard.addEventListener('click', function () { if (cmpPair()) goCompare(); else goCard(); });

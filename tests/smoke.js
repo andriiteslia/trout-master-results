@@ -57,7 +57,7 @@ async function page(b, opts, fixture, extra) {
   await p.route('https://script.google.com/**', (r) => {
     const q = r.request();
     if (q.method() === 'POST') { posts.push(q.postData()); return r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true,"names":[]}' }); }
-    return r.fulfill({ status: 200, contentType: 'application/json', body: FIX(fixture) });
+    return r.fulfill({ status: 200, contentType: 'application/json', body: FIX(extra.fx ? extra.fx.name : fixture) });
   });
   await p.route('https://telegram.org/**', (r) => r.fulfill({ status: 200, contentType: 'text/javascript', body: '' }));
   await p.route('https://t.me/**', (r) => r.fulfill({ status: 200, body: 'ok' }));
@@ -160,6 +160,24 @@ const TESTS = {
     await t.p.locator('#board [data-key]').nth(1).click(); await t.p.waitForTimeout(300);
     await t.p.locator('#board [data-key]').nth(5).click(); await t.p.waitForTimeout(500);
     assert((await t.p.locator('#board .is-sel').count()) === 1, 'у списку виділено більше одного');
+    await t.ctx.close(); return t.errors;
+  },
+
+  'stats → дані стали «списком»: порожній стан із кнопкою, лого веде на головну': async (b) => {
+    const fx = { name: 'results' };
+    const t = await page(b, DESK, 'results', { fx });
+    await t.p.click('#navStats'); await t.p.waitForTimeout(1000);
+    fx.name = 'list';
+    await t.p.click('#refreshBtn'); await t.p.waitForTimeout(1800);
+    assert(await visible(t.p, '#tsBody .empty-state'), 'немає порожнього стану');
+    await shot(t.p, 'desk-stats-empty');
+    await t.p.click('#tsBody .empty-state__btn'); await t.p.waitForTimeout(900);
+    assert(!(await visible(t.p, '#tstats')), 'кнопка «На головну» не повернула на головну');
+    fx.name = 'results';
+    await t.p.click('#refreshBtn'); await t.p.waitForTimeout(1800);
+    await t.p.click('#navStats'); await t.p.waitForTimeout(900);
+    await t.p.click('#logoHome'); await t.p.waitForTimeout(900);
+    assert(!(await visible(t.p, '#tstats')), 'лого не повернуло на головну');
     await t.ctx.close(); return t.errors;
   },
 

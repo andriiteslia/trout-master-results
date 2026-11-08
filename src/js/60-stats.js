@@ -137,7 +137,7 @@
     var S = tournamentStats();
     var ev = (state.payload && state.payload.event) || {};
     document.title = 'Статистика | Trout Master';
-    if (!S) { ts.body.innerHTML = '<div class="card empty">Статистика з’явиться після перших турів.</div>'; return; }
+    if (!S) { ts.body.innerHTML = emptyState('Статистики поки немає', 'Вона з’явиться після перших зіграних турів.'); return; }
     var sub = [S.players + ' ' + plural(S.players, 'учасник', 'учасники', 'учасників'),
       S.played < S.rounds ? 'після ' + S.played + ' з ' + S.rounds + ' турів' : 'усі ' + S.rounds + ' турів'];
     var best = null;

@@ -8,11 +8,19 @@
       '<div class="pc-head__txt">' + bar('min(320px, 60vw)', 30) + bar('min(200px, 40vw)', 14, 14) + '</div></div></header>' +
       '<div class="pc-sheet" aria-hidden="true"><section class="card pc-block">' + skeletonRows() + '</section></div></div>';
   }
+  // Порожній стан (немає даних для екрана): рибка, заголовок, пояснення і кнопка «На головну».
+  // data-act="back" обробляють і картка, і статистика (goList), тож вийти можна завжди.
+  function emptyState(title, text) {
+    return '<div class="pc-sheet empty-sheet"><div class="card empty empty-state" role="status">' +
+      '<img class="empty-state__fish" src="assets/fish.webp" alt="" width="320" height="155" decoding="async">' +
+      '<strong>' + esc(title) + '</strong><span>' + esc(text) + '</span>' +
+      '<button type="button" class="btn btn-primary empty-state__btn" data-act="back">На головну</button></div></div>';
+  }
   function renderCard() {
     if (state.cardPending) { pc.body.innerHTML = cardSkeleton(); return; }
     if (state.cmpOpen) { renderCompare(); return; }
     var name = selectedPlayerName();
-    if (!name || !hasCardData(name)) { pc.body.innerHTML = '<div class="card empty">Виберіть учасника в таблиці.</div>'; return; }
+    if (!name || !hasCardData(name)) { pc.body.innerHTML = emptyState('Учасника не знайдено', 'Можливо, дані щойно оновились. Виберіть учасника в таблиці, щоб відкрити його картку.'); return; }
     var st = playerStats(name);
     // Сторона з жеребкування: «лівий» → Л, «правий» → П
     var sideL = /^л/i.test(st.side) ? 'Л' : /^п/i.test(st.side) ? 'П' : '';
