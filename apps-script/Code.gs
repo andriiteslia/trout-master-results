@@ -658,9 +658,15 @@ function writeStatus_(sh, p) {
   sh.getRange(CELL_STATUS).setValue('✅ ' + t + ' • ' + p.mode + ' • ' + summary_(p));
 }
 
+/**
+ * Підсумок для «Остання публікація»: скільки учасників реально є (рядки з іменем у колонці B),
+ * а не скільки рядків у діапазоні (заготовлені номери без імен не рахуються).
+ * Для списку учасників — ще й «з N місць» (B10).
+ */
 function summary_(p) {
   return p.sheets.map(function (s) {
-    return s.name + ': ' + Math.max(0, s.values.length - (s.headerRows || 2));
+    var n = s.values.slice(s.headerRows || 2).filter(function (r) { return String(r[1] == null ? '' : r[1]).trim(); }).length;
+    return s.name + ': ' + n + (s.name === 'Учасники' && p.seats ? ' з ' + p.seats + ' місць' : '');
   }).join(', ');
 }
 
