@@ -2077,7 +2077,17 @@ input, textarea, select { caret-color: var(--nav); }
   }
   .refresh svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .refresh:hover { color: #fff; border-color: #3a3a3a; background: #141414; }
-  .refresh.is-spin svg { animation: spin 0.8s linear infinite; }
+  /* Під час оновлення іконка й текст зникають (ширина кнопки та сама), по центру крутиться спіннер */
+  .refresh { position: relative; }
+  .refresh > svg, .refresh > span { transition: opacity 0.15s ease; }
+  .refresh.is-spin > svg, .refresh.is-spin > span { opacity: 0; }
+  .refresh__spin {
+    position: absolute; left: 50%; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.18); border-top-color: #fff; opacity: 0; transition: opacity 0.15s ease;
+  }
+  .refresh.is-spin .refresh__spin { opacity: 1; animation: spin 0.7s linear infinite; }
+  .refresh.is-spin { cursor: default; }
+  @supports (corner-shape: squircle) { .refresh__spin { corner-shape: round; } }
   .refresh:focus-visible { outline: 2px solid #76b12d; outline-offset: 2px; }
 }
 

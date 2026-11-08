@@ -3293,13 +3293,13 @@
     var t0 = 0;
     b.addEventListener('click', function () {
       if (b.classList.contains('is-spin')) return;
-      b.classList.add('is-spin'); t0 = Date.now();
+      b.classList.add('is-spin'); b.setAttribute('aria-busy', 'true'); t0 = Date.now();
       load();
     });
     window.addEventListener('tm:loaded', function () {
       if (!b.classList.contains('is-spin')) return;
       setTimeout(function () {
-        b.classList.remove('is-spin');
+        b.classList.remove('is-spin'); b.removeAttribute('aria-busy');
         var r = state.lastLoad || {};
         toast(!r.ok ? 'Не вдалося оновити. Перевірте інтернет' : r.changed ? '✓ Оновлено: є нові дані' : '✓ Оновлено — змін немає');
       }, Math.max(0, 700 - (Date.now() - t0)));   // щоб оберт було видно

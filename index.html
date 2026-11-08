@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
   <link rel="preload" href="assets/fonts/fixel-cyrillic-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fish.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="assets/style.css?v=20261108t">
-  <script src="config.js?v=20261108t"></script>
+  <link rel="stylesheet" href="assets/style.css?v=20261108u">
+  <script src="config.js?v=20261108u"></script>
   <script>
     // Запитуємо результати одразу, паралельно з завантаженням решти сторінки
     (function () {
@@ -24,8 +24,8 @@
       } catch (e) { window.__tmEarly = null; }
     })();
   </script>
-  <script src="assets/i18n.js?v=20261108t"></script>
-  <script src="assets/app.js?v=20261108t" defer></script>
+  <script src="assets/i18n.js?v=20261108u"></script>
+  <script src="assets/app.js?v=20261108u" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -42,6 +42,7 @@
       <button type="button" class="refresh" id="refreshBtn" title="Оновити" aria-label="Оновити дані">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>
         <span>Оновити</span>
+        <i class="refresh__spin" aria-hidden="true"></i>
       </button>
       <div class="lang" id="langSw" role="group" aria-label="Мова">
         <button type="button" data-lang="uk" lang="uk">УКР</button>
