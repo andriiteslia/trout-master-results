@@ -50,18 +50,19 @@ async function page(b, opts, fixture, extra) {
       window.Telegram = { WebApp: { initData: 'query_id=test&user=%7B%22id%22%3A1%7D&hash=x', initDataUnsafe: { user: { id: 1 } }, platform: 'ios', version: '8.0',
         ready() {}, expand() {}, onEvent() {}, offEvent() {}, setHeaderColor() {}, setBackgroundColor() {}, disableVerticalSwipes() {},
         BackButton: { show() {}, hide() {}, onClick() {}, offClick() {} }, HapticFeedback: { impactOccurred() {}, selectionChanged() {} },
-        CloudStorage: { getItem(k, cb) { cb && cb(null, ''); }, setItem() {} }, openTelegramLink() {}, openLink() {} } };
+        CloudStorage: { getItem(k, cb) { cb && cb(null, ''); }, setItem() {} }, openTelegramLink() {}, openLink() {},
+        isVersionAtLeast() { return true; }, requestWriteAccess(cb) { cb && cb(true); } } };
     });
   }
   const posts = [];
   await p.route('https://script.google.com/**', (r) => {
     const q = r.request();
-    if (q.method() === 'POST') { posts.push(q.postData()); return r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true,"names":[]}' }); }
+    if (q.method() === 'POST') { posts.push(q.postData()); return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, names: extra.names || [] }) }); }
     return r.fulfill({ status: 200, contentType: 'application/json', body: FIX(extra.fx ? extra.fx.name : fixture) });
   });
   await p.route('https://telegram.org/**', (r) => r.fulfill({ status: 200, contentType: 'text/javascript', body: '' }));
   await p.route('https://t.me/**', (r) => r.fulfill({ status: 200, body: 'ok' }));
-  await p.goto('http://localhost:' + PORT + '/' + (extra.hash || ''));
+  await p.goto('http://localhost:' + PORT + '/' + (extra.hash || (extra.tg ? '#tgWebAppVersion=8.0&tgWebAppPlatform=ios' : '')));
   await p.waitForTimeout(extra.wait || 1800);
   return { ctx, p, errors, posts };
 }
@@ -237,10 +238,24 @@ const TESTS = {
     await t.ctx.close(); return t.errors;
   },
 
+  'telegram: плашка сповіщень — зареєстрованому свій текст, «Увімкнути» ховає': async (b) => {
+    const t = await page(b, MOB, 'list', { tg: true, names: ['Повар Олександр'], wait: 2500 });
+    assert(await visible(t.p, '#nbar'), 'плашки немає');
+    assert(/Ви в списку учасників/.test(await t.p.locator('#nbar').innerText()), 'не той текст для зареєстрованого');
+    await shot(t.p, 'tg-nbar-reg');
+    await t.p.click('#nbarGo'); await t.p.waitForTimeout(400);
+    assert(/Готово/.test(await t.p.locator('#nbar').innerText()), 'немає «Готово»');
+    assert(t.posts.some((x) => /"writeAccess"/.test(x)), 'дозвіл не надіслано');
+    await t.ctx.close();
+    const u = await page(b, MOB, 'list', { tg: true, names: [], wait: 2500 });
+    assert(await visible(u.p, '#nbar') && /Результати — у Telegram/.test(await u.p.locator('#nbar').innerText()), 'глядачу не той текст');
+    await u.ctx.close(); return t.errors.concat(u.errors);
+  },
+
   'telegram: апка в TG, партнер рахує клік': async (b) => {
     const t = await page(b, MOB, 'results', { tg: true });
     if (await visible(t.p, '#partner')) {
-      await t.p.click('#partner'); await t.p.waitForTimeout(500);
+      await t.p.locator('#partner').dispatchEvent('click'); await t.p.waitForTimeout(500);   // кнопка «левітує» — клікаємо без очікування стабільності
       assert(t.posts.some((x) => /"pclick"/.test(x)), 'клік партнера не надіслано');
     }
     await shot(t.p, 'tg-results');

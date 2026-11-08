@@ -301,17 +301,31 @@
   })();
 
   // Плашка над таблицею «Результати — у Telegram»: для всіх у ТГ, хто ще не дозволив боту писати.
-  // Показуємо лише після відповіді «Хто я?» (щоб не блимала тим, кому вже можна писати). Хрестик ховає на 14 днів.
-  var LS_NBAR = 'tm:nbarHideUntil', nbarOk = false;
+  // Показуємо лише після відповіді «Хто я?» (щоб не блимала тим, кому вже можна писати).
+  // Зареєстрованим учасникам — свій текст («Ви в списку учасників…»): їм бот надсилає жеребкування,
+  // нагадування й результати, тож після хрестика чи «Ні» плашка повертається вже через 2 дні (решті — через 14).
+  var LS_NBAR = 'tm:nbarHideUntil', LS_NBAR_REG = 'tm:nbarRegHideUntil', nbarOk = false;
+  function nbarIsReg() { return !!(state.myNames && state.myNames.length); }
+  function nbarSnooze() {
+    if (nbarIsReg()) store.set(LS_NBAR_REG, Date.now() + 2 * 864e5);
+    else store.set(LS_NBAR, Date.now() + 14 * 864e5);
+  }
   function nbarReady() { nbarOk = true; renderNbar(); }
   function renderNbar() {
     var el = $('nbar');
-    if (!el) return;
-    var hideUntil = Number(store.get(LS_NBAR, 0)) || 0;
+    if (!el || el.classList.contains('is-done')) return;
+    var isReg = nbarIsReg();
+    var hideUntil = Number(store.get(isReg ? LS_NBAR_REG : LS_NBAR, 0)) || 0;
     el.hidden = !(nbarOk && IN_TG && canOfferNotify() && Date.now() > hideUntil);
+    el.classList.toggle('nbar--reg', isReg);
+    var txt = isReg
+      ? '<b>Ви в списку учасників</b><small>Увімкніть сповіщення — надішлемо жеребкування, нагадування й ваші результати</small>'
+      : '<b>Результати — у Telegram</b><small>Бот напише ваше місце й підсумки після турніру</small>';
+    if ($('nbarTxt').getAttribute('data-k') !== String(isReg)) { $('nbarTxt').innerHTML = txt; $('nbarTxt').setAttribute('data-k', String(isReg)); }
+    $('nbarGo').textContent = isReg ? 'Увімкнути сповіщення' : 'Отримувати результати';
   }
   $('nbarX').addEventListener('click', function () {
-    store.set(LS_NBAR, Date.now() + 14 * 864e5);
+    nbarSnooze();
     renderNbar();
   });
   $('nbarGo').addEventListener('click', function () {
@@ -325,10 +339,12 @@
           sendWriteAccess(true);
           var el = $('nbar');
           el.classList.add('is-done');
-          $('nbarTxt').innerHTML = '<b>🔔 Готово!</b><small>Результати прийдуть у Telegram</small>';
-          setTimeout(function () { el.hidden = true; el.classList.remove('is-done'); }, 2600);
+          $('nbarTxt').innerHTML = nbarIsReg()
+            ? '<b>🔔 Готово!</b><small>Жеребкування, нагадування й результати прийдуть у Telegram</small>'
+            : '<b>🔔 Готово!</b><small>Результати прийдуть у Telegram</small>';
+          setTimeout(function () { el.hidden = true; el.classList.remove('is-done'); $('nbarTxt').removeAttribute('data-k'); }, 2600);
         } else {
-          store.set(LS_NBAR, Date.now() + 14 * 864e5);
+          nbarSnooze();
           renderNbar();
         }
       });
