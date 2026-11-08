@@ -2070,3 +2070,36 @@ input, textarea, select { caret-color: var(--nav); }
 .rk-row.flash .mv { display: inline-block; animation: mv-pop 0.6s ease-out 3; }
 @keyframes mv-pop { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.3); } }
 @media (prefers-reduced-motion: reduce) { .rk-row.flash .mv { animation: none; } }
+
+/* Графіки: стовпчики виростають знизу, числа й лінія середнього з'являються слідом */
+.pc-chart.grow rect.bar, .pc-chart.grow rect.bar-t { transform-box: fill-box; transform-origin: 50% 100%; animation: bar-grow 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.pc-chart.grow text.val { animation: fade-in 0.4s ease both; }
+.pc-chart.grow .avg-line { animation: fade-in 0.6s ease 0.6s both; }
+@keyframes bar-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .pc-chart.grow * { animation: none !important; } }
+
+/* Кнопка «Оновити» в шапці — лише на комп'ютері */
+.refresh { display: none; }
+@media (min-width: 980px) {
+  .refresh {
+    display: inline-flex; align-items: center; gap: 6px; flex: none; height: 36px; padding: 0 14px; border: 1px solid #2a2a2a; border-radius: 999px;
+    background: transparent; color: #d0d5dd; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+  }
+  .refresh svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .refresh:hover { color: #fff; border-color: #3a3a3a; background: #141414; }
+  .refresh.is-spin svg { animation: spin 0.8s linear infinite; }
+  .refresh:focus-visible { outline: 2px solid #76b12d; outline-offset: 2px; }
+}
+
+/* Картка без фото: ініціали в такому самому кружечку */
+.pc-ava--ini { display: grid; place-items: center; border-radius: 50%; background: #1f1f1f; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.14); }
+.pc-ini { font-size: 20px; font-weight: 750; letter-spacing: 0.02em; color: #e4e7ec; }
+@media (min-width: 980px) {
+  .pc-ava--ini { background: #eef0f3; box-shadow: 0 0 0 1px var(--card-line); }
+  .pc-ini { font-size: 26px; color: #344054; }
+}
+@supports (corner-shape: squircle) { .pc-ava--ini { corner-shape: round; } }
+@media (min-width: 980px) {
+  .pc-ava--ini .pc-place--badge:not([class*="medal"]) { background: #fff; color: var(--text); box-shadow: 0 0 0 2px #f2f4f7, 0 1px 3px rgba(16, 24, 40, 0.12); }
+}

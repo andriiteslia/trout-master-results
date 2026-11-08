@@ -527,6 +527,7 @@
       .finally(function () {
         state.loading = false;
         schedule();
+        try { window.dispatchEvent(new Event('tm:loaded')); } catch (e) { /* */ }
       });
   }
 
@@ -903,6 +904,19 @@
     }, 450);
   }
 
+  // Стовпчики графіків «виростають» знизу по черзі, далі з'являються числа й лінія середнього
+  function growCharts(root) {
+    if (REDUCED || !root) return;
+    [].forEach.call(root.querySelectorAll('.pc-chart'), function (svg) {
+      var i = 0;
+      [].forEach.call(svg.querySelectorAll('rect.bar, rect.bar-t'), function (r) { r.style.animationDelay = (i++ * 45) + 'ms'; });
+      var j = 0;
+      [].forEach.call(svg.querySelectorAll('text.val'), function (t) { t.style.animationDelay = (250 + j++ * 45) + 'ms'; });
+      svg.classList.add('grow');
+    });
+  }
+  var grownStats = false;
+
   function renderCard() {
     var name = selectedPlayerName();
     if (!name || !hasCardData(name)) { pc.body.innerHTML = '<div class="card empty">Виберіть учасника в таблиці.</div>'; return; }
@@ -938,7 +952,8 @@
       (PHOTOS[normName(st.name)]
         ? '<div class="pc-ava" aria-hidden="true"><img src="assets/players/lg/' + encodeURIComponent(PHOTOS[normName(st.name)]) + '?v=' + PHOTO_V + '" alt="" decoding="async" onerror="this.onerror=null;this.src=this.src.replace(\'/lg/\',\'/\')">' +
             (started && st.place ? '<span class="pc-place pc-place--badge' + medal + '">' + st.place + '</span>' : '') + '</div>'
-        : (started && st.place ? '<div class="pc-place' + medal + '" aria-hidden="true">' + st.place + '</div>' : '')) +
+        : '<div class="pc-ava pc-ava--ini" aria-hidden="true"><span class="pc-ini">' + esc(initials(st.name)) + '</span>' +   // без фото — ініціали в такому ж кружечку
+            (started && st.place ? '<span class="pc-place pc-place--badge' + medal + '">' + st.place + '</span>' : '') + '</div>') +
       '<div class="pc-head__txt"><h1 class="title" id="pcTitle" tabindex="-1">' + esc(st.name) + '</h1>' +
       '<p class="pc-sub m-only">' + esc([st.num ? '№ ' + st.num : '', sideWord ? sideWord + ' берег' : '', placeTxt].filter(Boolean).join(' · ')) + '</p>' +
       '<p class="pc-chips d-only">' + chips.map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('') +
@@ -1042,6 +1057,7 @@
     if (state.view === 'card' && countedCard !== name) {
       countedCard = name;
       countUp(pc.body.querySelectorAll('.pc-k .pk__v, .pc-k .pk__badge'));
+      growCharts(pc.body);
       // Призер відкрив свою картку після фіналу — привітання конфеті (раз за сеанс)
       if (started && st.place >= 1 && st.place <= 3 && tournamentDone() && isMine(name)) {
         var ck = finKey() + ':card:' + normName(name);
@@ -1279,6 +1295,7 @@
       '</ul></section>']);
 
     ts.body.innerHTML = h + twoCols(L, R) + '</div>';
+    if (!grownStats && state.view === 'stats') { grownStats = true; growCharts(ts.body); }
 
     function pct(n) { return S.entries ? Math.round(n / S.entries * 100) + '%' : '—'; }
     function tsTile(label, valHtml) {
@@ -1644,6 +1661,7 @@
     if (state.view === v) return;
     state.view = v;
     if (v !== 'card') countedCard = '';   // наступне відкриття картки — знову з «докручуванням»
+    if (v !== 'stats') grownStats = false;
     if (formLift.spacer) setFormSpacer(0);
     renderReg();
     tgBack(v !== 'list');
@@ -2854,7 +2872,7 @@
       var spark = t && playedTours(t) > 1 ? '<span class="spark d-only" aria-hidden="true">' + tot.map(function (x) {
         return '<i style="height:' + (x ? Math.max(2, Math.round(x / mx * 36)) : 0) + 'px"></i>';
       }).join('') + '</span>' : '';
-      h += kpi('k-spark', 'Усього риби', 'Риби', fmtInt(tf), spark);
+      h += kpi(spark ? 'k-spark' : '', 'Усього риби', 'Риби', fmtInt(tf), spark);
     }
     if (t && t.avgPerTour != null) h += kpi('d-only', 'Середній улов', 'Середній', fmt1(t.avgPerTour), '<span class="kpi__s">риби на учасника за тур</span>');
     var m0 = resultsModel() || state.models[0];
@@ -3175,6 +3193,22 @@
     clearTimeout(toastT);
     toastT = setTimeout(function () { v2.toast.hidden = true; }, 2600);
   }
+  // Кнопка «Оновити» в шапці (комп'ютер; на телефоні — потягнути вниз)
+  (function () {
+    var b = document.getElementById('refreshBtn');
+    if (!b) return;
+    var t0 = 0;
+    b.addEventListener('click', function () {
+      if (b.classList.contains('is-spin')) return;
+      b.classList.add('is-spin'); t0 = Date.now();
+      load();
+    });
+    window.addEventListener('tm:loaded', function () {
+      if (!b.classList.contains('is-spin')) return;
+      setTimeout(function () { b.classList.remove('is-spin'); }, Math.max(0, 700 - (Date.now() - t0)));   // щоб оберт було видно
+    });
+  })();
+
   // Перемикач мови в шапці: без перезавантаження — i18n.js міняє тексти на місці, а ми перемальовуємо блоки
   (function () {
     var sw = document.getElementById('langSw');
