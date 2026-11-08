@@ -2107,3 +2107,5 @@ input, textarea, select { caret-color: var(--nav); }
 @media (min-width: 980px) { .topbar__inner .refresh, .topbar__inner .lang { margin-left: -22px; } }
 .has-seg > button[aria-current="page"] { background: transparent !important; box-shadow: none !important; }
 .topnav .seg-ind { box-shadow: none; }
+/* Телефон: якщо сторінку «перетягнути» вгору, під світлим аркушем не видно темної смужки фону */
+@media (max-width: 979px) { .main { box-shadow: 0 120px 0 0 var(--page); } }
