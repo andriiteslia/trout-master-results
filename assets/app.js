@@ -1147,7 +1147,9 @@
   // другий (state.cmpKey), тап по третьому замінює другого. Тоді замість «Картка учасника» —
   // «Порівняти» (кнопка внизу на телефоні й таблетка на комп'ютері). Екран порівняння живе в
   // контейнері картки (state.cmpOpen), тож «Назад», Telegram і свайп працюють так само.
-  // Порівнюється основне: 4 плитки картки (бали, В·РН·БН·П, улов, проти суперників) і блок «Статистика».
+  // Порівнюється основне: 4 плитки картки (бали, В·РН·БН·П, улов, проти суперників) і блок «Статистика»;
+  // якщо за жеребкуванням вони суперники — ще й «Особисті зустрічі»: зазвичай один тур і один рахунок,
+  // інколи 2 (або 4–6 у плей-оф) — тоді в заголовку ще й підсумок перемог між собою.
 
   function keyName(k) { return k ? String(k).replace(/ #\d+$/, '') : null; }
   // Порівняння — лише в результатах, коли вже є зіграні тури й картки увімкнені (B12)
@@ -1276,6 +1278,36 @@
       : 'Порівну: по ' + score.a + ' ' + plural(score.a, 'кращому показнику', 'кращих показники', 'кращих показників');
     var I_BACK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
 
+    // Особисті зустрічі: тури, де за жеребкуванням вони суперники (зіграні — з рахунком, майбутні — «ще попереду»)
+    var meets = A.tours.filter(function (x) { return x.oppName && normName(x.oppName) === normName(B.name); });
+    var h2h = '';
+    if (meets.length) {
+      var wa = 0, wb = 0;
+      var DRAW = { d: 'рибна нічия', z: 'безрибна нічия' };
+      var mrows = meets.map(function (x) {
+        var bt = B.tours[x.n - 1] || {};
+        var bf = x.oppFish != null ? x.oppFish : (bt.code ? bt.fish : null);
+        var win = x.code === 'w' ? 'a' : x.code === 'l' ? 'b' : null;
+        if (win === 'a') wa++; else if (win === 'b') wb++;
+        var sec = x.sector ? 'сектор ' + x.sector : '';
+        var sub = !x.code ? 'ще попереду' : DRAW[x.code] || '';
+        var cell = function (v, who) {
+          return '<span class="cmp-v cmp-v--' + who + (win === who ? ' is-win' : '') + '"><b>' + (v == null ? '—' : v) + '</b></span>';
+        };
+        var sr = !x.code ? ', ще попереду' : win ? ', переміг ' + (win === 'a' ? A.name : B.name) + ', ' + x.fish + ' : ' + bf : ', ' + DRAW[x.code] + ', ' + x.fish + ' : ' + bf;
+        return '<div class="cmp-row cmp-meet' + (x.code ? '' : ' is-wait') + '" role="group" aria-label="' + esc('Тур ' + x.n + sr) + '">' +
+          cell(x.code ? x.fish : null, 'a') +
+          '<span class="cmp-l"><span class="cmp-meet__t">Тур ' + x.n + '</span>' +
+            ([sec, sub].filter(Boolean).length ? '<small>' + esc([sec, sub].filter(Boolean).join(' · ')) + '</small>' : '') + '</span>' +
+          cell(x.code ? bf : null, 'b') + '</div>';
+      }).join('');
+      var played = meets.filter(function (x) { return x.code; }).length;
+      h2h = '<section class="card pc-block cmp-h2h"><h2 class="pc-h2">Особисті зустрічі' +
+        (played > 1 ? '<span class="cmp-h2h__tally" aria-label="' + esc('Перемоги між собою ' + wa + ' : ' + wb) + '">' +
+          '<b class="' + (wa > wb ? 'is-win' : '') + '">' + wa + '</b> : <b class="' + (wb > wa ? 'is-win' : '') + '">' + wb + '</b></span>' : '') +
+        '</h2><div class="cmp-rows">' + mrows + '</div></section>';
+    }
+
     pc.body.innerHTML =
       '<header class="pc-hero cmp-hero"><div class="pc-hero__bar">' +
         '<button type="button" class="hero-back pc-back" data-act="back">' + I_BACK + '<span class="l-m">Назад</span><span class="l-d">До підсумку</span></button></div>' +
@@ -1288,7 +1320,7 @@
             '<b class="' + (score.b > score.a ? 'is-win' : '') + '">' + score.b + '</b></div>' +
           '<p class="cmp-sum__t">' + sumTxt + (score.tie ? ', порівну — ' + score.tie : '') + '</p>' +
           (gap.length ? '<p class="cmp-sum__s">Різниця: ' + esc(gap.join(' · ')) + '</p>' : '') +
-        '</section>' +
+        '</section>' + h2h +
         '<div class="cmp-cols">' +
           '<section class="card pc-block"><h2 class="pc-h2">Основне</h2><div class="cmp-rows">' + main + '</div></section>' +
           '<section class="card pc-block"><h2 class="pc-h2">Статистика</h2><div class="cmp-rows">' + stats + '</div></section>' +

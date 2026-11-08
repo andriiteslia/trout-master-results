@@ -129,6 +129,20 @@ const TESTS = {
     await t.ctx.close(); return t.errors;
   },
 
+  'compare h2h: особисті зустрічі, якщо вони суперники': async (b) => {
+    const fx = JSON.parse(FIX('results'));
+    const pl = fx.draw.players, a = pl.find((x) => x.t[0][1]), bn = pl.find((x) => x.n === a.t[0][1]).name;
+    const t = await page(b, DESK, 'results');
+    await t.p.locator('#board [data-key^="' + a.name + '"]').first().click(); await t.p.waitForTimeout(300);
+    await t.p.locator('#board [data-key^="' + bn + '"]').first().click(); await t.p.waitForTimeout(500);
+    await t.p.click('#selCard'); await t.p.waitForTimeout(1500);
+    assert(await visible(t.p, '#pcBody .cmp-h2h'), 'немає блоку «Особисті зустрічі»');
+    assert((await t.p.locator('#pcBody .cmp-meet').count()) >= 1, 'немає жодної зустрічі');
+    assert(/Тур 1/.test(await t.p.locator('#pcBody .cmp-h2h').innerText()), 'немає туру 1 у зустрічах');
+    await shot(t.p, 'desk-cmp-h2h');
+    await t.ctx.close(); return t.errors;
+  },
+
   'compare mobile: «Порівняти» внизу → двобій': async (b) => {
     const t = await page(b, MOB, 'results');
     await t.p.locator('#board [data-key]').nth(1).click(); await t.p.waitForTimeout(400);

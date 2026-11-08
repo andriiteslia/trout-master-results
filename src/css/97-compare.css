@@ -85,3 +85,15 @@
 .cmp-anim .cmp-bar i { animation: cmp-grow 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .cmp-anim .cmp-cols .pc-block:last-child .cmp-bar i { animation-delay: 0.12s; }
 @media (prefers-reduced-motion: reduce) { .cmp-anim .cmp-bar i { animation: none; } }
+
+/* Особисті зустрічі: тур по центру, улов кожного по боках, переможець зеленим */
+.cmp-h2h .pc-h2 { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.cmp-h2h__tally { font-size: 16px; font-weight: 750; font-stretch: 100%; color: #c3c9d3; white-space: nowrap; }
+.cmp-h2h__tally b { color: var(--text); }
+.cmp-h2h__tally b.is-win { color: var(--brand-ink); }
+.cmp-meet .cmp-l { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.cmp-meet__t { font-size: 14px; font-weight: 700; color: var(--text); }
+.cmp-meet .cmp-l small { font-size: 12px; font-weight: 550; color: var(--muted); }
+.cmp-meet .cmp-v b { font-size: 22px; }
+.cmp-meet.is-wait .cmp-v b { color: #c3c9d3; font-weight: 650; }
+@media (min-width: 980px) { .cmp-meet .cmp-v b { font-size: 24px; } }
