@@ -36,7 +36,7 @@ var SETTINGS = {
   // Адреса розгортання (/exec) — для вебхука Telegram. Та сама, що в config.js сайту.
   WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbxbXAq9BaSu4nxH27TCGc2HZkzt7RlrWtWAle7zF20802ujhpsfMBLek1efKtXexdNF/exec',
   // Сайт (міні-застосунок) — для кнопки в привітанні бота
-  SITE_URL: 'https://andriiteslia.github.io/trout-master-results/',
+  SITE_URL: 'https://troutmaster.app/',
   // Відповідь бота на Start. Порожньо — бот мовчить.
   BOT_GREETING: 'Привіт! Тут онлайн-результати та реєстрація на турніри TROUT MASTER 🎣\nНатисни кнопку нижче, щоб відкрити застосунок.'
 };

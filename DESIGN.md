@@ -4,7 +4,7 @@
 
 ## Коротко про проєкт
 
-- **Сайт:** https://andriiteslia.github.io/trout-master-results/. Це vanilla JS без збирання, хоститься на GitHub Pages з гілки `main`.
+- **Сайт:** https://troutmaster.app/ (домен у Cloudflare, DNS only → GitHub Pages; стара адреса github.io перенаправляє сюди). Це vanilla JS без збирання, хоститься на GitHub Pages з гілки `main`.
 - **Telegram Mini App:** @troutmasterua_bot (`t.me/troutmasterua_bot?startapp`). Це той самий сайт усередині Telegram.
 - **Дані:** Google Таблиця → Apps Script (`apps-script/Code.gs`) → JSON → сайт опитує його кожні 15 с.
   - Таблиця раунду: `13wvgmiuQeCl6ap4QmScSdf1dR0_wUuljV9-1-GggLdk`, аркуш «Сайт».
