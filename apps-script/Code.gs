@@ -688,6 +688,7 @@ function doPost(e) {
     else if (data.action === 'whoami') out = whoami_(data);
     else if (data.action === 'writeAccess') out = writeAccess_(data);
     else if (data.action === 'visit') out = visit_(data);
+    else if (data.action === 'pclick') out = partnerClick_(data);
     else out = fail_('bad_request', 'Невідомий запит.');
   } catch (err) {
     out = fail_('server', 'Не вдалося зберегти заявку. Спробуйте ще раз за хвилину.');
@@ -993,6 +994,154 @@ function setupVisitStats() {
   var sh = visitsSheet_(ss);
   writeVisitStats_(sh);
   Logger.log('Готово: зведення на аркуші «' + VISITS_SHEET + '» (J1:M13), журнал — «' + JOURNAL_SHEET + '».');
+}
+
+// ---------------------------------------------------------------------------
+// Кліки по партнерах (кнопка FISH.ME.FISH тощо): журнал + зведення на аркуші «Партнери»
+// ---------------------------------------------------------------------------
+
+var PCLICK_JOURNAL = 'Журнал кліків';   // прихований аркуш: Час | Партнер | Джерело | Пристрій | ID
+var PARTNERS_SHEET = 'Партнери';         // видимий аркуш зі зведенням: блок на кожного партнера
+var PCLICK_DEDUPE_SEC = 3;               // подвійний тап за 3 с — один клік
+var PSTATS_HEAD_ROWS = 3;                // заголовок, «Сьогодні / Тиждень / …», «Починаючи з»
+
+/**
+ * Сайт/апка: { action: 'pclick', partner: 'FISH.ME.FISH', dev: 'Телефон'|'Комп', vid, tg }.
+ * Людина — та сама, що у «Журналі візитів»: Telegram ID (перевірений підписом) або анонімний ID браузера.
+ */
+function partnerClick_(data) {
+  var partner = String(data.partner || '').replace(/\s+/g, ' ').trim();
+  if (!/^[\p{L}\p{N} .&'’_-]{2,40}$/u.test(partner)) return { ok: true };
+  var dev = data.dev === 'Комп' ? 'Комп' : 'Телефон';
+  var src = data.tg ? 'Telegram' : 'Сайт', id = '';
+  if (data.tg && PropertiesService.getScriptProperties().getProperty('BOT_TOKEN')) {
+    var user = telegramUser_(data.tg);
+    if (user) id = String(user.id);
+  }
+  if (!id) {
+    var vid = String(data.vid || '').trim().toLowerCase();
+    if (/^[a-z0-9]{8,40}$/.test(vid)) id = 'web:' + vid;
+  }
+  var cache = CacheService.getScriptCache();
+  var key = 'pcl:' + partner + ':' + (id || 'anon');
+  if (id && cache.get(key)) return { ok: true };
+  if (id) cache.put(key, '1', PCLICK_DEDUPE_SEC);
+  var ss = SpreadsheetApp.openById(getSpreadsheetId_());
+  pclickJournal_(ss).appendRow([new Date(), partner, src, dev, id]);
+  ensurePartnerBlock_(ss, partner);
+  return { ok: true };
+}
+
+function pclickJournal_(ss) {
+  var sh = ss.getSheetByName(PCLICK_JOURNAL);
+  if (sh) return sh;
+  try { sh = ss.insertSheet(PCLICK_JOURNAL); } catch (err) {
+    sh = ss.getSheetByName(PCLICK_JOURNAL);
+    if (sh) return sh;
+    throw err;
+  }
+  sh.getRange(1, 1, 1, 5).setValues([['Час', 'Партнер', 'Джерело', 'Пристрій', 'ID']]).setFontWeight('bold').setBackground('#e3f0fa');
+  sh.setFrozenRows(1);
+  sh.getRange('A:A').setNumberFormat('dd.MM.yyyy HH:mm:ss');
+  sh.getRange('E:E').setNumberFormat('@');
+  sh.setColumnWidth(1, 150);
+  sh.setColumnWidth(5, 200);
+  try { sh.hideSheet(); } catch (e) { /* не критично */ }
+  return sh;
+}
+
+/** Аркуш «Партнери»: шапка з періодами (рахують формули, скрипт лише створює). */
+function partnersSheet_(ss) {
+  var sh = ss.getSheetByName(PARTNERS_SHEET);
+  if (sh) return sh;
+  try { sh = ss.insertSheet(PARTNERS_SHEET); } catch (err) {
+    sh = ss.getSheetByName(PARTNERS_SHEET);
+    if (sh) return sh;
+    throw err;
+  }
+  sh.getRange(1, 1, 2, 5).setValues([['Кліки по партнерах', '', '', '', ''], ['', 'Сьогодні', 'Тиждень', 'Місяць', 'Усього']]);
+  var sep = formulaSep_(sh.getRange(3, 2));
+  sh.getRange(3, 1).setValue('Починаючи з');
+  sh.getRange(3, 2, 1, 4).setFormulas([['=TODAY()', '=TODAY()-WEEKDAY(TODAY(),2)+1', '=DATE(YEAR(TODAY()),MONTH(TODAY()),1)', '=DATE(2020,1,1)']
+    .map(function (f) { return f.replace(/,/g, sep); })]);
+  sh.getRange(1, 1).setFontWeight('bold').setFontSize(12);
+  sh.getRange(2, 1, 1, 5).setFontWeight('bold').setBackground('#e3f0fa');
+  sh.getRange(3, 1, 1, 5).setFontColor('#667085');
+  sh.getRange(3, 2, 1, 3).setNumberFormat('dd.MM');
+  sh.getRange(3, 5).setNumberFormat('"увесь час"');
+  sh.getRange(2, 2, 2, 4).setHorizontalAlignment('center');
+  sh.setFrozenRows(3);
+  sh.setColumnWidth(1, 230);
+  for (var i = 2; i <= 5; i++) sh.setColumnWidth(i, 95);
+  sh.getRange(1, 7, 4, 1).setValues([
+    ['Кліки — скільки разів натиснули кнопку партнера (подвійний тап за 3 с — один).'],
+    ['Люди — скільки різних людей (у Telegram) чи пристроїв (у браузері) натиснули.'],
+    ['Конверсія — частка відвідувачів сайту/апки за період, які натиснули.'],
+    ['Тиждень — з понеділка, місяць — з 1-го числа. Записи — на прихованому аркуші «' + PCLICK_JOURNAL + '».']
+  ]).setFontColor('#667085').setWrap(false);
+  return sh;
+}
+
+/** Блок партнера на «Партнерах» (додається сам із першим кліком нового партнера). */
+function ensurePartnerBlock_(ss, partner) {
+  var sh = partnersSheet_(ss);
+  var last = lastRowA_(sh);
+  if (last > PSTATS_HEAD_ROWS) {
+    var names = sh.getRange(PSTATS_HEAD_ROWS + 1, 1, last - PSTATS_HEAD_ROWS, 1).getDisplayValues();
+    for (var i = 0; i < names.length; i++) if (names[i][0] === partner) return;
+  }
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(10000); } catch (e) { return; }
+  try {
+    last = lastRowA_(sh);   // хтось міг додати блок, поки чекали
+    if (last > PSTATS_HEAD_ROWS) {
+      var again = sh.getRange(PSTATS_HEAD_ROWS + 1, 1, last - PSTATS_HEAD_ROWS, 1).getDisplayValues();
+      for (var k = 0; k < again.length; k++) if (again[k][0] === partner) return;
+    }
+    var r = last > PSTATS_HEAD_ROWS ? last + 2 : PSTATS_HEAD_ROWS + 1;   // між блоками — порожній рядок
+    journalSheet_(ss);   // формула конверсії посилається на «Журнал візитів» — він має існувати
+    var J = "'" + PCLICK_JOURNAL + "'!", V = "'" + JOURNAL_SHEET + "'!";
+    var nameRef = '$A$' + r;
+    var cols = ['B', 'C', 'D', 'E'];
+    var since = function (c) { return J + 'A2:A,">="&' + c + '$3'; };
+    var clicks = function (src) { return cols.map(function (c) { return '=COUNTIFS(' + J + 'B2:B,' + nameRef + ',' + since(c) + (src ? ',' + J + 'C2:C,"' + src + '"' : '') + ')'; }); };
+    var people = cols.map(function (c) { return '=COUNTUNIQUEIFS(' + J + 'E2:E,' + J + 'B2:B,' + nameRef + ',' + since(c) + ')'; });
+    var conv = cols.map(function (c, i) {
+      return '=IFERROR(' + c + (r + 4) + '/COUNTUNIQUEIFS(' + V + 'C2:C,' + V + 'A2:A,">="&' + c + '$3),0)';
+    });
+    var labels = [[partner], ['Кліки'], ['   у Telegram'], ['   на сайті (браузер)'], ['Люди'], ['Конверсія від відвідувачів']];
+    sh.getRange(r, 1, labels.length, 1).setValues(labels);
+    var sep = formulaSep_(sh.getRange(r, 2));
+    var f = [clicks(''), clicks('Telegram'), clicks('Сайт'), people, conv].map(function (row) {
+      return row.map(function (x) { return x.replace(/,/g, sep); });
+    });
+    sh.getRange(r + 1, 2, 5, 4).setFormulas(f);
+    sh.getRange(r, 1, 1, 5).setFontWeight('bold').setBackground('#eef6e3');
+    sh.getRange(r + 1, 1, 1, 5).setFontWeight('bold');
+    sh.getRange(r + 4, 1, 1, 5).setFontWeight('bold');
+    sh.getRange(r + 5, 2, 1, 4).setNumberFormat('0.0%');
+    sh.getRange(r + 1, 2, 5, 4).setHorizontalAlignment('center');
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/** Останній заповнений рядок у колонці A (пояснення праворуч не рахуються). */
+function lastRowA_(sh) {
+  var n = sh.getLastRow();
+  if (!n) return 0;
+  var v = sh.getRange(1, 1, n, 1).getDisplayValues();
+  for (var i = n - 1; i >= 0; i--) if (String(v[i][0]).trim()) return i + 1;
+  return 0;
+}
+
+/** Можна запустити з редактора, щоб аркуш «Партнери» з'явився одразу (інакше — з першим кліком). */
+function setupPartnerStats() {
+  var ss = SpreadsheetApp.openById(getSpreadsheetId_());
+  pclickJournal_(ss);
+  journalSheet_(ss);
+  ensurePartnerBlock_(ss, 'FISH.ME.FISH');
+  Logger.log('Готово: аркуш «' + PARTNERS_SHEET + '», журнал — «' + PCLICK_JOURNAL + '».');
 }
 
 // ---------------------------------------------------------------------------

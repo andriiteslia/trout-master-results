@@ -1949,8 +1949,8 @@
 
   // ----- Відвідування в звичайному браузері (для статистики на аркуші «Відвідування») -----
   // Анонімно: лише випадковий ID пристрою, без імен. У Telegram візит рахує «Хто я?».
-  function webVisit() {
-    if (DEMO || IN_TG) return;
+  // Анонімний ID пристрою (той самий для візитів і кліків по партнерах)
+  function deviceId() {
     var id = store.get('tm:vid', null);
     if (typeof id !== 'string' || !/^[a-z0-9]{8,40}$/.test(id)) {
       id = '';
@@ -1964,6 +1964,11 @@
       }
       store.set('tm:vid', id);
     }
+    return id;
+  }
+  function webVisit() {
+    if (DEMO || IN_TG) return;
+    var id = deviceId();
     try {
       fetch(API, {
         method: 'POST',
@@ -2022,12 +2027,27 @@
     } catch (e) { renderNotify('none'); }
   });
 
+  // Клік по партнеру — у статистику на аркуші «Партнери» (анонімно: Telegram ID або ID пристрою)
+  function trackPartner(name) {
+    if (DEMO || !name) return;
+    var tg = tgApp();
+    var body = JSON.stringify({
+      action: 'pclick', partner: name,
+      dev: window.matchMedia && window.matchMedia('(min-width: 980px)').matches ? 'Комп' : 'Телефон',
+      vid: deviceId(), tg: (IN_TG && tg && tg.initData) || ''
+    });
+    try {
+      fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body, keepalive: true })
+        .catch(function () { /* статистика — не критично */ });
+    } catch (e) { /* */ }
+  }
   // Кнопка партнера над нижньою кнопкою (лише в ТГ на телефоні): відкриває канал усередині Telegram
   (function () {
     ['partner', 'partnerWeb'].forEach(function (id) {
       var a = document.getElementById(id);
       if (!a) return;
       a.addEventListener('click', function (e) {
+        trackPartner(a.getAttribute('data-partner'));
         var tg = tgApp();
         if (!IN_TG || !tg || typeof tg.openTelegramLink !== 'function') return;   // звичайний браузер — просте посилання
         e.preventDefault();

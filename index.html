@@ -27,8 +27,8 @@
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
   <link rel="preload" href="assets/fonts/fixel-cyrillic-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fish.webp" as="image" type="image/webp">
-  <link rel="stylesheet" href="assets/style.css?v=20261108x">
-  <script src="config.js?v=20261108x"></script>
+  <link rel="stylesheet" href="assets/style.css?v=20261108y">
+  <script src="config.js?v=20261108y"></script>
   <script>
     // Запитуємо результати одразу, паралельно з завантаженням решти сторінки
     (function () {
@@ -44,8 +44,8 @@
     // Посилання на картку (…/#p9, startapp=p9): з першого кадру ховаємо головну, щоб не блимав список до картки
     if (/(?:tgWebAppStartParam=|#)p\d+(?:&|$)/.test(location.hash + '&' + location.search.slice(1))) document.documentElement.className += ' view-card deep-wait';
   </script>
-  <script src="assets/i18n.js?v=20261108x"></script>
-  <script src="assets/app.js?v=20261108x" defer></script>
+  <script src="assets/i18n.js?v=20261108y"></script>
+  <script src="assets/app.js?v=20261108y" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -82,7 +82,7 @@
         <p class="meta" id="subtitle" hidden></p>
       </div>
       <div class="hero__actions" id="heroActions">
-        <a class="partner-web" id="partnerWeb" href="https://t.me/fishmefish_japan" target="_blank" rel="noopener" title="Наш партнер FISH.ME.FISH" aria-label="Наш партнер FISH.ME.FISH у Telegram">
+        <a class="partner-web" id="partnerWeb" data-partner="FISH.ME.FISH" href="https://t.me/fishmefish_japan" target="_blank" rel="noopener" title="Наш партнер FISH.ME.FISH" aria-label="Наш партнер FISH.ME.FISH у Telegram">
           <img src="assets/partners/fishmefish.svg?v=1" alt="" width="288" height="288" decoding="async">
         </a>
         <button type="button" class="btn2 btn2-light" id="shareBtn">
@@ -240,7 +240,7 @@
   </main>
 
   <div class="regbar" id="regbar" hidden>
-    <a class="partner" id="partner" href="https://t.me/fishmefish_japan" target="_blank" rel="noopener" aria-label="Наш партнер FISH.ME.FISH у Telegram">
+    <a class="partner" id="partner" data-partner="FISH.ME.FISH" href="https://t.me/fishmefish_japan" target="_blank" rel="noopener" aria-label="Наш партнер FISH.ME.FISH у Telegram">
       <img src="assets/partners/fishmefish.svg?v=1" alt="" width="288" height="288" decoding="async">
     </a>
     <button type="button" class="btn btn-primary" id="cardOpen" hidden>

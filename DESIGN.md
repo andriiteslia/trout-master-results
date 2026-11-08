@@ -215,6 +215,7 @@ const srv=http.createServer((q,r)=>{let p=path.join(ROOT,decodeURIComponent(q.ur
   - Статуси причин недоставки: `bcWhy_`.
 - **Telegram ID:** перевіряється підписом через `BOT_TOKEN`.
 - **Журнали:** «Відвідування» і «Журнал візитів» ведуть статистику.
+- **Кліки по партнерах:** `a[data-partner]` → `trackPartner()` шле `{action:'pclick', partner, dev, vid, tg}` → `partnerClick_` пише в прихований «Журнал кліків», `ensurePartnerBlock_` додає блок партнера на «Партнери» (формули COUNTIFS/COUNTUNIQUEIFS, конверсія — від унікальних із «Журналу візитів»). Новий action у `doPost` — після зміни потрібна «Нова версія» розгортання.
 
 ## Відомі пастки
 
