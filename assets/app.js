@@ -543,14 +543,28 @@
   el.tabs.addEventListener('click', function (e) {
     var b = e.target.closest('[data-tab]');
     if (!b) return;
-    state.tab = b.getAttribute('data-tab');
-    var sc = el.board.querySelector('.bs');
-    if (sc) sc.scrollLeft = 0;
-    renderTabs();
-    renderBoard();
-    var cur = el.tabs.querySelector('[aria-selected="true"]');
-    if (cur) cur.focus();
+    if (b.getAttribute('aria-selected') === 'true') return;
+    var next = b.getAttribute('data-tab');
+    // Плавний перехід «Підсумок ↔ По турах»: таблиця розтягується/стискається, бічна панель від'їжджає праворуч
+    smoothSwap(function () {
+      state.tab = next;
+      var sc = el.board.querySelector('.bs');
+      if (sc) sc.scrollLeft = 0;
+      renderTabs();
+      renderBoard();
+      var cur = el.tabs.querySelector('[aria-selected="true"]');
+      if (cur) cur.focus({ preventScroll: true });
+    });
   });
+  function smoothSwap(fn) {
+    var root = document.documentElement;
+    if (!document.startViewTransition || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) { fn(); return; }
+    root.classList.add('vt-tabs');
+    var t;
+    try { t = document.startViewTransition(fn); } catch (e) { root.classList.remove('vt-tabs'); fn(); return; }
+    var done = function () { root.classList.remove('vt-tabs'); };
+    t.finished.then(done, done);
+  }
   el.tabs.addEventListener('keydown', function (e) {
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
     var tabs = Array.prototype.slice.call(el.tabs.querySelectorAll('[role="tab"]'));
