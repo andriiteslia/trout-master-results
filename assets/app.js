@@ -2305,7 +2305,7 @@
     if (act === 'story') { openStory(selectedPlayerName()); return; }
     if (act === 'share') {
       var nm = selectedPlayerName(), dp = nm ? drawPlayer(nm) : null;
-      shareLink(dp ? SHARE_URL + '=p' + dp.n : SHARE_URL, (nm || 'Учасник') + ': картка учасника TROUT MASTER');
+      shareLink(shareUrl(dp && dp.n), (nm || 'Учасник') + ': картка учасника TROUT MASTER');
     }
   });
   ts.open.addEventListener('click', goStats);
@@ -2332,6 +2332,13 @@
     side: $('side'), toast: $('toast')
   };
   var SHARE_URL = 'https://t.me/troutmasterua_bot?startapp';
+  var WEB_URL = 'https://troutmaster.app/';
+  // У Telegram ділимось посиланням на Mini App, у браузері — на сайт (картка: …?startapp=p9 / …/#p9)
+  function shareUrl(n) {
+    var tg = window.Telegram && window.Telegram.WebApp;
+    if (tg && tg.initData) return n ? SHARE_URL + '=p' + n : SHARE_URL;
+    return n ? WEB_URL + '#p' + n : WEB_URL;
+  }
   var ZEBRA = true;
   var RC = { w: ['В', 'Перемога'], d: ['РН', 'Рибна нічия'], z: ['БН', 'Безрибна нічия'], l: ['П', 'Поразка'] };
   state.query = '';
@@ -3248,29 +3255,24 @@
     });
   });
   var toastT = null;
-  function toast(msg, top) {
+  // Усі тости — зверху: виїжджають з-під навбару вниз, потім тікають назад угору
+  function toast(msg) {
     var t = v2.toast;
     t.textContent = msg;
     clearTimeout(toastT);
     t.classList.remove('is-in', 'is-out');
-    t.classList.toggle('toast--top', !!top);
-    if (top) {
-      // Виїжджає з-під навбару вниз, потім тікає назад угору
-      var nb = document.querySelector('.topbar');
-      var y = nb ? Math.max(0, nb.getBoundingClientRect().bottom) : 0;
-      t.style.top = (y + 12) + 'px';
-      t.hidden = false; void t.offsetWidth;
-      t.classList.add('is-in');
-      toastT = setTimeout(function () {
-        t.classList.remove('is-in'); t.classList.add('is-out');
-        toastT = setTimeout(function () { t.hidden = true; t.classList.remove('is-out', 'toast--top'); t.style.top = ''; }, 320);
-      }, 2400);
-      return;
-    }
-    t.style.top = '';
-    t.hidden = false;
-    toastT = setTimeout(function () { t.hidden = true; }, 2600);
+    t.classList.add('toast--top');
+    var nb = document.querySelector('.topbar');
+    var y = nb ? Math.max(0, nb.getBoundingClientRect().bottom) : 0;
+    t.style.top = (y + 12) + 'px';
+    t.hidden = false; void t.offsetWidth;
+    t.classList.add('is-in');
+    toastT = setTimeout(function () {
+      t.classList.remove('is-in'); t.classList.add('is-out');
+      toastT = setTimeout(function () { t.hidden = true; t.classList.remove('is-out', 'toast--top'); t.style.top = ''; }, 320);
+    }, 2400);
   }
+
   // Кнопка «Оновити» в шапці (комп'ютер; на телефоні — потягнути вниз)
   (function () {
     var b = document.getElementById('refreshBtn');
@@ -3286,7 +3288,7 @@
       setTimeout(function () {
         b.classList.remove('is-spin');
         var r = state.lastLoad || {};
-        toast(!r.ok ? 'Не вдалося оновити. Перевірте інтернет' : r.changed ? '✓ Оновлено: є нові дані' : '✓ Оновлено — змін немає', true);
+        toast(!r.ok ? 'Не вдалося оновити. Перевірте інтернет' : r.changed ? '✓ Оновлено: є нові дані' : '✓ Оновлено — змін немає');
       }, Math.max(0, 700 - (Date.now() - t0)));   // щоб оберт було видно
     });
   })();
@@ -3337,13 +3339,13 @@
       navigator.share({ title: text, text: text, url: url }).catch(function () {});
       return;
     }
-    var done = function () { toast('Посилання скопійовано'); };
+    var done = function () { toast('✓ Посилання скопійовано'); };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, function () { toast(url); });
     else toast(url);
   }
   v2.share.addEventListener('click', function () {
     var ev = (state.payload && state.payload.event) || {};
-    shareLink(SHARE_URL, (ev.title || 'TROUT MASTER') + ': результати наживо');
+    shareLink(shareUrl(), (ev.title || 'TROUT MASTER') + ': результати наживо');
   });
   // Клавіатура: Enter/пробіл на рядку = тап
   el.board.addEventListener('keydown', function (e) {

@@ -185,7 +185,7 @@
     'У клітинці — результат і улов учасника в турі': 'Each cell — the participant’s result and catch in the round',
     'Бали → перемоги → риба': 'Points → wins → fish', 'Місце': 'Place', 'Останні 5': 'Last 5', 'Нікого не знайдено': 'No one found',
     'Спробуйте інше прізвище.': 'Try another surname.', 'Перем.': 'Wins', 'гортайте →': 'scroll →', 'Вільне місце': 'Free place',
-    'Посилання скопійовано': 'Link copied', 'Берег': 'Bank', 'Сектори': 'Sectors', 'Жеребкування': 'Draw',
+    'Посилання скопійовано': 'Link copied', '✓ Посилання скопійовано': '✓ Link copied', 'Берег': 'Bank', 'Сектори': 'Sectors', 'Жеребкування': 'Draw',
     'Наш партнер FISH.ME.FISH': 'Our partner FISH.ME.FISH', 'Наш партнер FISH.ME.FISH у Telegram': 'Our partner FISH.ME.FISH on Telegram',
     'В': 'W', 'РН': 'FD', 'БН': 'ND', 'П': 'L', 'Л': 'L', 'В · РН · БН · П': 'W · FD · ND · L',
     'лівий': 'left', 'правий': 'right', 'турів': 'rounds', 'тури': 'rounds', 'туру': 'round', 'риби': 'fish', 'риб': 'fish', 'риба': 'fish',
