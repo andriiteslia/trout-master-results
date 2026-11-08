@@ -1226,6 +1226,10 @@
     // Секторів на водоймі: з аркуша «Сайт» або найбільший номер у жеребкуванні; на кожному березі — половина
     var N = Math.max(+(state.payload && state.payload.sectors) || 0, rows.reduce(function (m, r) { return Math.max(m, r.sector); }, 0));
     var half = Math.ceil(N / 2);
+    // «14 (6, 8)» на аркуші «Сайт»: верхній берег 6, нижній 8 (нумерація та сама — по колу від нижнього лівого)
+    var split = state.payload && state.payload.sectorsSplit;
+    if (split && +split[0] + +split[1] === N) half = +split[1];
+    var cols = Math.max(half, N - half);
     var tour = state.pondTour;
     if (tour !== 'all' && !S.totals[tour]) tour = state.pondTour = 'all';
     var val = function (r) {
@@ -1258,7 +1262,7 @@
       : 'Тур ' + (tour + 1) + ': скільки риби спіймали в секторі (обидва учасники разом).';
     return '<section class="card pc-block"><h2 class="pc-h2">Карта водойми</h2>' +
       '<div class="pond-chips" role="group" aria-label="Тур для карти">' + chips + '</div>' +
-      '<div class="pond" style="--pond-n:' + half + '" role="img" aria-label="Карта водойми: ' + caption + '">' +
+      '<div class="pond" style="--pond-n:' + cols + '" role="img" aria-label="Карта водойми: ' + caption + '">' +
         '<div class="pond-row pond-row--top">' + top + '</div>' +
         '<div class="pond-water"><span>водойма</span></div>' +
         '<div class="pond-row">' + bottom + '</div>' +

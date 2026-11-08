@@ -242,10 +242,8 @@ function setupSync() {
 
   // Скільки секторів на водоймі: якщо порожньо — підставляємо найбільший номер сектора з жеребкування
   var secCell = sh.getRange(CELL_SECTORS);
-  secCell.clearDataValidations();
-  secCell.setDataValidation(SpreadsheetApp.newDataValidation()
-    .requireNumberBetween(2, 200).setAllowInvalid(false)
-    .setHelpText('Скільки секторів на водоймі, напр. 14 — по 7 на кожному березі.').build());
+  secCell.clearDataValidations();   // тепер можна й «14 (6, 8)», тож без перевірки «лише число»
+  secCell.setNumberFormat('@').setNote('Скільки секторів на водоймі.\n14 — порівну, по 7 на кожному березі.\n14 (6, 8) — верхній берег 6, нижній 8.');
   secCell.setFontWeight('bold').setBackground('#e3f0fa').setHorizontalAlignment('left');
   if (!String(secCell.getDisplayValue()).trim()) {
     try {
@@ -515,11 +513,22 @@ function trEn_(text) {
   }
 }
 
-function sectors_(sh) {
+/**
+ * Сектори на водоймі з B13: «14» — порівну на берегах (7 + 7);
+ * «14 (6, 8)» — верхній берег 6, нижній 8 (буває через рельєф берега й підходи до води).
+ */
+function sectorsCfg_(sh) {
   if (!sh) return null;
-  var n = parseInt(String(sh.getRange(CELL_SECTORS).getDisplayValue()).replace(/\s/g, ''), 10);
-  return n >= 2 ? n : null;
+  var t = String(sh.getRange(CELL_SECTORS).getDisplayValue()).trim();
+  var m = t.match(/^(\d+)?\s*\(?\s*(\d+)\s*[,;+\/]\s*(\d+)\s*\)?$/);
+  if (m && (m[1] || /[(,;+\/]/.test(t))) {
+    var top = +m[2], bottom = +m[3];
+    if (top >= 1 && bottom >= 1) return { n: top + bottom, top: top, bottom: bottom };
+  }
+  var n = parseInt(t.replace(/\s/g, ''), 10);
+  return n >= 2 ? { n: n, top: null, bottom: null } : null;
 }
+function sectors_(sh) { var c = sectorsCfg_(sh); return c ? c.n : null; }
 
 function publish_(ss) {
   var sh = ss.getSheetByName(SYNC_SHEET);
@@ -540,9 +549,11 @@ function publish_(ss) {
   var regDeadline = registration && deadline ? deadline.toISOString() : null;
   var seats = seats_(sh);
   var showMoves = !sh || String(sh.getRange(CELL_MOVES).getDisplayValue()).trim() !== MOVES_OFF;
-  var sectors = sectors_(sh);
+  var secCfg = sectorsCfg_(sh);
+  var sectors = secCfg ? secCfg.n : null;
+  var sectorsSplit = secCfg && secCfg.top ? [secCfg.top, secCfg.bottom] : null;   // [верхній, нижній] берег
   var now = new Date().toISOString();
-  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw, showCard, sectors]);
+  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw, showCard, sectors, sectorsSplit]);
   var hash = Utilities.base64EncodeWebSafe(
     Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, body, Utilities.Charset.UTF_8));
 
@@ -558,6 +569,7 @@ function publish_(ss) {
     draw: draw,
     showCard: showCard,
     sectors: sectors,
+    sectorsSplit: sectorsSplit,
     hash: hash,
     changedAt: now,
     generatedAt: now,
