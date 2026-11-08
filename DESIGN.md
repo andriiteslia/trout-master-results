@@ -132,7 +132,7 @@ const srv=http.createServer((q,r)=>{let p=path.join(ROOT,decodeURIComponent(q.ur
 | Цифри | «докручуються» в картці учасника | `countUp(els, ms)` |
 | Графіки | стовпчики ростуть знизу | `growCharts(root)`, `.pc-chart.grow` |
 | Фінал | конфеті (canvas, 150 частинок, 2.6s) один раз на пристрій, коли зіграно всі тури; конфеті-вітання топ-3 у своїй картці | `celebrateFinal()`, `confetti()` |
-| Завантаження | скелетони рядків і KPI, неяскраві | `skeletonRows()`, `.skel` |
+| Завантаження | скелетони рядків і KPI, неяскраві; посилання на картку (`#p9` / `startapp=p9`) без збережених даних одразу відкриває скелетон картки, без проміжного списку | `skeletonRows()`, `.skel`, `cardSkeleton()`, `state.cardPending` |
 | Партнер (мобайл) | кнопка FISH.ME.FISH левітує над нижньою кнопкою (float 2s) | `.partner` |
 
 ## Екрани й компоненти

@@ -941,7 +941,17 @@
   }
   var grownStats = false;
 
+  function cardSkeleton() {
+    var bar = function (w, h, mt) { return '<i class="skel__bar" style="width:' + w + ';' + (h ? 'height:' + h + 'px;' : '') + (mt ? 'margin-top:' + mt + 'px' : '') + '"></i>'; };
+    return '<div class="pc-skel" role="status" aria-live="polite"><span class="visually-hidden">Завантаження картки…</span>' +
+      '<header class="pc-hero"><div class="pc-hero__bar">' +
+      '<button type="button" class="hero-back pc-back" data-act="back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg><span class="l-m">Назад</span><span class="l-d">До підсумку</span></button></div>' +
+      '<div class="pc-hero__main" aria-hidden="true"><div class="pc-ava pc-ava--ini skel__dot"></div>' +
+      '<div class="pc-head__txt">' + bar('min(320px, 60vw)', 30) + bar('min(200px, 40vw)', 14, 14) + '</div></div></header>' +
+      '<div class="pc-sheet" aria-hidden="true"><section class="card pc-block">' + skeletonRows() + '</section></div></div>';
+  }
   function renderCard() {
+    if (state.cardPending) { pc.body.innerHTML = cardSkeleton(); return; }
     var name = selectedPlayerName();
     if (!name || !hasCardData(name)) { pc.body.innerHTML = '<div class="card empty">Виберіть учасника в таблиці.</div>'; return; }
     var st = playerStats(name);
@@ -1681,6 +1691,7 @@
   function setView(v) {
     if (state.view === v) return;
     state.view = v;
+    if (v !== 'card' && state.cardPending) { state.cardPending = false; state.wantPlayer = null; }   // пішли з картки, поки вона вантажилась
     if (v !== 'card') countedCard = '';   // наступне відкриття картки — знову з «докручуванням»
     if (v !== 'stats') grownStats = false;
     if (formLift.spacer) setFormSpacer(0);
@@ -3398,13 +3409,18 @@
   }
   function openWantedPlayer() {
     selectWanted();
-    if (!state.wantPlayer || !drawData()) return;
-    var dp = drawData().players.find(function (x) { return +x.n === state.wantPlayer; });
+    var pending = state.cardPending;   // картку вже відкрито зі скелетоном — чекала на дані
+    state.cardPending = false;
+    var dp = state.wantPlayer && drawData() ? drawData().players.find(function (x) { return +x.n === state.wantPlayer; }) : null;
     state.wantPlayer = null;
-    if (!dp || !hasCardData(dp.name)) return;
+    if (!dp || !hasCardData(dp.name)) {   // такого учасника немає — повертаємось до списку
+      if (pending && state.view === 'card') goList();
+      return;
+    }
     var s = standingsRows(), r = s && s.rows.find(function (x) { return normName(x.name) === normName(dp.name); });
     selectOnly(r ? r.key : dp.name);
     renderBoard();
+    if (pending && state.view === 'card') { renderCard(); return; }
     if (state.view !== 'list') { state.regPushed = false; setView('list'); }   // напр. уже на картці іншого учасника: новий запис історії — список, поверх нього картка
     goCard();
   }
@@ -3414,9 +3430,15 @@
   if (cached && cached.sheets) {
     applyPayload(cached, { cached: true });
     renderAll();
+    if (state.wantPlayer) openWantedPlayer();   // посилання на картку: відкриваємо одразу зі збережених даних
   } else {
     renderHeader();
     renderBoard();
+  }
+  // Даних ще немає (перший візит) — одразу показуємо картку зі скелетоном, без проміжного списку
+  if (state.wantPlayer) {
+    state.cardPending = true;
+    goCard();
   }
   renderStatus(false);
   load();
