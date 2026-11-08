@@ -65,7 +65,7 @@ input, textarea, select { caret-color: var(--nav); }
 
 /* Telegram: «потягни вниз — оновити» */
 .ptr {
-  position: fixed; left: 50%; top: calc(var(--tg-top, 0px) + 8px); z-index: 61;
+  position: fixed; left: 50%; top: calc(var(--tg-top, 0px) + 8px); z-index: 64;   /* поверх навбару (.topbar — 62) */
   width: 40px; height: 40px; border-radius: 50%;
   display: grid; place-items: center;
   background: #fff; color: var(--nav);
