@@ -3215,11 +3215,28 @@
     });
   });
   var toastT = null;
-  function toast(msg) {
-    v2.toast.textContent = msg;
-    v2.toast.hidden = false;
+  function toast(msg, top) {
+    var t = v2.toast;
+    t.textContent = msg;
     clearTimeout(toastT);
-    toastT = setTimeout(function () { v2.toast.hidden = true; }, 2600);
+    t.classList.remove('is-in', 'is-out');
+    t.classList.toggle('toast--top', !!top);
+    if (top) {
+      // Виїжджає з-під навбару вниз, потім тікає назад угору
+      var nb = document.querySelector('.topbar');
+      var y = nb ? Math.max(0, nb.getBoundingClientRect().bottom) : 0;
+      t.style.top = (y + 12) + 'px';
+      t.hidden = false; void t.offsetWidth;
+      t.classList.add('is-in');
+      toastT = setTimeout(function () {
+        t.classList.remove('is-in'); t.classList.add('is-out');
+        toastT = setTimeout(function () { t.hidden = true; t.classList.remove('is-out', 'toast--top'); t.style.top = ''; }, 320);
+      }, 2400);
+      return;
+    }
+    t.style.top = '';
+    t.hidden = false;
+    toastT = setTimeout(function () { t.hidden = true; }, 2600);
   }
   // Кнопка «Оновити» в шапці (комп'ютер; на телефоні — потягнути вниз)
   (function () {
@@ -3236,7 +3253,7 @@
       setTimeout(function () {
         b.classList.remove('is-spin');
         var r = state.lastLoad || {};
-        toast(!r.ok ? 'Не вдалося оновити. Перевірте інтернет' : r.changed ? '✓ Оновлено: є нові дані' : '✓ Оновлено — змін немає');
+        toast(!r.ok ? 'Не вдалося оновити. Перевірте інтернет' : r.changed ? '✓ Оновлено: є нові дані' : '✓ Оновлено — змін немає', true);
       }, Math.max(0, 700 - (Date.now() - t0)));   // щоб оберт було видно
     });
   })();

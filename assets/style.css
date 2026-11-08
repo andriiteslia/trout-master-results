@@ -2131,3 +2131,17 @@ input, textarea, select { caret-color: var(--nav); }
 .tab-in { animation: tab-in 0.22s cubic-bezier(0.4, 0, 0.2, 1) both; }
 @keyframes tab-in { from { opacity: 0.2; transform: translateY(4px); } }
 @media (prefers-reduced-motion: reduce) { .tab-in { animation: none; } }
+
+/* Тост «Оновлено» — зверху: виїжджає з-під навбару і тікає назад */
+.topbar { position: relative; z-index: 62; }
+.toast.toast--top {
+  bottom: auto; z-index: 61;
+  transform: translate(-50%, calc(-100% - 16px)); opacity: 0;
+  transition: transform 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.15), opacity 0.18s ease;
+}
+.toast.toast--top.is-in { transform: translate(-50%, 0); opacity: 1; }
+.toast.toast--top.is-out {
+  transform: translate(-50%, calc(-100% - 16px)); opacity: 0;
+  transition: transform 0.32s cubic-bezier(0.55, 0, 0.7, 0.2), opacity 0.1s linear 0.24s;
+}
+@media (prefers-reduced-motion: reduce) { .toast.toast--top, .toast.toast--top.is-out { transition: opacity 0.2s; transform: translate(-50%, 0); } }
