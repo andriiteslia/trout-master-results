@@ -1,0 +1,100 @@
+/* ===== src/css/65-v2-card.css ===== */
+/* =====================================================================
+   НОВИЙ ДИЗАЙН: картка учасника (і загальні блоки картки/статистики)
+   ===================================================================== */
+#pcBack { display: none !important; }
+.pcard { max-width: none; }
+@media (max-width: 979px) {
+  .view-card .main { background: var(--nav); padding: 0; border-radius: 0; }
+}
+.pc-hero { color: #fff; padding: 4px 16px 32px; }
+.pc-hero__bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 16px; }
+.pc-back {
+  display: inline-flex !important; align-items: center; gap: 4px; height: 36px; padding: 0 12px 0 8px; margin: 0 !important;
+  border: 0; border-radius: 999px; background: #1a1a1a; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.pc-back svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pc-hero__acts { display: flex; gap: 8px; }
+.pc-share, .pc-ibtn {
+  display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 0;
+  background: #1a1a1a; color: #fff; cursor: pointer;
+}
+.pc-share svg, .pc-ibtn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.pc-hero__main { display: flex; align-items: center; gap: 14px; }
+.pc-hero .pc-place { width: 60px; height: 60px; font-size: 26px; flex: none; }
+.pc-hero .pc-place:not([class*="medal"]) { background: #1a1a1a; color: #fff; }
+.pc-hero .title { color: #fff; font-size: 26px; line-height: 1.1; letter-spacing: -0.02em; margin: 0; }
+.pc-sub { margin: 4px 0 0; font-size: 13px; color: #b8bfca; }
+.pc-sheet { background: var(--page); border-radius: 24px 24px 0 0; padding: 16px; min-height: 60vh; }
+@media (max-width: 979px) { .pc-sheet { min-height: calc(100vh - 160px); } }
+
+@media (min-width: 980px) {
+  .pc-hero { color: var(--text); padding: 28px 0 24px; }
+  .pc-hero__bar { margin-bottom: 20px; }
+  .pc-back { background: transparent !important; color: #344054 !important; padding: 0 !important; height: auto !important; font-weight: 600; }
+  .pc-ibtn { width: 44px; height: 44px; border-radius: 12px; background: #fff; border: 1px solid #d0d5dd; color: #344054; }
+  .pc-share { width: auto; height: 44px; padding: 0 18px; gap: 8px; display: inline-flex; align-items: center; border-radius: 999px; background: #0a0a0a; font-size: 14px; font-weight: 600; }
+  .pc-share svg { width: 16px; height: 16px; }
+  .pc-hero__main { gap: 20px; }
+  .pc-hero .pc-place { width: 76px; height: 76px; font-size: 32px; }
+  .pc-hero .pc-place:not([class*="medal"]) { background: #eef1f5; color: #344054; }
+  .pc-hero .pc-place.medal-1 { box-shadow: inset 0 0 0 3px #e8b931; }
+  .pc-hero .title { color: var(--text); font-size: 40px; line-height: 1.05; letter-spacing: -0.025em; }
+  .pc-chips { margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { padding: 4px 10px; border-radius: 999px; background: #fff; border: 1px solid var(--card-line); font-size: 13px; font-weight: 600; }
+  .chip-place { background: #eef1f5; border-color: transparent; }
+  .chip-place.medal-1 { background: #fbf1d0; color: #6b4d00; }
+  .chip-place.medal-2 { background: #eef1f5; color: #344054; }
+  .chip-place.medal-3 { background: #f6e3d2; color: #7a3f12; }
+  .chip-plain { background: transparent; border-color: transparent; color: var(--muted); font-weight: 500; }
+  .pc-sheet { background: transparent; border-radius: 0; padding: 0 0 48px; min-height: 0; }
+}
+
+/* Плитки картки */
+.pc-k { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.pk { min-width: 0; background: #fff; border: 1px solid var(--card-line); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 6px; }
+.pk__l { font-size: 12.5px; color: var(--muted); font-weight: 550; }
+.pk__v { font-size: 26px; font-weight: 750; font-stretch: 100%; line-height: 1; letter-spacing: -0.01em; white-space: nowrap; }
+.pk__v--sm { font-size: 22px; }
+.pk__v small { font-size: 14px; color: var(--muted); font-weight: 600; letter-spacing: 0; }
+.pk__s { font-size: 12px; color: var(--muted); }
+.pk__wdl { display: flex; gap: 2px; height: 5px; border-radius: 3px; overflow: hidden; }
+.pk__wdl i { display: block; height: 100%; }
+.pk__badge { align-self: flex-start; padding: 1px 7px; border-radius: 999px; background: #f2f4f7; color: #475467; font-size: 12px; font-weight: 650; }
+.pk__badge.is-up { background: #ecfdf3; color: #067647; }
+.pk__badge.is-down { background: #fef3f2; color: #b42318; }
+@media (min-width: 980px) {
+  .pc-k { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .pk { padding: 18px 20px; gap: 10px; }
+  .pk__l { font-size: 13px; }
+  .pk__v, .pk__v--sm { font-size: 32px; letter-spacing: -0.02em; }
+  .pk__v small { font-size: 16px; }
+  .pk__s { font-size: 12.5px; }
+  .pk__wdl { height: 6px; }
+  .pk__badge { font-size: 12.5px; padding: 2px 8px; }
+}
+
+/* Блоки картки й статистики */
+.pcard .pc-cols { gap: 12px; }
+.pcard .pc-block { background: #fff; border: 1px solid var(--card-line); border-radius: 18px; box-shadow: none; padding: 16px; margin-bottom: 12px; }
+.pcard .pc-h2 { font-size: 16px; font-weight: 700; font-stretch: 100%; margin: 0 0 12px; }
+@media (min-width: 980px) {
+  .pcard .pc-cols { column-gap: 24px; }
+  .pcard .pc-block { border-radius: var(--r-card); padding: 20px 24px; margin-bottom: 16px; }
+  .pcard .pc-h2 { font-size: 18px; margin-bottom: 14px; }
+}
+/* Тури: зебра і рядки на всю ширину блоку */
+.pcard .pc-tour { margin: 0 -16px; padding-left: 16px; padding-right: 16px; border-top-color: var(--row-line); }
+.pcard .pc-tours .pc-tour:nth-child(even):not(.is-next) { background: var(--zebra2); }
+.pcard .pc-tour--head { margin: 0 -16px; padding: 8px 16px; background: #f9fafb; border-top: 1px solid #eef0f3; border-bottom: 1px solid #eef0f3; font-size: 11px; letter-spacing: 0.06em; color: var(--muted); }
+@media (min-width: 980px) {
+  .pcard .pc-tour, .pcard .pc-tour--head { margin: 0 -24px; padding-left: 24px; padding-right: 24px; }
+  .pcard .pc-tour { min-height: 52px; }
+}
+.pcard .pc-tour__n .hm-sec__b { width: 24px; height: 24px; min-width: 24px; border-radius: 50%; background: #eef1f5; color: #344054; }
+/* Статистика в картці */
+.pcard .pc-stat { border-radius: 12px; background: #f6f7f9; padding: 14px; }
+.pcard .pc-stat dd b { font-size: 18px; font-stretch: 100%; }
+.pcard .pc-stats { gap: 10px; }
+.pcard .pc-chips li { border-radius: 999px; border-color: var(--card-line); }
+

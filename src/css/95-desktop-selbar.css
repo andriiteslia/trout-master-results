@@ -1,0 +1,49 @@
+/* ===== src/css/95-desktop-selbar.css ===== */
+/* ===== Комп: верх таблиці прилипає при прокручуванні, вибраний учасник — плаваюча таблетка внизу ===== */
+@media (min-width: 980px) {
+  .bcard { overflow: clip; }   /* clip, а не hidden — інакше sticky всередині не працює */
+  .bcard > .btools { position: sticky; top: 0; z-index: 8; background: #fff; }
+  .bcard .rk-head { position: sticky; top: var(--bt-h, 81px); z-index: 7; }
+  /* «По турах»: справжня шапка сидить у горизонтальному скролі, тому прилипає її копія */
+  .bcard .tgrid-hd {
+    display: block; position: sticky; top: var(--bt-h, 81px); z-index: 7;
+    overflow: hidden; background: #fff; pointer-events: none;
+  }
+  .bcard .tgrid .tr-head { display: none; }
+  .bcard .rk-row, .bcard .tr-row, .bcard .plist > li { scroll-margin-top: calc(var(--bt-h, 81px) + 56px); scroll-margin-bottom: 110px; }
+
+  .selbar:not([hidden]) {
+    position: fixed; left: 50%; bottom: 24px; z-index: 55;
+    flex-wrap: nowrap; gap: 14px; width: max-content; max-width: calc(100vw - 48px);
+    padding: 10px 10px 10px 12px; border-radius: 999px;
+    box-shadow: 0 18px 44px rgba(10, 10, 10, 0.28), 0 2px 6px rgba(10, 10, 10, 0.16);
+    transform: translate(-50%, calc(100% + 32px)); opacity: 0;
+    transition: transform 0.26s cubic-bezier(0.5, 0, 0.75, 0), opacity 0.2s ease;
+  }
+  .selbar.is-on:not([hidden]) {
+    transform: translate(-50%, 0); opacity: 1;
+    transition: transform 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.12), opacity 0.16s ease;
+  }
+  .selbar .selbar__place { width: 36px; height: 36px; font-size: 14px; flex: none; }
+  .selbar .selbar__txt { margin-right: 14px; min-width: 0; }
+  .selbar .selbar__txt b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .selbar #selCard { border-radius: 999px; }
+  .selbar .selbar__x { flex: none; }
+  .sel-on .main { padding-bottom: 104px; }
+}
+@media (min-width: 980px) and (prefers-reduced-motion: reduce) {
+  .selbar:not([hidden]), .selbar.is-on:not([hidden]) { transition: opacity 0.2s; transform: translate(-50%, 0); }
+}
+
+/* Скелетон картки: відкрили посилання …/#p9, а дані ще вантажаться */
+.pc-skel .pc-ava.skel__dot { width: 56px; height: 56px; }
+.pc-skel .pc-head__txt { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+.pc-skel .pc-sheet .pc-block { padding: 4px 0; }
+@media (min-width: 980px) { .pc-skel .pc-ava.skel__dot { width: 76px; height: 76px; } }
+@media (max-width: 979px) {
+  .pc-skel .pc-hero .skel__bar, .pc-skel .pc-hero .skel__dot { background: rgba(255, 255, 255, 0.12); }
+  .pc-skel .pc-hero .skel__bar::after, .pc-skel .pc-hero .skel__dot::after { opacity: 0.12; }
+}
+
+/* Посилання на картку: поки app.js не відкрив картку, порожній «аркуш» картки замість головної */
+.deep-wait #pcard[hidden] { display: block !important; min-height: 60vh; }

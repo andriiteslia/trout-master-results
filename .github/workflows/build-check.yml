@@ -1,0 +1,15 @@
+# Перевірка: assets/app.js і assets/style.css зібрані з src/ (node tools/build.js).
+# Якщо хтось поправив src/, але не зібрав, — тут буде червоний хрестик.
+name: build-check
+on:
+  push:
+    branches: [main]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/build.js --check

@@ -1,0 +1,93 @@
+/* ===== src/css/75-card-sticky-tg.css ===== */
+/* Картка учасника: шапка таблиці «Тури» прилипає до верху, поки гортається таблиця */
+.pcard .pc-tour--head {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 6;
+}
+.tg .pcard .pc-tour--head { top: calc(var(--tg-top) + 12px); }
+.tg.tg-stuck .pcard .pc-tour--head.over-cap { z-index: 52; }
+
+/* Telegram на телефоні: чорна смуга під панеллю Telegram — найвищий шар, тому прилиплі шапки таблиць,
+   коли таблиця закінчується і вони їдуть угору, ховаються під неї, а не налазять на кнопки Telegram.
+   «Кришка» аркуша сама малює чорні кути (без прозорих місць), тож смуга потрібна лише до --tg-top. */
+@media (max-width: 979px) {
+  .tg.tg-stuck body::before { height: var(--tg-top); z-index: 60; }
+  /* чорна підкладка під кути «кришки» (сама кришка — body::after із заокругленням-супереліпсом) */
+  .tg.tg-stuck::before {
+    content: "";
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: var(--tg-top);
+    height: 24px;
+    background: var(--nav);
+    z-index: 51;
+    pointer-events: none;
+  }
+}
+
+/* Реєстрація на телефоні: картки на 12 px від країв і від верху аркуша, як таблиця на головній */
+@media (max-width: 979px) {
+  .view-reg .main { padding-left: 12px; padding-right: 12px; padding-top: 12px; }
+}
+@media (max-width: 979px) { .tg.tg-stuck #regForm.over-cap { position: relative; z-index: 52; } }
+
+/* Картка учасника: коли шапка «Тури» прилипла, у неї заокруглені верхні кути й рамка — як у самої картки */
+.pcard .pc-tour--head { transition: border-radius 0.12s ease; }
+.pcard .pc-tour--head.is-stuck {
+  border-radius: 17px 17px 0 0;
+  border-top-color: transparent;
+  box-shadow: 0 0 0 1px var(--card-line);
+}
+@media (min-width: 980px) { .pcard .pc-tour--head.is-stuck { border-radius: calc(var(--r-card) - 1px) calc(var(--r-card) - 1px) 0 0; } }
+@media (prefers-reduced-motion: reduce) { .pcard .pc-tour--head { transition: none; } }
+/* Telegram на телефоні: прилипла шапка таблиці — з лінією зверху, як верхня рамка таблиці */
+@media (max-width: 979px) {
+  .tg .rk-head, .tg .plist-head, .tg .tgrid-hd { border-top: 1px solid transparent; }
+  .tg .rk-head.is-stuck, .tg .plist-head.is-stuck, .tg .tgrid-hd.is-stuck { border-top-color: var(--card-line); }
+}
+/* Прилиплі шапки таблиць — звичайне заокруглення: супереліпс на них Chrome малює з артефактом (світлий клин) */
+@supports (corner-shape: squircle) {
+  .rk-head, .plist-head, .tgrid-hd, .pc-tour--head { corner-shape: round; }
+}
+
+/* Телефон: компактніші рядки таблиць (було: учасники 52, залік 62, по турах 48, тури в картці 44) */
+@media (max-width: 979px) {
+  .plist .pt { min-height: 44px; }
+  .rk-row:not(.rk-head) { min-height: 52px; }
+  .tgrid .tr-row:not(.tr-head) { min-height: 40px; }
+  .pcard .pc-tour:not(.pc-tour--head) { min-height: 40px; }
+}
+
+/* Курсор у полях введення — чорний, як навбар (на світлому полі білий курсор не видно) */
+input, textarea, select { caret-color: var(--nav); }
+
+/* Telegram: «потягни вниз — оновити» */
+.ptr {
+  position: fixed; left: 50%; top: calc(var(--tg-top, 0px) + 8px); z-index: 61;
+  width: 40px; height: 40px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: #fff; color: var(--nav);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  opacity: 0; transform: translate(-50%, -44px);
+  pointer-events: none;
+}
+.ptr__arrow { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; transition: opacity 0.15s ease; }
+.ptr.is-armed .ptr__arrow { color: #3f7d0f; }
+.ptr__spin { display: none; width: 20px; height: 20px; border-radius: 50%; border: 2.4px solid #e4e7ec; border-top-color: var(--nav); }
+.ptr.is-busy .ptr__arrow { display: none; }
+.ptr.is-busy .ptr__spin { display: block; animation: ptr-spin 0.7s linear infinite; }
+@keyframes ptr-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: no-preference) {
+  .ptr:not(.is-dragging) { transition: opacity 0.2s ease, transform 0.25s ease; }
+}
+@supports (corner-shape: squircle) { .ptr, .ptr__spin, .swipe-back { corner-shape: round; } }
+
+/* Форма реєстрації: «неактивна» кнопка, поки поля не заповнені правильно (але клікабельна — покаже помилки) */
+#regSubmit.is-idle { background: #e4e7ec; color: #98a2b3; box-shadow: none; }
+@media (hover: hover) { #regSubmit.is-idle:hover { background: #dde1e7; } }
+#regSubmit.is-idle:not(:disabled):active { background: #d0d5dd; box-shadow: none; }
+#regSubmit { transition: background-color 0.18s ease, color 0.18s ease; }
+@media (prefers-reduced-motion: reduce) { #regSubmit { transition: none; } }
+

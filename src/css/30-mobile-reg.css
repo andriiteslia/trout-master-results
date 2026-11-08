@@ -1,0 +1,108 @@
+/* ===== src/css/30-mobile-reg.css ===== */
+/* ---------- Mobile ---------- */
+@media (max-width: 640px) {
+  .topbar__inner { min-height: 56px; }
+  .logo { height: 30px; }
+  .main { padding-top: 20px; }
+  .title { font-size: 24px; }
+  .subtitle { font-size: 15px; }
+  .tabs { display: flex; }
+  .tab { flex: 1; }
+  .board { margin-left: -4px; margin-right: -4px; }
+  th, td { padding: 0 6px; }
+  thead th { white-space: normal; }
+  th.c-place, td.c-place { padding-left: 12px; padding-right: 4px; }
+  tbody td { height: 39px; }   /* + лінія 1px = 40px, як на вебі */
+  td.c-name { min-width: 0; }
+  .nm { min-height: 39px; padding: 0 6px; white-space: nowrap; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  td.flash, .status.is-pulse .status__dot, .loader-fish, .reg-live__dot::after { animation: none; }
+}
+
+/* Великі заголовки — Fixel Display */
+.title, .done__title { font-stretch: 100%; }
+
+/* ---------- Реєстрація ---------- */
+:root {
+  --accent: #1764a8;        /* білий текст 6.1:1 */
+  --accent-hover: #12528b;
+  --accent-pressed: #0d3f6b;   /* натиснута кнопка */
+  --accent-ring: rgba(23, 100, 168, 0.22);
+  --field-line: #8a94a6;    /* рамка поля 3:1 на білому */
+  --btn-radius: 999px;     /* кнопки повністю заокруглені (пігулка) */
+}
+.btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 20px;
+  border: 1px solid transparent;
+  border-radius: var(--btn-radius);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+.btn:not(:disabled):active { transform: scale(0.97); }
+.btn:focus-visible { outline-offset: 3px; border-radius: var(--btn-radius); outline-color: var(--accent); }
+.btn-primary { background: var(--accent); color: #fff; }
+@media (hover: hover) { .btn-primary:hover { background: var(--accent-hover); } }
+.btn-primary:not(:disabled):active { background: var(--accent-pressed); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.18); }
+.btn-secondary { background: var(--surface); color: var(--text); border-color: var(--border-strong); }
+@media (hover: hover) { .btn-secondary:hover { background: var(--head); } }
+.btn-secondary:not(:disabled):active { background: var(--border); }
+/* Неактивна кнопка: блідіша, не реагує на натискання */
+.btn:disabled { cursor: not-allowed; opacity: 0.7; transform: none; box-shadow: none; }
+.btn.is-loading:disabled { cursor: progress; opacity: 0.85; }   /* текст «Надсилаємо…» має читатися */
+.btn .spinner { display: none; }
+.btn.is-loading .spinner {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Плаваюча кнопка внизу екрана */
+.regbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  padding: 24px max(16px, env(safe-area-inset-right)) calc(24px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px))) max(16px, env(safe-area-inset-left));
+  background: linear-gradient(to top, var(--page) 55%, rgba(244, 246, 248, 0));
+  pointer-events: none;
+}
+.regbar .btn {
+  display: flex;
+  max-width: 420px;
+  margin: 0 auto;
+  pointer-events: auto;
+  box-shadow: 0 8px 20px rgba(23, 100, 168, 0.28), 0 2px 4px rgba(16, 24, 40, 0.08);
+}
+.has-regbar .main { padding-bottom: calc(112px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px))); }
+
+/* Дві кнопки внизу: «Картка гравця» і «Зареєструватися» */
+.regbar { display: flex; justify-content: center; gap: 10px; }
+.regbar .btn { flex: 1 1 0; min-width: 0; margin: 0; }
+.regbar.two .btn { max-width: 280px; }
+@media (max-width: 640px) {
+  /* Дві кнопки поруч на телефоні: без іконки й трохи менший шрифт, щоб текст не обрізався */
+  .regbar.two .btn { font-size: 15px; padding: 0 12px; gap: 0; }
+  .regbar.two .btn__icon { display: none; }
+}
+.regbar .btn-secondary { box-shadow: 0 8px 20px rgba(16, 24, 40, 0.12), 0 2px 4px rgba(16, 24, 40, 0.06); }
+.regbar .btn__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+

@@ -1,3 +1,5 @@
+/* Зібрано з src/css командою node tools/build.js — правте модулі там, а не цей файл. */
+/* ===== src/css/00-base.css ===== */
 /* ---------- Font: Fixel від MacPaw (SIL OFL, див. fonts/OFL-Fixel.txt) ----------
    Один змінний файл на дві осі: насиченість 400–800 і ширина.
    Ширина 87.5% — Fixel Text (текст і таблиці), 100% — Fixel Display (великі заголовки). */
@@ -138,6 +140,7 @@ button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--brand-ink); outline-offset: 2px; border-radius: 4px; }
 [hidden] { display: none !important; }
 
+/* ===== src/css/10-topbar-tabs.css ===== */
 /* ---------- Top bar ---------- */
 .topbar { background: var(--nav); }
 .topbar__inner {
@@ -238,6 +241,7 @@ button { font: inherit; color: inherit; }
   box-shadow: 0 1px 3px rgba(16, 24, 40, 0.1), 0 1px 2px rgba(16, 24, 40, 0.06);
 }
 
+/* ===== src/css/20-table.css ===== */
 /* ---------- Table card ---------- */
 .board {
   background: var(--surface);
@@ -487,6 +491,7 @@ tbody tr.reserve-sep th {
 .info svg { flex: none; width: 16px; height: 16px; margin-top: 1px; fill: none; stroke: #2e6f9e; stroke-width: 1.6; stroke-linecap: round; }
 .info svg .dot { fill: #2e6f9e; stroke: none; }
 
+/* ===== src/css/30-mobile-reg.css ===== */
 /* ---------- Mobile ---------- */
 @media (max-width: 640px) {
   .topbar__inner { min-height: 56px; }
@@ -594,6 +599,7 @@ tbody tr.reserve-sep th {
 .regbar .btn-secondary { box-shadow: 0 8px 20px rgba(16, 24, 40, 0.12), 0 2px 4px rgba(16, 24, 40, 0.06); }
 .regbar .btn__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* ===== src/css/40-card.css ===== */
 /* ---------- Картка гравця ---------- */
 .view-card .intro, .view-card .notice, .view-card .tabs, .view-card .info:not(.pc-note), .view-card .board,
 .view-card .reg-live,
@@ -720,6 +726,7 @@ tbody tr.reserve-sep th {
 .pc-chart .val-last { font-size: 10.5px; fill: var(--accent); }
 .pc-chart .bar-t { fill: #6fa8dc; }
 
+/* ===== src/css/50-stats-regform.css ===== */
 /* ---------- Статистика турніру ---------- */
 .tstats .pc-tile__val small { display: block; font-size: 12px; font-weight: 550; color: var(--text-4); white-space: normal; }
 
@@ -963,6 +970,7 @@ tbody tr.reserve-sep th {
   }
 }
 
+/* ===== src/css/60-v2-layout.css ===== */
 /* =====================================================================
    НОВИЙ ДИЗАЙН (beta): шапка, плитки, залік, по турах, список учасників
    Телефон — до 979px (темна шапка, світлий «аркуш»), комп'ютер — від 980px.
@@ -1403,6 +1411,7 @@ html, body { background: var(--nav); }
   box-shadow: 0 8px 24px rgba(16, 24, 40, 0.24);
 }
 
+/* ===== src/css/65-v2-card.css ===== */
 /* =====================================================================
    НОВИЙ ДИЗАЙН: картка учасника (і загальні блоки картки/статистики)
    ===================================================================== */
@@ -1502,6 +1511,7 @@ html, body { background: var(--nav); }
 .pcard .pc-stats { gap: 10px; }
 .pcard .pc-chips li { border-radius: 999px; border-color: var(--card-line); }
 
+/* ===== src/css/70-v2-polish.css ===== */
 /* =====================================================================
    НОВИЙ ДИЗАЙН: статистика
    ===================================================================== */
@@ -1656,6 +1666,7 @@ html, body { background: var(--nav); }
   .tg-back .pc-hero:not(.ts-hero) .pc-hero__bar { display: none; }
 }
 
+/* ===== src/css/75-card-sticky-tg.css ===== */
 /* Картка учасника: шапка таблиці «Тури» прилипає до верху, поки гортається таблиця */
 .pcard .pc-tour--head {
   position: sticky;
@@ -1748,6 +1759,7 @@ input, textarea, select { caret-color: var(--nav); }
 #regSubmit { transition: background-color 0.18s ease, color 0.18s ease; }
 @media (prefers-reduced-motion: reduce) { #regSubmit { transition: none; } }
 
+/* ===== src/css/80-photos-story.css ===== */
 /* Фото учасника в кружечку замість ініціалів */
 .av--ph { position: relative; overflow: hidden; color: transparent; }
 .av--ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
@@ -1890,6 +1902,7 @@ input, textarea, select { caret-color: var(--nav); }
 @media (hover: hover) { .story__share:hover { background: linear-gradient(135deg, #52a014 0%, #30720b 100%); color: #fff; border-color: transparent; } }
 .story__share:active { background: linear-gradient(135deg, #3f7d0f 0%, #245708 100%); color: #fff; }
 
+/* ===== src/css/85-banners-partner-lang.css ===== */
 /* Плашка «Результати — у Telegram» над таблицею (лише в ТГ, поки бот не може писати) */
 .nbar { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; margin: 0 0 12px; padding: 14px 12px 14px 14px; border-radius: 20px; background: linear-gradient(135deg, #f1f8e6 0%, #e6f2d6 100%); border: 1px solid #d5e8bd; }
 .nbar[hidden] { display: none; }
@@ -2008,6 +2021,7 @@ input, textarea, select { caret-color: var(--nav); }
 .pond-row { display: flex; }
 .pond-row .pond-sec { flex: 1 1 0; min-width: 0; }
 
+/* ===== src/css/90-motion.css ===== */
 /* Скелетони завантаження: м'який перелив, мінімум деталей */
 .skel { padding: 8px 16px 16px; }
 .skel__row { display: flex; align-items: center; gap: 12px; height: 52px; border-bottom: 1px solid #f2f4f7; }
@@ -2145,6 +2159,7 @@ input, textarea, select { caret-color: var(--nav); }
 }
 @media (prefers-reduced-motion: reduce) { .toast.toast--top, .toast.toast--top.is-out { transition: opacity 0.2s; transform: translate(-50%, 0); } }
 
+/* ===== src/css/95-desktop-selbar.css ===== */
 /* ===== Комп: верх таблиці прилипає при прокручуванні, вибраний учасник — плаваюча таблетка внизу ===== */
 @media (min-width: 980px) {
   .bcard { overflow: clip; }   /* clip, а не hidden — інакше sticky всередині не працює */

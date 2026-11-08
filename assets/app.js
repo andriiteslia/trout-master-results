@@ -1,5 +1,7 @@
+/* Зібрано з src/js командою node tools/build.js — правте модулі там, а не цей файл. */
 (function () {
   'use strict';
+  // ===== src/js/00-core.js — Ядро: мова (i18n), автооновлення апки, Telegram Mini App, налаштування, DOM, стан =====
   // Мова інтерфейсу (assets/i18n.js): апка рендерить українською, англійську підставляє i18n.js
   var I18N = window.TM_I18N || { en: false, tr: function (s) { return s; }, translit: function (s) { return s; }, plural: function () { return null; } };
 
@@ -133,6 +135,7 @@
     timer: null
   };
 
+  // ===== src/js/10-model.js — Допоміжні функції, аркуш → модель таблиці, різниця між оновленнями =====
   // ---------- Helpers ----------
   var NUM_RE = /^[-+−]?\d+(?:[.,]\d+)?\s*%?$/;
   function isNum(v) { return NUM_RE.test(String(v).trim()); }
@@ -273,6 +276,7 @@
     return { moves: moves, changed: changed, any: any };
   }
 
+  // ===== src/js/20-render.js — Рендер таблиці (старий шар, частину перекриває v2) =====
   // ---------- Rendering ----------
   function currentModel() {
     if (!state.models.length) return null;
@@ -461,6 +465,7 @@
     celebrateFinal();
   }
 
+  // ===== src/js/30-data.js — Завантаження даних з Apps Script, кеш, опитування =====
   // ---------- Data ----------
   function applyPayload(p, opts) {
     opts = opts || {};
@@ -539,6 +544,7 @@
     state.timer = setTimeout(load, REFRESH_MS);
   }
 
+  // ===== src/js/40-events.js — Події: вкладки, пошук, вибір рядків, мережа =====
   // ---------- Events ----------
   el.tabs.addEventListener('click', function (e) {
     var b = e.target.closest('[data-tab]');
@@ -635,6 +641,7 @@
   });
   window.addEventListener('online', function () { load(); });
 
+  // ===== src/js/45-reg-setup.js — Реєстрація: елементи форми =====
   // ---------- Реєстрація ----------
   // Кнопка «Зареєструватися» видно, коли на аркуші «Сайт» реєстрація «Відкрита».
   // Форма відкривається на тій самій сторінці (без перезавантаження), кнопка «Назад»
@@ -648,6 +655,7 @@
     bar: $('regbar'), open: $('regOpen'), live: $('regLive'),
     timer: $('regTimer'), timerTxt: $('regTimerTxt'), timerSr: $('regTimerSr')
   };
+  // ===== src/js/50-card.js — Картка учасника: розрахунок статистики й рендер =====
   // ---------- Картка учасника ----------
   // Дані: жеребкування (payload.draw: сектор і суперник по турах) + аркуш «Тури»
   // (результат В/П/РН/БН і риба по турах, підсумок). Статистика рахується тут, з кожної публікації.
@@ -823,6 +831,7 @@
     var t = toursData();
     return t ? Object.keys(t.byName).length : 0;
   }
+  // ===== src/js/55-effects.js — Ефекти: «одометр» чисел, конфеті, ріст графіків =====
   // ---------- «Одометр»: числа рахують від 0 до значення ----------
   var countedCard = '';
   var REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1128,6 +1137,7 @@
     }
   }
 
+  // ===== src/js/60-stats.js — Статистика турніру, карта водойми, карта секторів =====
   // ---------- Таблиця по ходу турніру й статистика турніру ----------
   var POINTS = { w: 3, d: 2, z: 1, l: 0 };   // В — 3, РН — 2, БН — 1, П — 0
 
@@ -1535,6 +1545,7 @@
     return !d || Date.now() < d.getTime();
   }
 
+  // ===== src/js/70-reg-timer.js — Відлік до кінця реєстрації, екрани (setView), прилипла шапка «Тури» =====
   // ----- Зворотний відлік до завершення реєстрації -----
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
   function fmtLeft(ms) {
@@ -1756,6 +1767,7 @@
   });
   document.addEventListener('tm-tg-ready', function () { if (state.view !== 'list') tgBack(true); });
 
+  // ===== src/js/80-telegram.js — Telegram: потягнути — оновити, свайп «Назад», свій рядок, візити, дозвіл писати, партнери =====
   // ----- Telegram: потягнути сторінку вниз — оновити дані (pull to refresh) -----
   // Робить той самий запит, що й автооновлення кожні 15 с: бере вже опубліковані дані, таблицю не чіпає.
   // «Оновлено – 14:32» показує час публікації, тож від ручного оновлення він не змінюється, якщо нових даних немає.
@@ -2113,6 +2125,7 @@
     }
   }
 
+  // ===== src/js/85-reg-form.js — Форма реєстрації: маска телефону, перевірка, надсилання, «Поділитися» =====
   // ----- Маска номера: «+380 » уже стоїть, вводяться лише 9 цифр -----
   function localDigits(raw) {
     var v = String(raw || '');
@@ -2357,6 +2370,7 @@
   }
   var wantReg = /^#register$/.test(location.hash) || /tgWebAppStartParam=register(&|$)/.test(location.hash + location.search);
 
+  // ===== src/js/90-v2-photos-story.js — Новий дизайн: фото учасників, картинка-сторіс =====
   // ================= Новий дизайн: шапка, плитки, таблиці =================
   var v2 = {
     hero: $('hero'), pill: $('heroPill'), kpis: $('kpis'), share: $('shareBtn'),
@@ -2771,6 +2785,7 @@
     return null;
   }
 
+  // ===== src/js/91-v2-hero-side.js — Новий дизайн: шапка турніру, бічна панель, таблетка вибраного, тости =====
   // ----- Шапка турніру -----
   var ICON_CAL = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
   var ICON_PIN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
@@ -3027,6 +3042,7 @@
     if (window.ResizeObserver) new ResizeObserver(put).observe(bt); else window.addEventListener('resize', put);
   })();
 
+  // ===== src/js/92-v2-table.js — Новий дизайн: перемикачі, таблиці (залік, по турах, список) =====
   // ----- Вкладки «Залік / По турах» -----
   // ---------- Перемикачі: біла «таблетка» плавно переїжджає до вибраного пункту ----------
   function segSlide(box, sel) {
@@ -3265,6 +3281,7 @@
 
   function renderInfo() { if (el.info) el.info.hidden = true; }
 
+  // ===== src/js/93-v2-events.js — Новий дизайн: події (навігація, «Оновити», клавіатура) =====
   // ----- Події нового дизайну -----
   var searchClear = document.getElementById('searchClear');
   function syncClear() { if (searchClear) searchClear.hidden = !v2.search.value; }
@@ -3386,6 +3403,7 @@
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.r[data-key]')) { e.preventDefault(); e.target.click(); }
   });
   // ================= /Новий дизайн =================
+  // ===== src/js/95-deeplinks.js — Посилання на картку (#p9 / startapp=p9) і на виділений рядок (?sel=9) =====
 
   // Посилання на картку: t.me/…?startapp=p9 (Telegram) або …/#p9 (браузер) — номер із жеребкування
   var wantM = /(?:tgWebAppStartParam=|#)p(\d+)(?:&|$)/.exec(location.hash + '&' + location.search.replace(/^\?/, ''));
@@ -3446,6 +3464,7 @@
     goCard();
   }
 
+  // ===== src/js/99-start.js — Старт: дані з кешу, перший рендер, завантаження =====
   // ---------- Start ----------
   var cached = store.get(LS.data, null);
   if (cached && cached.sheets) {

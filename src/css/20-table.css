@@ -1,0 +1,250 @@
+/* ===== src/css/20-table.css ===== */
+/* ---------- Table card ---------- */
+.board {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-xs);
+  overflow: clip;
+}
+.bh {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 5;
+  overflow: hidden;
+}
+/* Рамка навколо шапки — блакитна, як лінії всередині; навколо тіла — сіра */
+.board:has(.bh) { border: 0; }
+.bh {
+  border: 1px solid var(--head-line);
+  border-bottom: 0;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.bs {
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+.bs {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+table { width: 100%; border-collapse: separate; border-spacing: 0; }
+th, td {
+  height: 40px;
+  padding: 0 12px;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+thead th {
+  background: var(--head);
+  color: var(--text-3);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+thead tr.h1 th { background: var(--head-top); color: var(--head-top-ink); font-size: 13px; font-weight: 650; }
+thead tr.h2 th { background: var(--head-top); color: var(--head-top-ink); border-bottom-color: var(--head-line); }
+thead tr.h1 th { border-bottom-color: var(--head-line); }
+td.gstart { border-left: 1px solid var(--border-strong); }
+th.gstart { border-left: 1px solid var(--head-line); }
+th.c-name, td.c-name { text-align: left; }
+th.c-place, td.c-place { width: 1%; padding-left: 16px; padding-right: 8px; }
+
+tbody td { height: 39px; font-size: 14px; color: var(--text-2); background: var(--surface); }
+tbody tr:nth-child(even) td { background: var(--zebra); }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr { cursor: pointer; }
+@media (hover: hover) {
+  tbody tr:hover td { background: var(--hover); }
+}
+tbody tr.is-sel td { background: var(--selected); color: var(--text); }
+tbody tr.is-sel td:first-child { box-shadow: inset 3px 0 0 var(--brand-ink); }
+
+td.c-place { font-weight: 650; color: var(--text-2); }
+td.c-name { padding: 0; min-width: 180px; }
+.nm {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 39px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--text);
+  cursor: pointer;
+}
+tr.is-sel .nm { font-weight: 650; }
+
+/* Призери на вкладці «Результат»: смужка зліва й кружечок з номером медального кольору */
+:root { --gold: #d4a017; --silver: #98a2b3; --bronze: #c27c3e; }
+tr.medal-1 { --medal: var(--gold); --medal-bg: #fbefc6; --medal-ink: #6b4d00; }
+tr.medal-2 { --medal: var(--silver); --medal-bg: #e9edf2; --medal-ink: #344054; }
+tr.medal-3 { --medal: var(--bronze); --medal-bg: #f6e3d2; --medal-ink: #7a3f12; }
+tbody tr.medal:not(.is-sel) td:first-child { box-shadow: inset 4px 0 0 var(--medal); }
+.board.is-wide tbody tr.medal:not(.is-sel) td.c-place { box-shadow: inset 4px 0 0 var(--medal), 1px 0 0 var(--border); }
+tr.medal .pn {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 12px;
+  background: var(--medal-bg);
+  color: var(--medal-ink);
+  font-weight: 750;
+}
+
+/* Зміна місця після оновлення */
+.mv { margin-left: 6px; font-size: 11.5px; font-weight: 600; }
+.mv.up { color: var(--win); }
+.mv.down { color: var(--loss); }
+
+/* Результат туру: В / П / РН / БН */
+.code {
+  display: inline-block;
+  min-width: 30px;
+  padding: 2px 7px;
+  text-align: center;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+}
+.code-w { background: var(--win-bg); color: var(--win); }
+.code-l { background: var(--loss-bg); color: var(--loss); }
+.code-d { background: var(--draw-bg); color: var(--draw); }
+.code-z { background: var(--zero-bg); color: var(--zero); }
+
+/* Короткий підсвіт змінених клітинок */
+td.flash { animation: flash 3s ease-out 1; }
+@keyframes flash {
+  0%, 30% { box-shadow: inset 0 0 0 999px var(--flash); }
+  100% { box-shadow: inset 0 0 0 999px transparent; }
+}
+
+/* Широка таблиця: номер (і на вебі ім'я) закріплені зліва */
+.board.is-wide td.c-place, .board.is-wide th.c-place { position: sticky; left: 0; z-index: 1; }
+.board.is-wide td.c-place { box-shadow: 1px 0 0 var(--border); }
+.board.is-wide th.c-place { box-shadow: 1px 0 0 var(--head-line); }
+.board.is-wide tbody tr.is-sel td.c-place { box-shadow: inset 3px 0 0 var(--brand-ink), 1px 0 0 var(--border); }
+@media (min-width: 641px) {
+  .board.is-wide td.c-place, .board.is-wide th.c-place { box-shadow: none; }
+  .board.is-wide tbody tr.is-sel td.c-place { box-shadow: inset 3px 0 0 var(--brand-ink); }
+  .board.is-wide td.c-name, .board.is-wide th.c-name { position: sticky; left: var(--pw, 48px); z-index: 1; }
+  .board.is-wide td.c-name { box-shadow: 1px 0 0 var(--border); }
+  .board.is-wide th.c-name { box-shadow: 1px 0 0 var(--head-line); }
+}
+
+.empty { padding: 40px 20px; text-align: center; color: var(--text-3); white-space: normal; }
+.empty strong { display: block; color: var(--text); font-size: 15px; margin-bottom: 4px; }
+/* Екран завантаження: рибка над текстом, легко «пливе» */
+.empty.is-loading { padding: 48px 20px 44px; }
+.loader-fish {
+  display: block;
+  width: 120px;
+  height: auto;
+  margin: 0 auto 14px;
+  animation: fish-swim 2.4s ease-in-out infinite;
+}
+@keyframes fish-swim {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(3px, -4px) rotate(-2deg); }
+  50% { transform: translate(6px, 0) rotate(0deg); }
+  75% { transform: translate(3px, 3px) rotate(2deg); }
+}
+
+.main { padding-bottom: max(32px, env(safe-area-inset-bottom)); }
+
+/* Плашка «Триває реєстрація» з пульсуючою крапкою */
+.reg-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  margin: 0 0 16px;
+  padding: 0 14px 0 12px;
+  border: 1px solid #abefc6;
+  border-radius: 999px;
+  background: var(--win-bg);
+  color: var(--win);
+  font-size: 14px;
+  font-weight: 650;
+}
+.reg-live__dot {
+  position: relative;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #17b26a;
+}
+.reg-live__dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #17b26a;
+  animation: reg-pulse 1.6s ease-out infinite;
+}
+@keyframes reg-pulse {
+  0% { transform: scale(1); opacity: 0.55; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+.view-reg .reg-live { display: none !important; }
+.reg-live { flex-wrap: wrap; row-gap: 2px; }
+.reg-live__timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* Кожна цифра таймера в комірці однакової ширини — плашка не «смикається» щосекунди */
+.reg-live__timer .dg { display: inline-block; width: 0.62em; text-align: center; }
+.reg-live__timer::before { content: ""; width: 1px; height: 14px; background: #abefc6; }
+
+/* Роздільник «Резерв» у списку учасників */
+tbody tr.reserve-sep { cursor: default; }
+tbody tr.reserve-sep th {
+  height: 30px;
+  padding: 0 16px;
+  border-top: 1px solid #fedf89;
+  border-bottom: 1px solid #fedf89;
+  background: #fffaeb;
+  color: #93370d;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+}
+@media (hover: hover) { tbody tr.reserve-sep:hover th { background: #fffaeb; } }
+
+/* Інфо-бейдж над таблицею */
+.info {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 1px solid #c5def0;
+  border-radius: 4px;
+  background: #eef6fc;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.info svg { flex: none; width: 16px; height: 16px; margin-top: 1px; fill: none; stroke: #2e6f9e; stroke-width: 1.6; stroke-linecap: round; }
+.info svg .dot { fill: #2e6f9e; stroke: none; }
+
