@@ -2942,7 +2942,7 @@
     var name = state.view === 'list' && !isListMode() ? selectedPlayerName() : null;
     var cardOn = !(state.payload && state.payload.showCard === false);
     var on = !!name && cardOn && hasCardData(name);
-    v2.selbar.hidden = !on;
+    selShow(on);
     if (!on) return;
     var s = standingsRows(), r = s && s.rows.find(function (x) { return normName(x.name) === normName(name); });
     v2.selPlace.hidden = !(r && r.place);
@@ -2952,6 +2952,31 @@
     }
     v2.selName.textContent = name + (r && r.pts != null ? ' · ' + r.pts + ' ' + plural(r.pts, 'бал', 'бали', 'балів') : '');
   }
+
+  // Вибраний учасник на компі — плаваюча «таблетка» внизу екрана: виїжджає знизу і ховається назад
+  function selShow(on) {
+    var sb = v2.selbar, root = document.documentElement;
+    clearTimeout(sb._t);
+    if (on) {
+      if (sb.hidden) { sb.hidden = false; void sb.offsetWidth; }
+      sb.classList.add('is-on'); root.classList.add('sel-on');
+      return;
+    }
+    root.classList.remove('sel-on');
+    if (sb.hidden) return;
+    sb.classList.remove('is-on');
+    sb._t = setTimeout(function () { if (!sb.classList.contains('is-on')) sb.hidden = true; }, 280);
+  }
+  // Таблетка живе поза карткою таблиці (інакше її перекриває знімок переходу між вкладками)
+  if (v2.selbar && v2.selbar.parentNode !== document.body) document.body.appendChild(v2.selbar);
+  // Висота верхньої панелі таблиці — під нею прилипає рядок назв колонок
+  (function () {
+    var bt = document.querySelector('.bcard .btools');
+    if (!bt) return;
+    var put = function () { document.documentElement.style.setProperty('--bt-h', bt.offsetHeight + 'px'); };
+    put();
+    if (window.ResizeObserver) new ResizeObserver(put).observe(bt); else window.addEventListener('resize', put);
+  })();
 
   // ----- Вкладки «Залік / По турах» -----
   // ---------- Перемикачі: біла «таблетка» плавно переїжджає до вибраного пункту ----------
