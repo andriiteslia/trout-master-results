@@ -2126,3 +2126,8 @@ input, textarea, select { caret-color: var(--nav); }
 ::view-transition-new(side-panel) { animation: vt-fade-in 0.2s ease 0.06s both; }
 @keyframes vt-fade-out { to { opacity: 0; } }
 @keyframes vt-fade-in { from { opacity: 0; } }
+
+/* Мобайл: перемикання Підсумок ↔ По турах — нова таблиця м'яко проявляється, кнопки лишаються на місці */
+.tab-in { animation: tab-in 0.22s cubic-bezier(0.4, 0, 0.2, 1) both; }
+@keyframes tab-in { from { opacity: 0.2; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .tab-in { animation: none; } }

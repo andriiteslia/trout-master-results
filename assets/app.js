@@ -558,7 +558,15 @@
   });
   function smoothSwap(fn) {
     var root = document.documentElement;
-    if (!document.startViewTransition || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) { fn(); return; }
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) { fn(); return; }
+    // Мобайл: бічної панелі нема, тож без View Transition (його знімок перекриває фіксовані кнопки й «кришку» TG) —
+    // просто м'яко проявляємо нову таблицю.
+    if (!document.startViewTransition || (window.matchMedia && window.matchMedia('(max-width: 979px)').matches)) {
+      fn();
+      var bd = el.board; bd.classList.remove('tab-in'); void bd.offsetWidth; bd.classList.add('tab-in');
+      clearTimeout(bd._tin); bd._tin = setTimeout(function () { bd.classList.remove('tab-in'); }, 260);
+      return;
+    }
     root.classList.add('vt-tabs');
     var t;
     try { t = document.startViewTransition(fn); } catch (e) { root.classList.remove('vt-tabs'); fn(); return; }
