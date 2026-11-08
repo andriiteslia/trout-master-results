@@ -1735,6 +1735,7 @@
   }
 
   window.addEventListener('hashchange', function () {
+    if (takeHashPlayer()) return;
     if (location.hash !== '#register' || state.view === 'reg') return;
     state.regDone = null;
     state.regPushed = false;
@@ -2060,6 +2061,7 @@
   });
 
   window.addEventListener('popstate', function (e) {
+    if (takeHashPlayer()) return;   // вставили …/#p9 у ту саму вкладку — відкрити картку, а не список
     var v = e.state && /^(reg|card|stats)$/.test(e.state.tmView) ? e.state.tmView : 'list';
     if (v === 'card' && !selectedPlayerName()) v = 'list';
     if (v === 'list') state.regPushed = false;
@@ -3356,6 +3358,19 @@
   // Посилання на картку: t.me/…?startapp=p9 (Telegram) або …/#p9 (браузер) — номер із жеребкування
   var wantM = /(?:tgWebAppStartParam=|#)p(\d+)(?:&|$)/.exec(location.hash + '&' + location.search.replace(/^\?/, ''));
   state.wantPlayer = wantM ? +wantM[1] : null;
+  // …/#p9 у браузері: прибрати з адреси одразу, щоб після оновлення сторінки картка не відкривалась знову
+  if (!IN_TG && /^#p\d+$/.test(location.hash)) {
+    try { history.replaceState({ tmView: 'list' }, '', location.pathname + location.search); } catch (e) { /* */ }
+  }
+  // Посилання …/#p9 вставили в уже відкриту вкладку (без перезавантаження)
+  function takeHashPlayer() {
+    var m = /^#p(\d+)$/.exec(location.hash);
+    if (!m || IN_TG) return false;
+    try { history.replaceState({ tmView: 'list' }, '', location.pathname + location.search); } catch (e) { /* */ }
+    state.wantPlayer = +m[1];
+    if (state.payload) openWantedPlayer();
+    return true;
+  }
   // ?sel=9 — з персонального повідомлення бота: виділити рядок учасника №9 (картку відкриває він сам)
   var selM = /(?:^|[?&])sel=(\d+)(?:&|$)/.exec(location.search);
   state.wantSelect = selM ? +selM[1] : null;
@@ -3390,6 +3405,7 @@
     var s = standingsRows(), r = s && s.rows.find(function (x) { return normName(x.name) === normName(dp.name); });
     selectOnly(r ? r.key : dp.name);
     renderBoard();
+    if (state.view !== 'list') { state.regPushed = false; setView('list'); }   // напр. уже на картці іншого учасника: новий запис історії — список, поверх нього картка
     goCard();
   }
 
