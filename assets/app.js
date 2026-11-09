@@ -2923,6 +2923,18 @@
     if (story.url) { try { URL.revokeObjectURL(story.url); } catch (e) { /* */ } story.url = null; }
     document.documentElement.classList.remove('story-open');
   }
+  // Підпис до картинки: чат, Viber, Facebook підхоплять його разом із фото (Instagram-сторіс — ні, там лише стікер «Посилання»)
+  function storyCaption(st) {
+    var url = shareUrl(st.num), en = I18N.en, name = en ? I18N.translit(st.name) : st.name;
+    var place = st.played > 0 && st.place ? st.place : null;
+    if (en) {
+      return name + (place ? ' — ' + I18N.ord(place) + ' place, ' + st.points + ' pts' : '') + ' at TROUT MASTER 🎣\nStats: ' + url;
+    }
+    var t = place % 100, d = place % 10;
+    var ua = place + '-' + (t >= 11 && t <= 19 ? 'те' : ({ 1: 'ше', 2: 'ге', 3: 'тє', 7: 'ме', 8: 'ме' }[d] || 'те'));   // 1-ше, 2-ге, 5-те, 7-ме
+    return name + (place ? ' — ' + ua + ' місце, ' + st.points + ' ' + plural(Number(st.points) || 0, 'бал', 'бали', 'балів') : '') +
+      ' на TROUT MASTER 🎣\nСтатистика: ' + url;
+  }
   function openStory(name) {
     if (!name) return;
     var st = playerStats(name);
@@ -2952,7 +2964,7 @@
       });
       story.el.querySelector('.story__share').addEventListener('click', function () {
         if (!story.file) return;
-        navigator.share({ files: [story.file], title: 'TROUT MASTER' }).catch(function () { /* скасував */ });
+        navigator.share({ files: [story.file], title: 'TROUT MASTER', text: storyCaption(story.st) }).catch(function () { /* скасував */ });
       });
     }
     story.st = st;
