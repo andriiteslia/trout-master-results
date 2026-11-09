@@ -139,7 +139,7 @@
     'Місце після кожного туру: бали (В 3, РН 2, БН 1, П 0), при рівних — більше перемог, далі більше риби': 'Place after each round: points (W 3, FD 2, ND 1, L 0); ties go to more wins, then more fish',
     'Відсоток перемог': 'Win rate', 'Сумарно проти суперників': 'Total vs opponents', 'Середній улов за тур': 'Average catch per round',
     'Частка від усієї риби': 'Share of all fish', 'Найкращий тур': 'Best round', 'Найдовша серія перемог': 'Longest winning streak',
-    'Найуловистіший сектор': 'Most productive sector', 'Найслабший сектор': 'Weakest sector',
+    'Найуловистіший сектор': 'Most productive sector', 'Найуловистіший сектор:': 'Most productive sector:', 'Найслабший сектор': 'Weakest sector',
     'Найуловистіший сектор турніру': 'Most productive sector of the tournament', 'Найслабший сектор турніру': 'Weakest sector of the tournament',
     'Статистика': 'Statistics', 'По турніру': 'Tournament', 'Обіграно': 'Beat', 'Програно': 'Lost to',
     'Особисті зустрічі': 'Head-to-head', 'Учасник у цьому секторі ще не рибалив': 'The participant hasn’t fished this sector yet',

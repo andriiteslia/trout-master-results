@@ -170,9 +170,12 @@
     if (tf != null) {
       var tot = tourTotals(t), mx = Math.max.apply(null, tot.map(function (x) { return x || 0; }).concat([1]));
       var spark = t && playedTours(t) > 1 ? '<span class="spark d-only" aria-hidden="true">' + tot.map(function (x) {
-        return '<i style="height:' + (x ? Math.max(2, Math.round(x / mx * 36)) : 0) + 'px"></i>';
+        return '<i style="height:' + (x ? Math.max(2, Math.round(x / mx * 30)) : 0) + 'px"></i>';
       }).join('') + '</span>' : '';
-      h += kpi(spark ? 'k-spark' : '', 'Усього риби', 'Риби', fmtInt(tf), spark);
+      // Третій рядок — найуловистіший сектор турніру (середній улов на учасника за тур), якщо секторів більше одного
+      var secs = t && playedTours(t) ? tournamentSectors() : null;
+      var secLine = secs && secs.length > 1 ? '<span class="kpi__s d-only">Найуловистіший сектор: <b>' + secs[0].sector + '</b></span>' : '';
+      h += kpi(spark ? 'k-spark' : '', 'Усього риби', 'Риби', fmtInt(tf), spark + secLine);
     }
     if (t && t.avgPerTour != null) h += kpi('d-only', 'Середній улов', 'Середній', fmt1(t.avgPerTour), '<span class="kpi__s">риби на учасника за тур</span>');
     var m0 = resultsModel() || state.models[0];
