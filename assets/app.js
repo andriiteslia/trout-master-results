@@ -2294,6 +2294,23 @@
     });
   })();
 
+  // Футер: рік, кліки по партнерах; в апці посилання t.me відкриваються всередині Telegram, решта — у браузері
+  (function () {
+    var f = document.getElementById('siteFoot');
+    if (!f) return;
+    var y = document.getElementById('footYear');
+    if (y) y.textContent = String(Math.max(2026, new Date().getFullYear()));
+    f.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('a[href]');
+      if (!a) return;
+      if (a.hasAttribute('data-partner')) trackPartner(a.getAttribute('data-partner'));
+      var tg = tgApp();
+      if (!IN_TG || !tg) return;
+      if (/^https:\/\/t\.me\//.test(a.href) && typeof tg.openTelegramLink === 'function') { e.preventDefault(); tg.openTelegramLink(a.href); }
+      else if (/^https?:/.test(a.href) && typeof tg.openLink === 'function') { e.preventDefault(); tg.openLink(a.href); }
+    });
+  })();
+
   // Плашка над таблицею «Результати — у Telegram»: для всіх у ТГ, хто ще не дозволив боту писати.
   // Показуємо лише після відповіді «Хто я?» (щоб не блимала тим, кому вже можна писати).
   // Зареєстрованим учасникам — свій текст («Ви в списку учасників…»): їм бот надсилає жеребкування,

@@ -2358,3 +2358,39 @@ input, textarea, select { caret-color: var(--nav); }
 .empty-state span { max-width: 340px; font-size: 14px; line-height: 1.45; color: var(--muted); }
 .empty-state__btn.btn { margin-top: 16px; width: auto; min-width: 200px; flex: none; padding-left: 28px; padding-right: 28px; }
 @media (min-width: 980px) { .empty-sheet { margin-top: 32px; } .empty-state { padding: 56px 24px 44px; } .empty-state__fish { width: 200px; } }
+/* ===== src/css/99-footer.css ===== */
+/* Футер: інформаційний блок унизу сторінки (сайт і апка) — чорний, як шапка */
+.foot { background: var(--nav); color: #98a2b3; font-size: 14px; padding: 32px 0 24px; }
+.foot__inner { display: grid; grid-template-columns: 1fr; gap: 28px; }
+.foot__logo { display: block; width: 132px; height: auto; }
+.foot__brand p { margin: 12px 0 0; max-width: 260px; line-height: 1.45; }
+.foot__col { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.foot__col h3 { margin: 0 0 2px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #667085; }
+.foot__col a {
+  display: inline-flex; align-items: center; gap: 10px; min-height: 28px; color: #e4e7ec; text-decoration: none;
+  font-weight: 550; -webkit-tap-highlight-color: transparent; transition: color 0.15s ease;
+}
+.foot__col a svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; color: #9bd83a; }
+.foot__col a svg path[fill="currentColor"] { stroke: none; }
+.foot__plogo { width: 24px; height: 24px; border-radius: 6px; flex: none; }
+@media (hover: hover) { .foot__col a:hover { color: #fff; } }
+.foot__col a:focus-visible { outline: 2px solid #9bd83a; outline-offset: 3px; border-radius: 6px; }
+.foot__note { margin: 0; line-height: 1.45; }
+.foot__bottom {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px;
+  margin-top: 28px; padding-top: 18px; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 12.5px; color: #667085;
+}
+/* Телефон: нижня кнопка висить над футером — даємо місце під нею (замість відступу в .main) */
+.has-regbar .main { padding-bottom: 24px; }
+.has-regbar .foot { padding-bottom: calc(112px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px))); }
+.tg .foot { padding-bottom: calc(24px + var(--tg-safe-area-inset-bottom, 0px)); }
+.tg.has-regbar .foot { padding-bottom: calc(112px + var(--tg-safe-area-inset-bottom, 0px)); }
+/* Повноекранний перегляд картинки — футер не потрібен */
+.story-open .foot { display: none; }
+@media (min-width: 640px) {
+  .foot__inner { grid-template-columns: 1.4fr 1fr 1fr 1.3fr; gap: 32px; }
+}
+@media (min-width: 980px) {
+  .foot, .has-regbar .foot, .tg .foot, .tg.has-regbar .foot { margin-top: 32px; padding: 44px 0 28px; }   /* нижньої кнопки на комп'ютері немає */
+  .sel-on .foot, .sel-on.has-regbar .foot { padding-bottom: 104px; }   /* місце під плаваючою таблеткою */
+}

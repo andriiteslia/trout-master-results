@@ -27,8 +27,8 @@
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
   <link rel="preload" href="assets/fonts/fixel-cyrillic-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fish.webp?v=2" as="image" type="image/webp">
-  <link rel="stylesheet" href="assets/style.css?v=20261109x">
-  <script src="config.js?v=20261109x"></script>
+  <link rel="stylesheet" href="assets/style.css?v=20261109y">
+  <script src="config.js?v=20261109y"></script>
   <script>
     // Запитуємо результати одразу, паралельно з завантаженням решти сторінки
     (function () {
@@ -44,8 +44,8 @@
     // Посилання на картку (…/#p9, startapp=p9): з першого кадру ховаємо головну, щоб не блимав список до картки
     if (/(?:tgWebAppStartParam=|#)p\d+(?:&|$)/.test(location.hash + '&' + location.search.slice(1))) document.documentElement.className += ' view-card deep-wait';
   </script>
-  <script src="assets/i18n.js?v=20261109x"></script>
-  <script src="assets/app.js?v=20261109x" defer></script>
+  <script src="assets/i18n.js?v=20261109y"></script>
+  <script src="assets/app.js?v=20261109y" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -246,6 +246,35 @@
       <div id="tsBody"></div>
     </section>
   </main>
+
+  <footer class="foot" id="siteFoot">
+    <div class="wrap foot__inner">
+      <div class="foot__brand">
+        <img class="foot__logo" src="assets/logo.svg?v=3" width="1020" height="306" alt="Trout Master" loading="lazy">
+        <p>Результати й статистика турнірів з ловлі форелі</p>
+      </div>
+      <nav class="foot__col" aria-label="Спільнота">
+        <h3>Спільнота</h3>
+        <a href="https://t.me/troutmasterua" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.2 4.4 2.9 11.5c-1.2.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.8.8.4 0 .6-.2.9-.4l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.6c.3-1.3-.5-1.9-1.5-1.5Zm-3.4 3.4-8.4 7.6-.3 3.4-1.6-5 9.9-6.3c.5-.3.8 0 .4.3Z" fill="currentColor"/></svg><span>Telegram-чат</span></a>
+        <a href="https://t.me/troutmasterua_bot" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16.5h5"/></svg><span>Бот @troutmasterua_bot</span></a>
+        <a href="https://instagram.com/troutmasterua" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg><span>Instagram</span></a>
+      </nav>
+      <nav class="foot__col" aria-label="Партнери">
+        <h3>Партнери</h3>
+        <a data-partner="FISH.ME.FISH" href="https://t.me/fishmefish_japan" target="_blank" rel="noopener"><img class="foot__plogo" src="assets/partners/fishmefish.svg?v=1" alt="" width="288" height="288" loading="lazy"><span>FISH.ME.FISH</span></a>
+      </nav>
+      <div class="foot__col">
+        <h3>Співпраця</h3>
+        <p class="foot__note">Пропозиції співпраці й партнерства — пишіть:</p>
+        <a href="https://t.me/andriiteslia" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.2 4.4 2.9 11.5c-1.2.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.8.8.4 0 .6-.2.9-.4l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.6c.3-1.3-.5-1.9-1.5-1.5Zm-3.4 3.4-8.4 7.6-.3 3.4-1.6-5 9.9-6.3c.5-.3.8 0 .4.3Z" fill="currentColor"/></svg><span>@andriiteslia</span></a>
+        <a href="tel:+380955085475"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 3.5h2.6l1.4 4.2-2 1.4a12 12 0 0 0 6.3 6.3l1.4-2 4.2 1.4v2.6a2 2 0 0 1-2.1 2A16.5 16.5 0 0 1 4.6 5.6a2 2 0 0 1 2-2.1Z"/></svg><span>+380 95 508 54 75</span></a>
+      </div>
+    </div>
+    <div class="wrap"><div class="foot__bottom">
+      <span>© <span id="footYear">2026</span> TROUT MASTER. Усі права захищено.</span>
+      <span>troutmaster.app</span>
+    </div></div>
+  </footer>
 
   <div class="regbar" id="regbar" hidden>
     <a class="partner" id="partner" data-partner="FISH.ME.FISH" href="https://t.me/fishmefish_japan" target="_blank" rel="noopener" aria-label="Наш партнер FISH.ME.FISH у Telegram">
