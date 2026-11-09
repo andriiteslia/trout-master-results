@@ -261,6 +261,8 @@ const TESTS = {
     assert(await visible(t.p, '#regOpen'), 'немає кнопки «Зареєструватися»');
     await t.p.click('#regOpen'); await t.p.waitForTimeout(900);
     assert(await visible(t.p, '#regForm'), 'форма реєстрації не відкрилась');
+    assert((await t.p.textContent('#title')) === 'Реєстрація', 'заголовок на екрані реєстрації — не «Реєстрація»');
+    assert(!(await visible(t.p, '#payBox')), 'кнопка оплати видна на екрані реєстрації');
     assert(/Вартість участі — 1\u00a0700\u00a0грн/.test(await t.p.locator('#regFee').innerText()), 'немає вартості участі під кнопкою');
     await shot(t.p, 'mob-reg');
     await t.ctx.close(); return t.errors;

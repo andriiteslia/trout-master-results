@@ -1935,6 +1935,7 @@
       var h = document.getElementById('pcTitle');
       if (h) { try { h.focus({ preventScroll: true }); } catch (e) { h.focus(); } }
     } else if (v === 'reg') {
+      renderHeader();
       try { reg.title.focus({ preventScroll: true }); } catch (e) { reg.title.focus(); }
       if (!DEMO && state.payload) load();   // перевірити, чи реєстрація досі відкрита
     } else {
@@ -3090,7 +3091,7 @@
     var p = state.payload;
     var ev = (p && p.event) || {};
     var title = ev.title || (p && p.title) || 'Результати';
-    el.title.textContent = title;
+    el.title.textContent = state.view === 'reg' ? 'Реєстрація' : title;   // на екрані реєстрації — чіткий заголовок, турнір видно в підзаголовку
     var parts = String(ev.subtitle || '').split(/\s*[•·]\s*/).filter(Boolean);
     el.subtitle.innerHTML = parts.map(function (s, i) {
       return '<span>' + (i === 0 ? ICON_CAL : i === 1 ? ICON_PIN : '') + esc(s) + '</span>';

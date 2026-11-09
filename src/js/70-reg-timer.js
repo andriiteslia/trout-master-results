@@ -174,6 +174,7 @@
       var h = document.getElementById('pcTitle');
       if (h) { try { h.focus({ preventScroll: true }); } catch (e) { h.focus(); } }
     } else if (v === 'reg') {
+      renderHeader();
       try { reg.title.focus({ preventScroll: true }); } catch (e) { reg.title.focus(); }
       if (!DEMO && state.payload) load();   // перевірити, чи реєстрація досі відкрита
     } else {
