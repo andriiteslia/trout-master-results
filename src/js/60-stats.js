@@ -134,6 +134,7 @@
   var ts = { root: $('tstats'), body: $('tsBody'), back: $('tsBack'), open: $('statsOpen') };
 
   function renderStats() {
+    if (state.rulesOpen) { renderRules(); return; }   // «Положення» живе в контейнері статистики (той самий вигляд і «Назад»)
     var S = tournamentStats();
     var ev = (state.payload && state.payload.event) || {};
     document.title = 'Статистика | Trout Master';

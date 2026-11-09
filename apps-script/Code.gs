@@ -112,6 +112,9 @@ var RANGE_KEYS = ['Учасники', 'Результат', 'Тури'];
  * Публікується разом із результатами для «Картки гравця». Імена беруться з «Учасників» за номером.
  */
 var DRAW_SHEET = 'Жеребкування';
+// Положення турніру для апки: A — назва розділу, B — пункти (кожен з нового рядка, Ctrl+Enter).
+// Розділ «Розклад» показується як таблиця «час — подія». Зміни публікуються одразу, якщо режим «Список учасників».
+var RULES_SHEET = 'Положення';
 
 var CACHE_KEY = 'snapshot';
 var CACHE_TTL = 21600;   // 6 годин, максимум для CacheService
@@ -194,6 +197,7 @@ function setupSync() {
   sh.getRange('A15').setFontColor('#475467');
   sh.setColumnWidth(1, 180);
   sh.setColumnWidth(2, 420);
+  setupRules_(ss);
 
   // Випадаючий список замість галочки
   var cell = sh.getRange(CELL_PUBLISH);
@@ -338,6 +342,15 @@ function handleSiteSync(e) {
   if (sh.getName() === DRAW_SHEET ||
       (sh.getName() === REG_SHEET && e.range.getColumn() <= REG_COL_NAME && e.range.getLastColumn() >= REG_COL_NUM)) {
     try { syncDrawNames_(e.source); } catch (err) { console.error(err); }
+    return;
+  }
+  // Змінили «Положення» — публікуємо одразу, але лише в режимі «Список учасників» (у результатах його не показуємо,
+  // а публікація посеред туру віддала б глядачам неповні результати)
+  if (sh.getName() === RULES_SHEET) {
+    var st = e.source.getSheetByName(SYNC_SHEET);
+    if (st && currentMode_(st) === MODE_REG) {
+      try { writeStatus_(st, publish_(e.source)); } catch (err) { console.error(err); }
+    }
     return;
   }
   // Поставили/зняли галочку «Оплата» — оновлюємо значок 💵 у списку учасників на сайті
@@ -579,7 +592,9 @@ function publish_(ss) {
   var sectors = secCfg ? secCfg.n : null;
   var sectorsSplit = secCfg && secCfg.top ? [secCfg.top, secCfg.bottom] : null;   // [верхній, нижній] берег
   var now = new Date().toISOString();
-  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw, showCard, sectors, sectorsSplit, fee, paid]);
+  var rules = null;
+  try { rules = readRules_(ss); } catch (err) { console.error(err); }
+  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw, showCard, sectors, sectorsSplit, fee, paid, rules]);
   var hash = Utilities.base64EncodeWebSafe(
     Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, body, Utilities.Charset.UTF_8));
 
@@ -593,6 +608,7 @@ function publish_(ss) {
     seats: seats,
     fee: fee,
     paid: paid,
+    rules: rules,
     showMoves: showMoves,
     draw: draw,
     showCard: showCard,
@@ -606,6 +622,38 @@ function publish_(ss) {
   saveSnapshot_(JSON.stringify(payload));
   try { resSavePlaces_(payload); } catch (err) { console.error(err); }
   return payload;
+}
+
+/**
+ * Положення з аркуша «Положення»: [{ t: 'Мета турніру', items: ['…', '…'] }, …] або null.
+ * A — назва розділу (номер на початку прибирається, апка нумерує сама), B — пункти, кожен з нового рядка.
+ * Маркери «•», «-», «*» на початку й «;» у кінці пункту прибираються.
+ */
+function readRules_(ss) {
+  var sh = ss.getSheetByName(RULES_SHEET);
+  if (!sh || sh.getLastRow() < 2) return null;
+  var vals = sh.getRange(2, 1, sh.getLastRow() - 1, 2).getDisplayValues(), out = [];
+  vals.forEach(function (r) {
+    var t = String(r[0] || '').trim().replace(/^\d+[.)]\s*/, '');
+    var items = String(r[1] || '').split(/\r?\n/).map(function (x) {
+      return x.trim().replace(/^[•\-–*·]\s*/, '').replace(/[;]\s*$/, '').trim();
+    }).filter(Boolean);
+    if (t || items.length) out.push({ t: t, items: items });
+  });
+  return out.length ? out : null;
+}
+
+/** Створює аркуш «Положення» із заголовками й підказкою, якщо його ще немає. Запускається з setupSync. */
+function setupRules_(ss) {
+  if (ss.getSheetByName(RULES_SHEET)) return;
+  var sh = ss.insertSheet(RULES_SHEET);
+  sh.getRange(1, 1, 1, 2).setValues([['Розділ', 'Пункти — кожен з нового рядка (Ctrl+Enter / ⌘+Enter). Розділ «Розклад»: «07:00 — Збір учасників»']])
+    .setFontWeight('bold').setBackground('#f3f4f6').setWrap(true);
+  sh.setFrozenRows(1);
+  sh.setColumnWidth(1, 220);
+  sh.setColumnWidth(2, 720);
+  sh.getRange('B:B').setWrap(true);
+  sh.getRange('A:B').setVerticalAlignment('top');
 }
 
 /**

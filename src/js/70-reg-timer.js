@@ -160,7 +160,7 @@
     state.view = v;
     if (v !== 'card' && state.cardPending) { state.cardPending = false; state.wantPlayer = null; }   // пішли з картки, поки вона вантажилась
     if (v !== 'card') { countedCard = ''; state.cmpOpen = false; }   // наступне відкриття картки — знову з «докручуванням»
-    if (v !== 'stats') grownStats = false;
+    if (v !== 'stats') { grownStats = false; state.rulesOpen = false; }
     if (formLift.spacer) setFormSpacer(0);
     renderReg();
     tgBack(v !== 'list');
@@ -199,6 +199,7 @@
   }
 
   function goStats() {
+    if (state.view === 'stats' && state.rulesOpen) { state.rulesOpen = false; renderStats(); renderChrome(); window.scrollTo(0, 0); return; }
     if (state.view === 'stats') return;
     state.regPushed = true;
     try { history.pushState({ tmView: 'stats' }, '', IN_TG ? location.href : '#stats'); } catch (e) { state.regPushed = false; }

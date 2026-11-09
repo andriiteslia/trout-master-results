@@ -105,7 +105,7 @@
     'Trout Master: результати': 'Trout Master: results',
     'Онлайн-результати Trout Master. Оновлюються автоматично під час змагань.': 'Trout Master live results. Updated automatically during the competition.',
     'Розділи': 'Sections', 'Результати': 'Results', 'Статистика': 'Statistics', 'Завантаження…': 'Loading…',
-    'Назад': 'Back', 'Поділитися': 'Share', 'Telegram-чат': 'Telegram chat', 'Приєднуйтесь до Telegram‑чату': 'Join our Telegram chat', 'Анонси, новини й усе важливе про турнір — щоб нічого не пропустити.': 'Announcements, news and everything important about the tournament — so you never miss a thing.', 'Приєднатися': 'Join', 'Результати й статистика турнірів з ловлі форелі': 'Results and stats of trout fishing tournaments', 'Спільнота': 'Community', 'Сайт troutmaster.app': 'Website troutmaster.app', 'TROUT MASTER. Усі права захищено.': 'TROUT MASTER. All rights reserved.', 'Партнери': 'Partners', 'Співпраця': 'Partnership', 'Пропозиції співпраці й партнерства — пишіть:': 'For partnership and collaboration, message us:', 'Бот @troutmasterua_bot': 'Bot @troutmasterua_bot', 'Оплачено': 'Paid', 'Оплатити участь': 'Pay entry fee', 'пенсіонери': 'pensioners', 'УБД': 'combat veterans', 'грн': 'UAH', 'Участь оплачена': 'Entry fee paid', 'Telegram-чат турніру': 'Tournament Telegram chat', 'Зареєструватися': 'Register', 'Підсумки': 'Summary',
+    'Назад': 'Back', 'Поділитися': 'Share', 'Telegram-чат': 'Telegram chat', 'Приєднуйтесь до Telegram‑чату': 'Join our Telegram chat', 'Анонси, новини й усе важливе про турнір — щоб нічого не пропустити.': 'Announcements, news and everything important about the tournament — so you never miss a thing.', 'Приєднатися': 'Join', 'Результати й статистика турнірів з ловлі форелі': 'Results and stats of trout fishing tournaments', 'Спільнота': 'Community', 'Сайт troutmaster.app': 'Website troutmaster.app', 'TROUT MASTER. Усі права захищено.': 'TROUT MASTER. All rights reserved.', 'Партнери': 'Partners', 'Співпраця': 'Partnership', 'Пропозиції співпраці й партнерства — пишіть:': 'For partnership and collaboration, message us:', 'Бот @troutmasterua_bot': 'Bot @troutmasterua_bot', 'Оплачено': 'Paid', 'Оплатити участь': 'Pay entry fee', 'Як доїхати': 'Directions', 'Навігатор': 'Navigation', 'Положення': 'Rules', 'Розклад і правила': 'Schedule and rules', 'Відкрити в навігаторі': 'Open in navigation', 'Скасувати': 'Cancel', 'Положення поки немає': 'No rules yet', 'Організатор ще не додав його.': 'The organiser has not added them yet.', 'пенсіонери': 'pensioners', 'УБД': 'combat veterans', 'грн': 'UAH', 'Участь оплачена': 'Entry fee paid', 'Telegram-чат турніру': 'Tournament Telegram chat', 'Зареєструватися': 'Register', 'Підсумки': 'Summary',
     'Підсумкова таблиця': 'Standings', 'Вигляд': 'View', 'Знайти учасника': 'Find a participant', 'Оновити': 'Refresh', 'Не вдалося оновити. Перевірте інтернет': 'Couldn’t refresh. Check your internet connection', '✓ Оновлено: є нові дані': '✓ Updated: new data', '✓ Оновлено — змін немає': '✓ Updated — no changes', 'Оновити дані': 'Refresh data', 'Очистити пошук': 'Clear search',
     'Вибрано в таблиці': 'Selected in the table', 'Вибрано в списку': 'Selected in the list', 'Картка учасника': 'Player card', 'Зняти вибір': 'Clear selection',
     'Результати — у Telegram': 'Results on Telegram', 'Бот напише ваше місце й підсумки після турніру': 'The bot will send you your place and results after the tournament',
@@ -335,6 +335,7 @@
     if (n.nodeType === 3) {
       var v = n.nodeValue;
       if (v && NEED.test(v)) {
+        if (n.parentNode && n.parentNode.closest && n.parentNode.closest('[translate="no"]')) return;   // напр. текст положення з таблиці
         var p = n.parentNode && n.parentNode.nodeName;
         if (p === 'SCRIPT' || p === 'STYLE' || p === 'TEXTAREA') return;
         var t = tr(v); if (t !== v) { ORIG.set(n, v); n.nodeValue = t; }
@@ -342,7 +343,7 @@
       return;
     }
     if (n.nodeType !== 1) return;
-    if (n.nodeName === 'SCRIPT' || n.nodeName === 'STYLE') return;
+    if (n.nodeName === 'SCRIPT' || n.nodeName === 'STYLE' || n.getAttribute('translate') === 'no') return;
     for (var i = 0; i < ATTRS.length; i++) {
       var a = n.getAttribute(ATTRS[i]);
       if (a && NEED.test(a)) setAttr(n, ATTRS[i], a);

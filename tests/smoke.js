@@ -220,6 +220,31 @@ const TESTS = {
     return t.errors.concat(r.errors, d.errors);
   },
 
+  'info: «Як доїхати» і «Положення» — лише в Telegram у списку учасників': async (b) => {
+    const t = await page(b, MOB, 'rules', { tg: true });
+    assert(await visible(t.p, '#heroLinks [data-info="map"]'), 'немає плитки «Як доїхати»');
+    assert(await visible(t.p, '#heroLinks [data-info="rules"]'), 'немає плитки «Положення»');
+    await t.p.click('#heroLinks [data-info="map"]'); await t.p.waitForTimeout(500);
+    assert(await visible(t.p, '#mapSheet'), 'не відкрився вибір навігатора');
+    assert(/waze\.com\/ul\?ll=49\.76/.test(await t.p.getAttribute('#mapSheet a[data-map="waze"]', 'href')), 'Waze веде не туди');
+    await shot(t.p, 'mob-map');
+    await t.p.click('#mapSheet [data-map="close"].mapsheet__btn'); await t.p.waitForTimeout(400);
+    assert(!(await visible(t.p, '#mapSheet')), 'вибір навігатора не закрився');
+    await t.p.click('#heroLinks [data-info="rules"]'); await t.p.waitForTimeout(800);
+    assert((await t.p.textContent('#tsTitle')) === 'Положення', 'не відкрився екран «Положення»');
+    assert((await t.p.locator('.rules__sched li').count()) >= 4, 'розклад не став таблицею');
+    assert((await t.p.locator('.rules__list li').count()) >= 10, 'пункти положення не показані');
+    await shot(t.p, 'mob-rules');
+    await t.p.evaluate(() => history.back()); await t.p.waitForTimeout(800);
+    assert(await visible(t.p, '#heroLinks'), 'після «Назад» не повернулись до списку');
+    await t.ctx.close();
+    const w = await page(b, MOB, 'rules');   // браузер — плиток немає
+    assert(!(await visible(w.p, '#heroLinks')), 'плитки видно в браузері'); await w.ctx.close();
+    const r = await page(b, MOB, 'results', { tg: true });   // результати — плиток немає
+    assert(!(await visible(r.p, '#heroLinks')), 'плитки видно в результатах'); await r.ctx.close();
+    return t.errors.concat(w.errors, r.errors);
+  },
+
   'list desktop: список, таблетка «Вибрано в списку»': async (b) => {
     const t = await page(b, DESK, 'list');
     assert((await t.p.locator('#board [data-key]').count()) >= 20, 'список учасників порожній');

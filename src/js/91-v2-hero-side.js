@@ -96,7 +96,7 @@
     v2.navList.textContent = list ? 'Учасники' : 'Результати';
     v2.navStats.hidden = !stats;
     v2.navList.setAttribute('aria-current', state.view === 'list' ? 'page' : 'false');
-    v2.navStats.setAttribute('aria-current', state.view === 'stats' ? 'page' : 'false');
+    v2.navStats.setAttribute('aria-current', state.view === 'stats' && !state.rulesOpen ? 'page' : 'false');
     segSlide(v2.topnav, '[aria-current="page"]');   // біла «таблетка» плавно їде між «Результати» і «Статистика»
 
     renderSide();
@@ -154,6 +154,7 @@
   })();
   function renderKpis() {
     renderPay();
+    renderInfoLinks();
     var p = state.payload, h = '';
     if (!p) {   // ще вантажимо: три легкі плитки-скелетони
       v2.kpis.innerHTML = state.error ? '' : [0, 1, 2].map(function (i) {
