@@ -206,6 +206,7 @@ const TESTS = {
   'list desktop: список, таблетка «Вибрано в списку»': async (b) => {
     const t = await page(b, DESK, 'list');
     assert((await t.p.locator('#board [data-key]').count()) >= 20, 'список учасників порожній');
+    assert((await t.p.locator('#board .pt__paid').count()) === 7, 'значок «оплачено» не в тих рядках');
     await t.p.locator('#board [data-key]').nth(3).click(); await t.p.waitForTimeout(700);
     assert(await visible(t.p, '#selbar.is-on'), 'таблетка не з’явилась');
     assert((await t.p.locator('#selLbl').innerText()) === 'Вибрано в списку', 'не той підпис у таблетці');

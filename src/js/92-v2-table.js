@@ -208,6 +208,10 @@
     var main = seats ? all.slice(0, seats) : all, reserve = seats ? all.slice(seats) : [];
     var free = seats && all.length < seats ? seats - all.length : 0;
     var newest = all.length - 2;   // останні дві реєстрації — «нове»
+    // Хто оплатив участь (галочка «Оплата» в таблиці) — значок праворуч
+    var paid = {};
+    (Array.isArray(pl.paid) ? pl.paid : []).forEach(function (n) { paid[normName(n)] = 1; });
+    var PAID_IC = '<img class="pt__paid" src="assets/icons/paid.webp?v=1" width="28" height="28" alt="Оплачено" title="Участь оплачена" decoding="async">';
     // На комп'ютері дві колонки: ліва — перша половина списку, права — друга
     var half = 1;
     function z2(j) { return (j % half) % 2 ? ' z2' : ''; }
@@ -216,7 +220,8 @@
       var sel = isSel(p.key);
       return '<li class="pt r' + (j % 2 ? ' z1' : '') + z2(j) + (sel ? ' is-sel' : '') + '" data-key="' + esc(p.key) + '">' +
         '<span class="pt__n">' + esc(p.n) + '</span>' + avatarHtml(p.name) +
-        '<span class="pt__nm">' + esc(p.name) + '</span>' + (p.i >= newest && p.i > 0 && all.length > 3 ? '<span class="pt__new">new</span>' : '') + '</li>';
+        '<span class="pt__nm">' + esc(p.name) + '</span>' + (p.i >= newest && p.i > 0 && all.length > 3 ? '<span class="pt__new">new</span>' : '') +
+        (paid[normName(p.name)] ? PAID_IC : '') + '</li>';
     }
     var vis = main.filter(function (p) { return matchQuery(p.name); });
     var nFree = free && !state.query ? free : 0;

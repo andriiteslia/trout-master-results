@@ -82,7 +82,7 @@ var CARD_OFF = 'Приховати';
 var REG_SHEET = 'Учасники';
 var REG_COL_NUM = 1;     // A — порядковий номер
 var REG_COL_NAME = 2;    // B — прізвище та ім'я
-var REG_COL_PAID = 3;    // C — оплата (галочка; бачить лише організатор, на сайт не йде)
+var REG_COL_PAID = 3;    // C — оплата (галочка; на сайті — значок «оплачено» біля імені)
 var REG_COL_PHONE = 5;   // E — телефон (лише для організатора)
 var REG_COL_TIME = 6;    // F — час реєстрації
 var REG_COL_TG_ID = 7;   // G — Telegram ID (якщо реєструвались через бота)
@@ -338,6 +338,14 @@ function handleSiteSync(e) {
     try { syncDrawNames_(e.source); } catch (err) { console.error(err); }
     return;
   }
+  // Поставили/зняли галочку «Оплата» — оновлюємо значок 💵 у списку учасників на сайті
+  if (sh.getName() === REG_SHEET && e.range.getColumn() <= REG_COL_PAID && e.range.getLastColumn() >= REG_COL_PAID) {
+    var site = e.source.getSheetByName(SYNC_SHEET);
+    if (site && currentMode_(site) === MODE_REG) {
+      try { writeStatus_(site, publish_(e.source)); } catch (err) { console.error(err); }
+    }
+    return;
+  }
   if (sh.getName() !== SYNC_SHEET) return;
   // Блок «Розсилка в Telegram»
   if (handleBroadcastEdit_(e, sh)) return;
@@ -561,12 +569,14 @@ function publish_(ss) {
   var regDeadline = registration && deadline ? deadline.toISOString() : null;
   var seats = seats_(sh);
   var fee = sh ? String(sh.getRange(CELL_FEE).getDisplayValue()).trim() || null : null;
+  var paid = [];
+  try { paid = paidNames_(ss); } catch (err) { console.error(err); }
   var showMoves = !sh || String(sh.getRange(CELL_MOVES).getDisplayValue()).trim() !== MOVES_OFF;
   var secCfg = sectorsCfg_(sh);
   var sectors = secCfg ? secCfg.n : null;
   var sectorsSplit = secCfg && secCfg.top ? [secCfg.top, secCfg.bottom] : null;   // [верхній, нижній] берег
   var now = new Date().toISOString();
-  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw, showCard, sectors, sectorsSplit, fee]);
+  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw, showCard, sectors, sectorsSplit, fee, paid]);
   var hash = Utilities.base64EncodeWebSafe(
     Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, body, Utilities.Charset.UTF_8));
 
@@ -579,6 +589,7 @@ function publish_(ss) {
     regDeadline: regDeadline,
     seats: seats,
     fee: fee,
+    paid: paid,
     showMoves: showMoves,
     draw: draw,
     showCard: showCard,
@@ -640,7 +651,8 @@ function drawNames_(ss) {
 
 /**
  * Колонка «Оплата» (C) на аркуші «Учасники»: галочка навпроти кожного учасника,
- * у заголовку — скільки оплатили, напр. «Оплата: 12/28». На сайт не потрапляє.
+ * у заголовку — скільки оплатили, напр. «Оплата: 12/28». На сайті в списку учасників у тих,
+ * хто оплатив, праворуч значок 💵 (payload.paid — лише імена, без сум).
  */
 function setupPaidColumn_(reg) {
   var head = reg.getRange(1, REG_COL_PAID);
@@ -650,7 +662,7 @@ function setupPaidColumn_(reg) {
     var sep = formulaSep_(head);
     head.setFormula('="Оплата: "&COUNTIF(' + col + '2:' + col + sep + 'TRUE)&"/"&COUNTA(' + nameCol + '2:' + nameCol + ')')
       .setFontWeight('bold').setHorizontalAlignment('center')
-      .setNote('Поставте галочку, коли учасник оплатив участь. Бачите лише ви — на сайт це не потрапляє.');
+      .setNote('Поставте галочку, коли учасник оплатив участь. На сайті в списку учасників біля його імені з’явиться значок «оплачено».');
   }
   var last = reg.getLastRow();
   if (last < 2) return;
@@ -658,6 +670,21 @@ function setupPaidColumn_(reg) {
   for (var i = 0; i < names.length; i++) if (String(names[i][0]).trim()) paidCheckbox_(reg, i + 2);
   reg.getRange(2, REG_COL_PAID, last - 1, 1).setHorizontalAlignment('center');
   if (reg.getColumnWidth(REG_COL_PAID) < 90) reg.setColumnWidth(REG_COL_PAID, 110);
+}
+
+/** Імена тих, у кого стоїть галочка «Оплата» (для значка у списку учасників на сайті). */
+function paidNames_(ss) {
+  var reg = ss.getSheetByName(REG_SHEET);
+  if (!reg || reg.getLastRow() < 2) return [];
+  var n = reg.getLastRow() - 1;
+  var names = reg.getRange(2, REG_COL_NAME, n, 1).getDisplayValues();
+  var paid = reg.getRange(2, REG_COL_PAID, n, 1).getValues();
+  var out = [];
+  for (var i = 0; i < n; i++) {
+    var nm = String(names[i][0]).replace(/\s+/g, ' ').trim(), v = paid[i][0];
+    if (nm && (v === true || /^(✅|✔️?|true)$/i.test(String(v).trim()))) out.push(nm);
+  }
+  return out;
 }
 
 /** Галочка «Оплата» в рядку учасника (якщо її ще немає; уже вписані ✅/так стають поставленою галочкою). */
