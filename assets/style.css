@@ -1926,6 +1926,7 @@ input, textarea, select { caret-color: var(--nav); }
   .story__box { width: min(100%, 1200px); gap: 16px; }
   .story__fmt { margin: 0 auto; }
   .story__acts { width: min(100%, 480px); margin: 0 auto; }
+  .story__acts .btn { min-height: 44px; height: 44px; padding: 0 18px; font-size: 15px; }
   .story__img { min-height: 0; }
   .story__img img { max-height: calc(100dvh - 216px); border-radius: 20px; box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55); }
 }
