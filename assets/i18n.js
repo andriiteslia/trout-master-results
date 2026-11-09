@@ -220,6 +220,8 @@
     [/^Порівну: по (\d+) кращ[а-яіїєґ]* показник[а-яіїєґ]*/, 'Even: $1 better metrics each'],
     [/, порівну — (\d+)$/, ', tied in $1'],
     [/^Різниця: /, 'Difference: '],
+    [/^Вартість участі — (.+?)(?:\s|\u00a0)?грн$/, 'Entry fee: $1 UAH'],
+    [/^Вартість участі — /, 'Entry fee: '],
     [/^Перевага в показниках не означає вищого місця: його вирішують бали за перемоги в турах\. Тому вище в таблиці — (.+)\.$/, 'Better stats don’t mean a higher place: it’s decided by points for round wins. That’s why $1 is higher in the standings.'],
     [/^Перевага в показниках не означає вищого місця: його вирішують бали за перемоги в турах\.$/, 'Better stats don’t mean a higher place: it’s decided by points for round wins.'],
     [/, переміг (.+), (\d+) : (\d+)$/, ', won by $1, $2 : $3'],

@@ -3060,6 +3060,16 @@
     box.hidden = !on;
     var note = document.getElementById('regBotNote');
     if (note) note.hidden = !(state.view === 'reg' && IN_TG && open && !state.regDone);
+    // Вартість участі — з таблиці (аркуш «Сайт», B14). Число → «1 700 грн», текст — як є
+    var feeEl = document.getElementById('regFee'), fee = String((state.payload && state.payload.fee) || '').trim();
+    if (feeEl) {
+      feeEl.hidden = !fee;
+      if (fee) {
+        if (/^\d[\d\s]*$/.test(fee)) fee = fee.replace(/\s/g, '').replace(/\B(?=(\d{3})+$)/g, '\u00a0') + '\u00a0грн';
+        feeEl.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6.5 9.5v5M17.5 9.5v5"/></svg>' +
+          '<span>Вартість участі — ' + esc(fee) + '</span>';
+      }
+    }
     if (!on) return;
     var free = si.seats ? si.seats - si.n : 0;
     var h = '<div class="seats__row"><b>Зареєстровано ' + si.n + (si.seats ? ' з ' + si.seats : '') + '</b>' +
