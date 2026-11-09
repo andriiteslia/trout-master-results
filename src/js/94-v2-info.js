@@ -80,6 +80,12 @@
     var m = String(s).match(/^(\d{1,2}[:.]\d{2}(?:\s*[-–—]\s*\d{1,2}[:.]\d{2})?|\d+\s*(?:хв|год)\.?)\s*[-–—:]\s*(.+)$/i);
     return m ? [m[1].replace('.', ':'), m[2]] : null;
   }
+  // Посилання в тексті положення робимо клікабельними (текст уже екранований)
+  function linkify(h) {
+    return h.replace(/https?:\/\/[^\s<]+[^\s<.,;:)!?]/g, function (u) {
+      return '<a href="' + u + '" target="_blank" rel="noopener">' + u.replace(/^https?:\/\//, '') + '</a>';
+    });
+  }
   function renderRules() {
     var rules = rulesData(), ev = (state.payload && state.payload.event) || {};
     document.title = 'Положення | Trout Master';
@@ -105,11 +111,15 @@
           return '<li' + (gap ? ' class="is-gap"' : '') + '><span class="rules__time">' + esc(p[0]) + '</span><span>' + esc(p[1]) + '</span></li>';
         }).join('') + '</ol>';
       } else if (items.length) {
-        h += '<ul class="rules__list" translate="no">' + items.map(function (it) { return '<li>' + esc(it) + '</li>'; }).join('') + '</ul>';
+        h += '<ul class="rules__list" translate="no">' + items.map(function (it) { return '<li>' + linkify(esc(it)) + '</li>'; }).join('') + '</ul>';
       }
       h += '</section>';
     });
     if (VENUE) h += '<button type="button" class="rules__map" data-info="map">' + I_PIN + '<span>Як доїхати · ' + esc(VENUE.name || '') + '</span>' + I_GO + '</button>';
     ts.body.innerHTML = h + '</div>';
   }
-  ts.body.addEventListener('click', function (e) { if (e.target.closest('[data-info="map"]')) openMapSheet(); });
+  ts.body.addEventListener('click', function (e) {
+    if (e.target.closest('[data-info="map"]')) { openMapSheet(); return; }
+    var a = e.target.closest('.rules a[href]');
+    if (a && openLinkOut(a.href)) e.preventDefault();   // у Telegram — через openLink
+  });
