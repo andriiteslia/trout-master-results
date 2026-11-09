@@ -2167,40 +2167,6 @@ function resSend_(ss, sh, r, how) {
   }
 }
 
-/**
- * Пробне особисте повідомлення з вигаданими цифрами — запустіть з редактора (▶ testPersonalResults).
- * Сайт і таблиця не змінюються. Надсилає 2 повідомлення на ID з «Тест — мій Telegram ID»:
- * «після 10 туру» і «підсумкові», з фото, обраним у блоці «Особисті результати в Telegram».
- */
-function testPersonalResults() {
-  var ss = SpreadsheetApp.openById(getSpreadsheetId_());
-  var sh = ss.getSheetByName(SYNC_SHEET);
-  var br = bcRow_(sh), rr = titleRow_(sh, RES_TITLE);
-  var tid = br ? String(sh.getRange(br + BC_TESTID, 2).getDisplayValue()).replace(/\s/g, '') : '';
-  if (!/^\d{3,15}$/.test(tid)) throw new Error('Вкажіть свій Telegram ID у рядку «Тест — мій Telegram ID» блоку «' + BC_TITLE + '»');
-  var me = mainSquad_(ss).find(function (x) { return x.id === tid; }) || mainSquad_(ss)[0] || { name: 'Тесля Андрій', num: '1' };
-  var codes = ['В', 'П', 'В', 'РН', 'В', 'В', 'П', 'В', 'РН', 'В', 'В', 'БН', 'В', 'В'];
-  var people = {};
-  people[resKey_(me.name)] = { name: me.name, place: 5, pts: 25, wins: 8, fish: 34, codes: codes.slice(0, 10) };
-  people['x4'] = { name: 'Інший Учасник', place: 4, pts: 27, wins: 8, fish: 30, codes: [] };
-  var d10 = { round: 10, total: 14, people: people };
-  var prev = { round: 5, places: {} }; prev.places[resKey_(me.name)] = 8;
-  var picName = rr ? String(sh.getRange(rr + RES_PHOTO, 2).getDisplayValue()).trim() : '';
-  var link = picLink_(sh, picName), photo = link ? bcFetchPhoto_(link) : null;
-  var url = SETTINGS.SITE_URL + (me.num ? '?sel=' + encodeURIComponent(me.num) : '');
-  var markup = { inline_keyboard: [[{ text: BC_BUTTON_ME, web_app: { url: url } }]] };
-  var send = function (html) {
-    var res = photo ? tgPhoto_(tid, photo, html, markup) : tgApi_('sendMessage', { chat_id: tid, text: html, parse_mode: 'HTML', reply_markup: markup });
-    if (!res || !res.ok) throw new Error('Не надіслано: ' + ((res && res.description) || 'немає відповіді') + ' — чи натиснули ви Start у боті?');
-    if (photo && typeof photo !== 'string') { var z = res.result.photo; photo = z[z.length - 1].file_id; }
-  };
-  send('🧪 <i>Пробне повідомлення, цифри вигадані</i>\n\n' + resText_(people[resKey_(me.name)], d10, prev));
-  var fin = JSON.parse(JSON.stringify(people));
-  fin[resKey_(me.name)].codes = codes; fin[resKey_(me.name)].place = 3; fin[resKey_(me.name)].pts = 35; fin['x4'].place = 2; fin['x4'].pts = 37;
-  send('🧪 <i>Пробне повідомлення, цифри вигадані</i>\n\n' + resText_(fin[resKey_(me.name)], { round: 14, total: 14, people: fin }, { round: 10, places: (function () { var o = {}; o[resKey_(me.name)] = 5; return o; })() }));
-  Logger.log('Надіслано 2 пробні повідомлення на ' + tid + ' (дані: ' + me.name + ', фото: ' + (picName || 'без фото') + ')');
-}
-
 /** Чому Telegram не доставив: 'blocked' | 'nostart' | 'gone' | '' (інша помилка) */
 function bcWhy_(res) {
   if (!res || res.ok) return '';
