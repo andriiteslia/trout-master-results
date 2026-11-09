@@ -1,5 +1,5 @@
 /* ===== «Як доїхати» і «Положення»: плитки під KPI, вибір навігатора, екран положення ===== */
-.hlinks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.hlinks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: -8px; }   /* батько — flex із gap 16 px; разом 8 px, як між плитками по горизонталі */
 .hlinks[hidden] { display: none; }
 .hlinks--1 { grid-template-columns: 1fr; }
 .hlink { flex-direction: row; align-items: center; gap: 10px; border: 0; color: #fff; text-align: left; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background-color .12s ease, transform .12s ease; }
