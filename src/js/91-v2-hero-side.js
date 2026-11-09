@@ -275,7 +275,8 @@
   (function () {
     var bt = document.querySelector('.bcard .btools');
     if (!bt) return;
-    var put = function () { document.documentElement.style.setProperty('--bt-h', bt.offsetHeight + 'px'); };
+    // Дробова висота (напр. 80.6px) + 1px нахлесту — інакше між панеллю й рядком колонок щілина, крізь яку видно рядки
+    var put = function () { document.documentElement.style.setProperty('--bt-h', (bt.getBoundingClientRect().height - 1) + 'px'); };
     put();
     if (window.ResizeObserver) new ResizeObserver(put).observe(bt); else window.addEventListener('resize', put);
   })();
