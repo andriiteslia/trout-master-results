@@ -82,6 +82,7 @@ var CARD_OFF = 'Приховати';
 var REG_SHEET = 'Учасники';
 var REG_COL_NUM = 1;     // A — порядковий номер
 var REG_COL_NAME = 2;    // B — прізвище та ім'я
+var REG_COL_SUM = 4;     // D — сума оплати, грн (лише для організатора; у D1 — «Зібрано: N грн»)
 var REG_COL_PAID = 3;    // C — оплата (галочка; на сайті — значок «оплачено» біля імені)
 var REG_COL_PHONE = 5;   // E — телефон (лише для організатора)
 var REG_COL_TIME = 6;    // F — час реєстрації
@@ -666,6 +667,17 @@ function setupPaidColumn_(reg) {
     head.setFormula('="Оплата: "&COUNTIF(' + col + '2:' + col + sep + 'TRUE)&"/"&COUNTA(' + nameCol + '2:' + nameCol + ')')
       .setFontWeight('bold').setHorizontalAlignment('center')
       .setNote('Поставте галочку, коли учасник оплатив участь. На сайті в списку учасників біля його імені з’явиться значок «оплачено».');
+  }
+  // Сума оплат (D): у заголовку — скільки зібрано
+  var sHead = reg.getRange(1, REG_COL_SUM);
+  var sv = String(sHead.getDisplayValue()).trim();
+  if (!sv || sv.indexOf('Зібрано') === 0 || sv === 'Загалом') {
+    var sc = String.fromCharCode(64 + REG_COL_SUM), sp = formulaSep_(sHead);
+    sHead.setFormula('="Зібрано: "&TEXT(SUM(' + sc + '2:' + sc + ')' + sp + '"#,##0")&" грн"')
+      .setFontWeight('bold').setHorizontalAlignment('center')
+      .setNote('Впишіть суму в гривнях, яку заплатив учасник (напр. 1700). У заголовку — скільки зібрано загалом. На сайт не потрапляє.');
+    reg.getRange(2, REG_COL_SUM, reg.getMaxRows() - 1, 1).setNumberFormat('#,##0').setHorizontalAlignment('center');
+    if (reg.getColumnWidth(REG_COL_SUM) < 130) reg.setColumnWidth(REG_COL_SUM, 150);
   }
   var last = reg.getLastRow();
   if (last < 2) return;
