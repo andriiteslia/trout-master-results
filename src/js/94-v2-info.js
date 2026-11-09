@@ -36,8 +36,7 @@
     var ll = VENUE.lat + ',' + VENUE.lng, name = VENUE.name || '';
     var urls = {
       google: VENUE.google || 'https://www.google.com/maps/search/?api=1&query=' + ll,
-      waze: 'https://waze.com/ul?ll=' + ll + '&navigate=yes',
-      apple: 'https://maps.apple.com/?daddr=' + ll + (name ? '&q=' + encodeURIComponent(name) : '')
+      waze: 'https://waze.com/ul?ll=' + ll + '&navigate=yes'
     };
     [].forEach.call(mapSheet.querySelectorAll('a[data-map]'), function (a) { a.href = urls[a.getAttribute('data-map')]; });
     document.getElementById('mapName').textContent = name;

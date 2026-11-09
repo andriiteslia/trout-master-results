@@ -22,6 +22,15 @@
 .mapsheet__s { margin: 0 0 6px; text-align: center; font-size: 14px; color: var(--muted); }
 .mapsheet__btn { display: flex; align-items: center; justify-content: center; height: 52px; border-radius: 999px; border: 0; background: #f3f4f6; color: #0a0a0a; font: inherit; font-size: 16px; font-weight: 650; text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .mapsheet__btn:active { background: #e4e7ec; }
+.mapsheet__btn img { width: 26px; height: 26px; object-fit: contain; margin-right: 10px; flex: none; }
+/* Google Maps — біла кнопка в стилі Google */
+.mapsheet__btn--google { background: #fff; border: 1px solid #dadce0; color: #3c4043; font-weight: 600; letter-spacing: .01em; }
+.mapsheet__btn--google:active { background: #f1f3f4; }
+.mapsheet__btn--google img { width: 22px; height: 30px; }
+/* Waze — фірмовий блакитний, чорний жирний текст */
+.mapsheet__btn--waze { background: #33ccff; color: #000; font-weight: 800; letter-spacing: -.01em; }
+.mapsheet__btn--waze:active { background: #2bb8e8; }
+.mapsheet__btn--waze img { width: 34px; height: 34px; margin-left: -6px; }
 .mapsheet__btn--x { background: transparent; color: var(--muted); height: 46px; }
 @media (prefers-reduced-motion: reduce) { .mapsheet__bg, .mapsheet__box { transition: none; } }
 
