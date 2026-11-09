@@ -27,8 +27,8 @@
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
   <link rel="preload" href="assets/fonts/fixel-cyrillic-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fish.webp?v=2" as="image" type="image/webp">
-  <link rel="stylesheet" href="assets/style.css?v=20261109n">
-  <script src="config.js?v=20261109n"></script>
+  <link rel="stylesheet" href="assets/style.css?v=20261109o">
+  <script src="config.js?v=20261109o"></script>
   <script>
     // Запитуємо результати одразу, паралельно з завантаженням решти сторінки
     (function () {
@@ -44,8 +44,8 @@
     // Посилання на картку (…/#p9, startapp=p9): з першого кадру ховаємо головну, щоб не блимав список до картки
     if (/(?:tgWebAppStartParam=|#)p\d+(?:&|$)/.test(location.hash + '&' + location.search.slice(1))) document.documentElement.className += ' view-card deep-wait';
   </script>
-  <script src="assets/i18n.js?v=20261109n"></script>
-  <script src="assets/app.js?v=20261109n" defer></script>
+  <script src="assets/i18n.js?v=20261109o"></script>
+  <script src="assets/app.js?v=20261109o" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -86,7 +86,7 @@
           <img src="assets/partners/fishmefish.svg?v=1" alt="" width="288" height="288" decoding="async">
         </a>
         <a class="btn2 btn2-tg" id="chatWeb" href="https://t.me/troutmasterua" target="_blank" rel="noopener" aria-label="Telegram-чат турніру">
-          <svg class="tg-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.2 4.4 2.9 11.5c-1.2.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.8.8.4 0 .6-.2.9-.4l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.6c.3-1.3-.5-1.9-1.5-1.5Zm-3.4 3.4-8.4 7.6-.3 3.4-1.6-5 9.9-6.3c.5-.3.8 0 .4.3Z" fill="currentColor"/></svg>
+          <svg class="tg-ic" viewBox="26 23 446 446" aria-hidden="true"><path d="M192.579 406.775C179.579 406.775 181.912 401.775 177.246 389.442L139.246 264.108L375.246 116.775L402.912 124.108L379.912 186.775L192.579 406.775Z" fill="#C8DAEA"/><path d="M192.579 406.775C202.579 406.775 206.912 402.108 212.579 396.775C221.245 388.442 332.579 280.108 332.579 280.108L264.245 263.442L200.912 303.442L192.579 403.442V406.775Z" fill="#A9C9DD"/><path d="M199.245 304.775L360.579 423.775C378.912 433.775 392.245 428.775 396.912 406.775L462.579 97.4416C469.245 70.4416 452.245 58.4416 434.579 66.4416L49.2453 215.108C22.912 225.775 23.2453 240.442 44.5787 246.775L143.579 277.775L372.579 133.442C383.245 126.775 393.245 130.442 385.245 137.775L199.245 304.775Z" fill="url(#tgPlaneA)"/><defs><linearGradient id="tgPlaneA" x1="295.882" y1="235.958" x2="379.215" y2="369.292" gradientUnits="userSpaceOnUse"><stop stop-color="#EFF7FC"/><stop offset="1" stop-color="#fff"/></linearGradient></defs></svg>
           <span>Telegram-чат</span>
         </a>
         <button type="button" class="btn2 btn2-dark" id="heroStats" hidden>
@@ -212,7 +212,7 @@
         </div>
         <p class="notify__ok" id="regNotifyOk" role="status" hidden>🔔 Готово! Сповіщення прийдуть у Telegram.</p>
         <a class="tgjoin" id="regChat" href="https://t.me/troutmasterua" target="_blank" rel="noopener">
-          <span class="tgjoin__ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.2 4.4 2.9 11.5c-1.2.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.8.8.4 0 .6-.2.9-.4l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.6c.3-1.3-.5-1.9-1.5-1.5Zm-3.4 3.4-8.4 7.6-.3 3.4-1.6-5 9.9-6.3c.5-.3.8 0 .4.3Z" fill="currentColor"/></svg></span>
+          <span class="tgjoin__ic"><svg class="tg-ic" viewBox="26 23 446 446" aria-hidden="true"><path d="M192.579 406.775C179.579 406.775 181.912 401.775 177.246 389.442L139.246 264.108L375.246 116.775L402.912 124.108L379.912 186.775L192.579 406.775Z" fill="#C8DAEA"/><path d="M192.579 406.775C202.579 406.775 206.912 402.108 212.579 396.775C221.245 388.442 332.579 280.108 332.579 280.108L264.245 263.442L200.912 303.442L192.579 403.442V406.775Z" fill="#A9C9DD"/><path d="M199.245 304.775L360.579 423.775C378.912 433.775 392.245 428.775 396.912 406.775L462.579 97.4416C469.245 70.4416 452.245 58.4416 434.579 66.4416L49.2453 215.108C22.912 225.775 23.2453 240.442 44.5787 246.775L143.579 277.775L372.579 133.442C383.245 126.775 393.245 130.442 385.245 137.775L199.245 304.775Z" fill="url(#tgPlaneB)"/><defs><linearGradient id="tgPlaneB" x1="295.882" y1="235.958" x2="379.215" y2="369.292" gradientUnits="userSpaceOnUse"><stop stop-color="#EFF7FC"/><stop offset="1" stop-color="#fff"/></linearGradient></defs></svg></span>
           <span class="tgjoin__txt"><b>Приєднуйтесь до Telegram‑чату</b><span>Анонси, новини й усе важливе про турнір — щоб нічого не пропустити.</span></span>
           <span class="tgjoin__btn">Приєднатися</span>
         </a>
