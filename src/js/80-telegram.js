@@ -284,6 +284,17 @@
         .catch(function () { /* статистика — не критично */ });
     } catch (e) { /* */ }
   }
+  // «Telegram-чат» у шапці (комп'ютер): у браузері — просте посилання, в апці — відкриваємо чат усередині Telegram
+  (function () {
+    var a = document.getElementById('chatWeb');
+    if (!a) return;
+    a.addEventListener('click', function (e) {
+      var tg = tgApp();
+      if (!IN_TG || !tg || typeof tg.openTelegramLink !== 'function') return;
+      e.preventDefault();
+      tg.openTelegramLink(a.href);
+    });
+  })();
   // Кнопка партнера над нижньою кнопкою (лише в ТГ на телефоні): відкриває канал усередині Telegram
   (function () {
     ['partner', 'partnerWeb'].forEach(function (id) {

@@ -118,7 +118,7 @@
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, function () { toast(url); });
     else toast(url);
   }
-  v2.share.addEventListener('click', function () {
+  if (v2.share) v2.share.addEventListener('click', function () {
     var ev = (state.payload && state.payload.event) || {};
     shareLink(shareUrl(), (ev.title || 'TROUT MASTER') + ': результати наживо');
   });

@@ -1089,6 +1089,8 @@ tbody tr.reserve-sep th {
 .btn2-dark { background: #0a0a0a; color: #fff; padding: 0 20px; }
 @media (hover: hover) { .btn2-dark:hover { background: #262626; } }
 .btn2-light { background: #fff; color: var(--text); border-color: #d0d5dd; }
+.btn2 svg.tg-ic { width: 20px; height: 20px; stroke: none; }
+.btn2-tg { text-decoration: none; }
 @media (hover: hover) { .btn2-light:hover { background: #f2f4f7; } }
 .btn2-white { background: #fff; color: #0a0a0a; height: 40px; padding: 0 16px; font-weight: 650; }
 
