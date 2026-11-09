@@ -65,6 +65,7 @@
 
   // Плашка статусу, плитки, кнопки шапки, меню, бічна панель, смужка вибору
   function renderChrome() {
+    renderTableShare();
     var p = state.payload;
     var list = isListMode();
     var t = toursData();

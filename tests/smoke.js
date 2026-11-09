@@ -245,6 +245,26 @@ const TESTS = {
     return t.errors.concat(w.errors, r.errors);
   },
 
+  'table share: картинка таблиці з шапки таблиці і з картки («Картка | Таблиця»)': async (b) => {
+    const t = await page(b, MOB, 'results');
+    assert(await visible(t.p, '#tableShare'), 'немає кнопки «Поділитися таблицею»');
+    await t.p.click('#tableShare'); await t.p.waitForTimeout(2500);
+    assert(await visible(t.p, '.story__img img'), 'картинка таблиці не згенерувалась');
+    assert(!(await visible(t.p, '.story__kind')), 'без вибраного учасника не має бути перемикача «Картка | Таблиця»');
+    assert(/4:5/.test(await t.p.textContent('.story [data-fmt="wide"]')) && await visible(t.p, '.story .fmt-t'), 'для таблиці допис має бути 4:5');
+    await t.p.click('.story__close'); await t.p.waitForTimeout(300);
+    await t.p.locator('#board [data-key]').nth(13).click(); await t.p.waitForTimeout(500);
+    await t.p.click('#tableShare'); await t.p.waitForTimeout(2500);
+    assert(await visible(t.p, '.story__kind'), 'з вибраним учасником немає перемикача «Картка | Таблиця»');
+    await shot(t.p, 'mob-table-share');
+    await t.p.click('[data-kind="card"]'); await t.p.waitForTimeout(2500);
+    assert(/Результат:/.test(await t.p.getAttribute('.story__img img', 'alt')), 'перемикач не показав картку учасника');
+    await t.ctx.close();
+    const l = await page(b, MOB, 'list');
+    assert(!(await visible(l.p, '#tableShare')), 'кнопка таблиці видна в списку учасників'); await l.ctx.close();
+    return t.errors.concat(l.errors);
+  },
+
   'list desktop: список, таблетка «Вибрано в списку»': async (b) => {
     const t = await page(b, DESK, 'list');
     assert((await t.p.locator('#board [data-key]').count()) >= 20, 'список учасників порожній');

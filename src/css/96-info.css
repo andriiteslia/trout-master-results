@@ -58,3 +58,22 @@
 .rules__list a { color: var(--brand-ink); text-decoration: underline; text-underline-offset: 2px; word-break: break-all; }
 /* На екрані реєстрації плитки й кнопка оплати не потрібні */
 .view-reg #heroLinks, .view-reg #payBox { display: none !important; }
+
+/* ===== Кнопка «Поділитися таблицею» в шапці таблиці: кругла (999px), супереліпс — глобальний (corner-shape) ===== */
+.tshare { order: 1; flex: none; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 999px; background: #e4e7ec; color: #0a0a0a; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background-color .12s ease, transform .12s ease; }
+.tshare[hidden] { display: none; }
+.tshare svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tshare:active { transform: scale(.95); background: #d0d5dd; }
+.btools:has(.tshare:not([hidden])) .tabs { flex: 1 1 0; min-width: 0; }
+@media (min-width: 980px) {
+  .tshare { order: 5; width: 40px; height: 40px; border-radius: 999px; background: #fff; border: 1px solid #d0d5dd; color: #344054; }
+  .tshare:hover { background: #f9fafb; }
+  .btools:has(.tshare:not([hidden])) .tabs { flex: 0 0 auto; }
+}
+
+/* Екран «Поділитися»: перемикач «Картка | Таблиця» і формат 4:5 для таблиці */
+.story .fmt-t, .story.is-table .fmt-c { display: none; }
+.story.is-table .fmt-t { display: inline; }
+.story__kind[hidden] { display: none; }
+.story__img.is-post { aspect-ratio: 4 / 5; }
+.story:has(.story__kind:not([hidden])) .story__img { max-height: calc(100dvh - var(--tg-top, 0px) - 236px); }

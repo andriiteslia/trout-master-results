@@ -322,19 +322,25 @@
     return name + (place ? ' — ' + ua + ' місце, ' + st.points + ' ' + plural(Number(st.points) || 0, 'бал', 'бали', 'балів') : '') +
       ' на TROUT MASTER 🎣\nСтатистика: ' + url;
   }
-  function openStory(name) {
-    if (!name) return;
-    var st = playerStats(name);
+  // kind: 'card' — картинка-картка учасника (за замовчуванням), 'table' — таблиця топ-10 (+ свій рядок, якщо name задано)
+  function openStory(name, kind) {
+    kind = kind === 'table' ? 'table' : 'card';
+    if (kind === 'card' && !name) return;
+    var st = name ? playerStats(name) : null;
     if (!story.el) {
       story.el = document.createElement('div');
       story.el.className = 'story';
       story.el.setAttribute('role', 'dialog');
       story.el.setAttribute('aria-modal', 'true');
       story.el.setAttribute('aria-label', 'Поділитися результатом');
-      story.el.innerHTML = '<div class="story__box"><div class="story__img"><span class="story__spin" aria-hidden="true"></span></div>' +
+      story.el.innerHTML = '<div class="story__box">' +
+        '<div class="story__fmt story__kind" role="radiogroup" aria-label="Що на картинці">' +
+          '<button type="button" role="radio" data-kind="card" aria-checked="true">Картка</button>' +
+          '<button type="button" role="radio" data-kind="table" aria-checked="false">Таблиця</button></div>' +
+        '<div class="story__img"><span class="story__spin" aria-hidden="true"></span></div>' +
         '<div class="story__fmt" role="radiogroup" aria-label="Формат картинки">' +
           '<button type="button" role="radio" data-fmt="story" aria-checked="true">Сторіс 9:16</button>' +
-          '<button type="button" role="radio" data-fmt="wide" aria-checked="false">Допис 4:3</button></div>' +
+          '<button type="button" role="radio" data-fmt="wide" aria-checked="false"><span class="fmt-c">Допис 4:3</span><span class="fmt-t">Допис 4:5</span></button></div>' +
         '<p class="story__hint" hidden>Утримуй картинку, щоб зберегти її. Якщо не виходить — відкрий апку в браузері.</p>' +
         '<div class="story__acts"><button type="button" class="btn btn-primary story__share">Поділитися</button>' +
         '<a class="btn btn-secondary story__save" download>Зберегти</a>' +
@@ -342,7 +348,13 @@
       document.body.appendChild(story.el);
       story.el.addEventListener('click', function (e) { if (e.target === story.el || e.target.closest('.story__close')) closeStory(); });
       document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && story.el && !story.el.hidden) closeStory(); });
-      story.el.querySelector('.story__fmt').addEventListener('click', function (e) {
+      story.el.querySelector('.story__kind').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-kind]');
+        if (!b || b.getAttribute('data-kind') === story.kind) return;
+        story.kind = b.getAttribute('data-kind');
+        renderStory();
+      });
+      story.el.querySelector('.story__fmt:not(.story__kind)').addEventListener('click', function (e) {
         var b = e.target.closest('[data-fmt]');
         if (!b || b.getAttribute('data-fmt') === story.fmt) return;
         story.fmt = b.getAttribute('data-fmt');
@@ -351,32 +363,44 @@
       });
       story.el.querySelector('.story__share').addEventListener('click', function () {
         if (!story.file) return;
-        navigator.share({ files: [story.file], title: 'TROUT MASTER', text: storyCaption(story.st) }).catch(function () { /* скасував */ });
+        navigator.share({ files: [story.file], title: 'TROUT MASTER', text: story.kind === 'table' ? tableCaption() : storyCaption(story.st) }).catch(function () { /* скасував */ });
       });
     }
     story.st = st;
+    story.me = name || null;
+    story.kind = kind;
+    // Перемикач «Картка | Таблиця» — коли є і учасник, і таблиця з результатами
+    story.el.querySelector('.story__kind').hidden = !(name && canShareTable());
+    story.el.querySelector('.story__kind')._seg = null;
     if (!story.fmt) { try { story.fmt = localStorage.getItem('tm:storyFmt') || 'story'; } catch (x) { story.fmt = 'story'; } }
     story.el.hidden = false;
-    story.el.querySelector('.story__fmt')._seg = null;   // при відкритті — одразу на місці, без «приїзду»
+    story.el.querySelector('.story__fmt:not(.story__kind)')._seg = null;   // при відкритті — одразу на місці, без «приїзду»
     document.documentElement.classList.add('story-open');
     renderStory();
   }
   function renderStory() {
-    var st = story.st, fmt = story.fmt === 'wide' ? 'wide' : 'story';
+    var st = story.st, fmt = story.fmt === 'wide' ? 'wide' : 'story', isTable = story.kind === 'table';
     [].forEach.call(story.el.querySelectorAll('[data-fmt]'), function (b) { b.setAttribute('aria-checked', String(b.getAttribute('data-fmt') === fmt)); });
-    segSlide(story.el.querySelector('.story__fmt'), '[aria-checked="true"]');   // біла «таблетка» їде, як в інших перемикачах
+    [].forEach.call(story.el.querySelectorAll('[data-kind]'), function (b) { b.setAttribute('aria-checked', String(b.getAttribute('data-kind') === story.kind)); });
+    story.el.classList.toggle('is-table', isTable);
+    var fmtBox = story.el.querySelector('.story__fmt:not(.story__kind)'), kindBox = story.el.querySelector('.story__kind');
+    segSlide(fmtBox, '[aria-checked="true"]');   // біла «таблетка» їде, як в інших перемикачах
+    if (!kindBox.hidden) segSlide(kindBox, '[aria-checked="true"]');
+    story.el.setAttribute('aria-label', isTable ? 'Поділитися таблицею' : 'Поділитися результатом');
     var box = story.el.querySelector('.story__img');
-    box.classList.toggle('is-wide', fmt === 'wide');
+    box.classList.toggle('is-wide', fmt === 'wide' && !isTable);
+    box.classList.toggle('is-post', fmt === 'wide' && isTable);
     box.innerHTML = '<span class="story__spin" aria-hidden="true"></span>';
     if (story.url) { try { URL.revokeObjectURL(story.url); } catch (e) { /* */ } story.url = null; }
     var token = story.token = (story.token || 0) + 1;
-    storyCanvas(st, fmt).then(function (cv) {
+    (isTable ? tableCanvas(story.me, fmt === 'wide' ? 'post' : 'story') : storyCanvas(st, fmt)).then(function (cv) {
       cv.toBlob(function (blob) {
         if (!blob || token !== story.token) return;
-        var fname = 'trout-master-' + (st.num || 'result') + (fmt === 'wide' ? '-4x3' : '-story') + '.png';
+        var fname = isTable ? 'trout-master-table' + (fmt === 'wide' ? '-4x5' : '-story') + '.png'
+          : 'trout-master-' + (st.num || 'result') + (fmt === 'wide' ? '-4x3' : '-story') + '.png';
         story.file = typeof File === 'function' ? new File([blob], fname, { type: 'image/png' }) : null;
         story.url = URL.createObjectURL(blob);
-        box.innerHTML = '<img alt="Результат: ' + esc(st.name) + '" src="' + story.url + '">';
+        box.innerHTML = '<img alt="' + (isTable ? esc(tableHeading()) : 'Результат: ' + esc(st.name)) + '" src="' + story.url + '">';
         var canShare = !!(story.file && navigator.canShare && navigator.share && navigator.canShare({ files: [story.file] }));
         story.el.querySelector('.story__share').hidden = !canShare;
         var save = story.el.querySelector('.story__save');
