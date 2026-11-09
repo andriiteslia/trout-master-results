@@ -96,7 +96,8 @@
   .kpi.k-dark .kpi__v { color: #fff; font-size: 22px; line-height: 1.15; white-space: normal; }
   .kpi__bar { background: #eef1f5; height: 6px; }
   .kpi__bar span { background: #4c9a12; }
-  .kpi.k-spark { flex-direction: row; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; column-gap: 12px; }
+  .kpi.k-spark { flex-direction: row; flex-wrap: wrap; align-items: flex-end; align-content: flex-start; justify-content: space-between; column-gap: 12px; }
+  .kpi.k-spark .spark { height: 30px; }   /* не вищий за число — тоді підпис і число стоять на тій самій висоті, що й у сусідніх плитках */
   .kpi.k-spark .kpi__l { flex-basis: 100%; }
   .tt { padding: 5px 9px; border-radius: 8px; background: #1a1a1a; margin-right: 6px; }
   .tt b { font-size: 22px; color: #fff; }
