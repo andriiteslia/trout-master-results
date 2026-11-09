@@ -2255,6 +2255,8 @@ input, textarea, select { caret-color: var(--nav); }
 .cmp-score span { color: #c3c9d3; font-weight: 700; }
 .cmp-sum__t { margin: 10px 0 0; font-size: 15px; font-weight: 650; }
 .cmp-sum__s { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.cmp-sum__note { display: flex; align-items: flex-start; justify-content: center; gap: 8px; margin: 14px auto 0; padding-top: 12px; border-top: 1px solid var(--border); max-width: 560px; font-size: 12.5px; line-height: 1.45; color: var(--muted); text-align: left; }
+.cmp-sum__note svg { flex: none; width: 16px; height: 16px; margin-top: 1px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 
 /* Показники: значення зліва й справа, назва по центру, смужка-шкала під ними */
 .cmp-cols { display: grid; gap: 0; }

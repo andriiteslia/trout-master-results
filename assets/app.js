@@ -1284,6 +1284,11 @@
     var sumTxt = lead
       ? esc(lead.name) + ' — краще у ' + Math.max(score.a, score.b) + ' з ' + score.n + ' ' + plural(score.n, 'показника', 'показників', 'показників')
       : 'Порівну: по ' + score.a + ' ' + plural(score.a, 'кращому показнику', 'кращих показники', 'кращих показників');
+    // Примітка: показники ≠ місце. Якщо попереду за показниками той, хто нижче в таблиці, — кажемо, хто вище і чому
+    var upper = A.place && B.place && A.place !== B.place ? (A.place < B.place ? A : B) : null;
+    var noteTxt = 'Перевага в показниках не означає вищого місця: його вирішують бали за перемоги в турах.' +
+      (lead && upper && lead !== upper ? ' Тому вище в таблиці — ' + esc(upper.name) + '.' : '');
+    var I_INFO = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/></svg>';
     var I_BACK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
 
     // Особисті зустрічі: тури, де за жеребкуванням вони суперники (зіграні — з рахунком, майбутні — «ще попереду»)
@@ -1328,6 +1333,7 @@
             '<b class="' + (score.b > score.a ? 'is-win' : '') + '">' + score.b + '</b></div>' +
           '<p class="cmp-sum__t">' + sumTxt + (score.tie ? ', порівну — ' + score.tie : '') + '</p>' +
           (gap.length ? '<p class="cmp-sum__s">Різниця: ' + esc(gap.join(' · ')) + '</p>' : '') +
+          '<p class="cmp-sum__note">' + I_INFO + '<span>' + noteTxt + '</span></p>' +
         '</section>' + h2h +
         '<div class="cmp-cols">' +
           '<section class="card pc-block"><h2 class="pc-h2">Основне</h2><div class="cmp-rows">' + main + '</div></section>' +
