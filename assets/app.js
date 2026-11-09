@@ -3448,7 +3448,6 @@
       var cls = 'rk-row r' + (ZEBRA && i % 2 ? ' z' : '') + (sel ? ' is-sel' : '') + medalCls(r.place, started) +
         (flashOn && changed[r.key] ? ' flash' : '') + (hasT ? '' : ' no-t');
       var form = r.form.map(function (c) { return '<span class="fb fb-' + c + '" title="' + RC[c][1] + '">' + RC[c][0] + '</span>'; }).join('');
-      var bars = r.form.map(function (c) { return '<i class="fl fl-' + c + '"></i>'; }).join('');
       var wdl = r.cnt ? '<b class="c-w">' + r.cnt.w + '</b> · <b class="c-d">' + r.cnt.d + '</b> · <b class="c-z">' + r.cnt.z + '</b> · <b class="c-l">' + r.cnt.l + '</b>' : '';
       var wdlM = r.cnt ? r.cnt.w + 'В · ' + r.cnt.d + 'РН · ' + r.cnt.z + 'БН · ' + r.cnt.l + 'П' : '';
       return '<div class="' + cls + '" role="row" data-key="' + esc(r.key) + '" tabindex="0" aria-selected="' + sel + '">' +
@@ -3456,7 +3455,7 @@
         '<span class="c-nm" role="cell">' + avatarHtml(r.name) + '<span class="nmw">' +
           '<span class="rk-nm">' + esc(r.name) + '</span>' +
           (r.num ? '<span class="sub d-only">№ ' + r.num + '</span>' : '') +
-          (r.cnt ? '<span class="msub m-only"><span class="fls" aria-hidden="true">' + bars + '</span>' + wdlM + '</span>' : '') +
+          (r.cnt ? '<span class="msub m-only">' + wdlM + '</span>' : '') +
         '</span></span>' +
         (hasT ? '<span class="c-form d-only" role="cell">' + form + '</span><span class="c-wdl d-only" role="cell">' + wdl + '</span>' : '') +
         '<span class="c-pts" role="cell"><b>' + (r.pts != null ? r.pts : '') + '</b>' +
