@@ -2222,9 +2222,9 @@
     var nb = $('regNotify'), ok = $('regNotifyOk'), toList = $('regToList');
     nb.hidden = mode !== 'offer';
     ok.hidden = mode !== 'ok';
-    // Поки пропонуємо сповіщення, головна кнопка — вона, а «Переглянути список» другорядна
-    toList.classList.toggle('btn-primary', mode !== 'offer');
-    toList.classList.toggle('btn-secondary', mode === 'offer');
+    // Головні дії — сповіщення (в апці) і Telegram-чат, тож «Переглянути список» завжди другорядна
+    toList.classList.remove('btn-primary');
+    toList.classList.add('btn-secondary');
   }
   function sendWriteAccess(granted) {
     var tg = tgApp();
@@ -2266,9 +2266,10 @@
         .catch(function () { /* статистика — не критично */ });
     } catch (e) { /* */ }
   }
-  // «Telegram-чат» у шапці (комп'ютер): у браузері — просте посилання, в апці — відкриваємо чат усередині Telegram
-  (function () {
-    var a = document.getElementById('chatWeb');
+  // «Telegram-чат» (шапка на комп'ютері й банер після реєстрації): у браузері — просте посилання,
+  // в апці — відкриваємо чат усередині Telegram
+  ['chatWeb', 'regChat'].forEach(function (id) {
+    var a = document.getElementById(id);
     if (!a) return;
     a.addEventListener('click', function (e) {
       var tg = tgApp();
@@ -2276,7 +2277,7 @@
       e.preventDefault();
       tg.openTelegramLink(a.href);
     });
-  })();
+  });
   // Кнопка партнера над нижньою кнопкою (лише в ТГ на телефоні): відкриває канал усередині Telegram
   (function () {
     ['partner', 'partnerWeb'].forEach(function (id) {

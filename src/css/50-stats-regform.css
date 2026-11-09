@@ -190,6 +190,29 @@
 .done__icon--late .face { fill: none; stroke: #b54708; stroke-width: 2.5; }
 .done__icon--late path { stroke: #b54708; stroke-width: 2.5; }
 .done__title { margin: 0; font-size: 20px; font-weight: 750; letter-spacing: -0.01em; }
+/* Банер «Приєднуйтесь до Telegram-чату» на екрані успішної реєстрації */
+.tgjoin {
+  justify-self: stretch; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 12px 14px;
+  margin: 10px 0 4px; padding: 16px; border-radius: 18px; text-align: left; text-decoration: none; color: #fff;
+  background: linear-gradient(180deg, #40B3E0 0%, #229ED9 100%); box-shadow: 0 6px 16px rgba(34, 158, 217, 0.28);
+  -webkit-tap-highlight-color: transparent; transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+.tgjoin__ic { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); }
+.tgjoin__ic svg { width: 24px; height: 24px; margin-left: -2px; }
+.tgjoin__txt { display: grid; gap: 3px; min-width: 0; }
+.tgjoin__txt b { font-size: 16px; font-weight: 750; line-height: 1.25; }
+.tgjoin__txt span { font-size: 13.5px; line-height: 1.4; color: rgba(255, 255, 255, 0.9); }
+.tgjoin__btn {
+  grid-column: 1 / -1; display: grid; place-items: center; height: 44px; border-radius: 999px;
+  background: #fff; color: #1b8ec5; font-size: 15px; font-weight: 700;
+}
+@media (min-width: 640px) {
+  .tgjoin { grid-template-columns: auto 1fr auto; padding: 16px 18px; }
+  .tgjoin__btn { grid-column: auto; padding: 0 20px; height: 40px; }
+}
+@media (hover: hover) { .tgjoin:hover { filter: brightness(1.05); transform: translateY(-1px); box-shadow: 0 10px 22px rgba(34, 158, 217, 0.34); } }
+.tgjoin:active { transform: scale(0.98); }
+.tgjoin:focus-visible { outline: 3px solid rgba(34, 158, 217, 0.45); outline-offset: 3px; }
 .done__text { margin: 0 0 12px; color: var(--text-3); }
 .done__text strong { color: var(--text); }
 
