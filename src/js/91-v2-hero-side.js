@@ -163,7 +163,7 @@
     }
     if (t) {
       var pl = playedTours(t);
-      h += kpi('', 'Турів зіграно', 'Тур', pl + ' <small>/ ' + t.rounds + '</small>',
+      h += kpi('k-tour', 'Турів зіграно', 'Тур', pl + ' <small>/ ' + t.rounds + '</small>',
         '<span class="kpi__bar d-only"><span style="width:' + Math.round(pl / t.rounds * 100) + '%"></span></span>');
     }
     var tf = totalFish();

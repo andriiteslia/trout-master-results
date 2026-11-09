@@ -40,10 +40,8 @@
   }
 
   // ---------- Конфеті: короткий «вжух» (без бібліотек) ----------
-  // from — елемент, з якого вистрілюють; 'top' — дощ з-за верхнього краю екрана на всю ширину
   function confetti(from) {
     if (REDUCED) return;
-    if (from === 'top') return confettiRain();
     var cv = document.createElement('canvas'), dpr = Math.min(2, window.devicePixelRatio || 1);
     var W = window.innerWidth, H = window.innerHeight;
     cv.className = 'confetti'; cv.width = W * dpr; cv.height = H * dpr;
@@ -77,40 +75,6 @@
       if (k < 1) requestAnimationFrame(frame); else cv.remove();
     })(performance.now());
   }
-  function confettiRain() {
-    var cv = document.createElement('canvas'), dpr = Math.min(2, window.devicePixelRatio || 1);
-    var W = window.innerWidth, H = window.innerHeight;
-    cv.className = 'confetti'; cv.width = W * dpr; cv.height = H * dpr;
-    document.body.appendChild(cv);
-    var c = cv.getContext('2d'); c.scale(dpr, dpr);
-    var COLORS = ['#f5c542', '#e8b931', '#76b12d', '#4a9112', '#ffffff', '#5b8fe0', '#e0675c'];
-    var N = Math.max(140, Math.min(300, Math.round(W / 4.5))), parts = [];
-    for (var i = 0; i < N; i++) {
-      parts.push({
-        x: Math.random() * W, y: -10 - Math.random() * H * 0.7,          // стартують над екраном, падають хвилями
-        vx: (Math.random() - 0.5) * 1.6, vy: 2 + Math.random() * 3.5,
-        sw: 0.6 + Math.random() * 1.4, ph: Math.random() * 6.28,         // погойдування з боку в бік
-        w: 6 + Math.random() * 6, h: 4 + Math.random() * 6, rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.3,
-        col: COLORS[i % COLORS.length], round: Math.random() < 0.25
-      });
-    }
-    var t0 = null, DUR = 3800;
-    (function frame(ts) {
-      if (t0 === null) t0 = ts;
-      var k = (ts - t0) / DUR, t = (ts - t0) / 1000;
-      c.clearRect(0, 0, W, H);
-      parts.forEach(function (p) {
-        p.vy = p.vy * 0.99 + 0.12; p.x += p.vx + Math.sin(t * 3 + p.ph) * p.sw; p.y += p.vy; p.rot += p.vr;
-        if (p.y < -20 || p.y > H + 20) return;
-        c.save(); c.globalAlpha = Math.max(0, 1 - Math.max(0, k - 0.75) / 0.25);
-        c.translate(p.x, p.y); c.rotate(p.rot); c.fillStyle = p.col;
-        if (p.round) { c.beginPath(); c.arc(0, 0, p.w / 2.4, 0, 6.28); c.fill(); }
-        else c.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.rot * 2)) + 1);
-        c.restore();
-      });
-      if (k < 1) requestAnimationFrame(frame); else cv.remove();
-    })(performance.now());
-  }
   function glow(el) {
     if (!el) return;
     el.classList.remove('is-glow'); void el.offsetWidth; el.classList.add('is-glow');
@@ -126,7 +90,7 @@
     try { if (localStorage.getItem(k)) return false; localStorage.setItem(k, '1'); return true; } catch (e) { return true; }
   }
   function finKey() { var ev = state.payload && state.payload.event; return 'tm:fin:' + ((ev && ev.title) || '') + '|' + ((ev && ev.subtitle) || ''); }
-  // Підсумкові результати: раз на пристрій — конфеті (комп: з подіуму; телефон: дощем згори) і сяйво медалі переможця
+  // Підсумкові результати: раз на пристрій — конфеті (комп: з подіуму; телефон: з плитки «Тур») і сяйво медалі переможця
   function celebrateFinal() {
     if (state.view !== 'list' || isListMode() || !tournamentDone()) return;
     var m = currentModel();
@@ -135,8 +99,9 @@
     setTimeout(function () {
       var p1 = v2.side && !v2.side.hidden ? v2.side.querySelector('.p1') : null;
       var row1 = el.board.querySelector('.rk-row.medal-1 .pc');
-      // Комп — з подіуму; телефон — дощем із-за верхнього краю екрана (верхній рядок таблиці там надто низько)
-      confetti(p1 && p1.offsetWidth ? p1.querySelector('.podium__av') || p1 : 'top');
+      // Комп — з подіуму; телефон — з плитки «Тур 14 / 14» угорі (верхній рядок таблиці там надто низько)
+      var tour = document.querySelector('.kpi.k-tour .kpi__v');
+      confetti(p1 && p1.offsetWidth ? p1.querySelector('.podium__av') || p1 : tour && tour.offsetWidth ? tour : row1);
       glow(p1 && p1.offsetWidth ? p1.querySelector('.podium__bar') : row1);
     }, 450);
   }
