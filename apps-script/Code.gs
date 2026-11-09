@@ -655,6 +655,9 @@ function drawNames_(ss) {
  * хто оплатив, праворуч значок 💵 (payload.paid — лише імена, без сум).
  */
 function setupPaidColumn_(reg) {
+  // Колонка могла бути об'єднаною клітинкою-роздільником (C1:C150) — у ній галочки не ставляться
+  var colAll = reg.getRange(1, REG_COL_PAID, reg.getMaxRows(), 1);
+  if (colAll.getMergedRanges().length) colAll.breakApart();
   var head = reg.getRange(1, REG_COL_PAID);
   var hv = String(head.getDisplayValue()).trim();
   if (!hv || hv.indexOf('Оплата') === 0) {
@@ -690,6 +693,7 @@ function paidNames_(ss) {
 /** Галочка «Оплата» в рядку учасника (якщо її ще немає; уже вписані ✅/так стають поставленою галочкою). */
 function paidCheckbox_(sh, row) {
   var c = sh.getRange(row, REG_COL_PAID);
+  if (c.isPartOfMerge()) return;   // об'єднана клітинка — спершу запустіть setupSync
   var dv = c.getDataValidation();
   if (dv && dv.getCriteriaType() === SpreadsheetApp.DataValidationCriteriaType.CHECKBOX) return;
   var v = String(c.getDisplayValue()).trim().toLowerCase();
