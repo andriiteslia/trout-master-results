@@ -56,3 +56,5 @@
 .rules__map span { flex: 1; min-width: 0; }
 .rules__map .hlink__go { stroke: #98a2b3; }
 .rules__list a { color: var(--brand-ink); text-decoration: underline; text-underline-offset: 2px; word-break: break-all; }
+/* На екрані реєстрації плитки й кнопка оплати не потрібні */
+.view-reg #heroLinks, .view-reg #payBox { display: none !important; }
