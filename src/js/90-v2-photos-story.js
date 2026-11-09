@@ -300,7 +300,7 @@
 
       // підпис
       track(4); font(500, 22); c.fillStyle = '#6b7380'; c.fillText('РЕЗУЛЬТАТИ Й СТАТИСТИКА', L.footX, L.footY); track(0);
-      font(600, 36); c.fillStyle = '#9bd83a'; c.fillText('@troutmasterua_bot', L.footX, L.botY);
+      font(600, 36); c.fillStyle = '#9bd83a'; c.fillText('troutmaster.app', L.footX, L.botY);
       return cv;
     });
   }
