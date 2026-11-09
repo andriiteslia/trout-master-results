@@ -2403,13 +2403,19 @@ input, textarea, select { caret-color: var(--nav); }
 .tg .foot__tg { display: inline-flex !important; }
 .tg .foot__web { display: none !important; }
 
-/* Телефон: коли під нижньою кнопкою вже чорний футер — світла підкладка плавно стає чорною, а чорна кнопка — білою */
-.regbar::before {
+/* Телефон: коли під нижньою кнопкою вже чорний футер — світла підкладка плавно стає чорною, а чорна кнопка — білою.
+   Так само для зеленої «Поділитися результатом» у картці учасника (.pc-storybar) */
+.regbar::before, .pc-storybar::before {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0;
   background: linear-gradient(to top, var(--nav) 55%, rgba(8, 8, 8, 0)); transition: opacity 0.25s ease;
 }
-.foot-in .regbar { background: transparent; }
-.foot-in .regbar::before { opacity: 1; }
+.foot-in .regbar, .foot-in .pc-storybar { background: transparent; }
+.foot-in .regbar::before, .foot-in .pc-storybar::before { opacity: 1; }
 .regbar .btn-primary:not(#cardOpen) { transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease, transform 0.1s ease; }
 .foot-in .regbar .btn-primary:not(#cardOpen) { background: #fff; color: #0a0a0a; box-shadow: none; }
-.foot-in .regbar #cardOpen { box-shadow: none; }
+.foot-in .regbar #cardOpen, .foot-in .pc-storybtn { box-shadow: none; }
+/* Картка учасника на телефоні: місце під «Поділитися результатом» — у футері, а не в самій картці */
+@media (max-width: 979px) {
+  .view-card .pcard:has(.pc-storybar) .pc-sheet { padding-bottom: 24px; }
+  html.view-card:has(.pc-storybar) .foot { padding-bottom: calc(112px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px))); }
+}

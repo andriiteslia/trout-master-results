@@ -318,8 +318,12 @@
     if (!f) return;
     var check = function () {
       raf = 0;
-      var bar = document.getElementById('regbar');
-      var barTop = bar && !bar.hidden ? bar.getBoundingClientRect().top + 24 : innerHeight;   // 24 — верхній відступ підкладки
+      // Видима нижня панель: «Зареєструватися / Статистика / Картка» або «Поділитися результатом» у картці
+      var barTop = innerHeight;
+      [document.getElementById('regbar'), document.querySelector('.view-card .pc-storybar')].forEach(function (bar) {
+        if (!bar || bar.hidden || !bar.offsetHeight) return;
+        barTop = Math.min(barTop, bar.getBoundingClientRect().top + 24);   // 24 — верхній відступ підкладки
+      });
       root.classList.toggle('foot-in', f.getBoundingClientRect().top < barTop);
     };
     var on = function () { if (!raf) raf = requestAnimationFrame(check); };
