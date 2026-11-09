@@ -2755,7 +2755,7 @@
     };
   }
   // ----- Картинка-сторіс з результатом учасника (1080×1920) -----
-  // Важливе — в «безпечній зоні» сторіс Instagram/Telegram: зверху ~200 px перекриває інтерфейс, знизу ~260 px — поле відповіді
+  // Важливе — в «безпечній зоні» сторіс Instagram/Telegram: зверху ~150 px перекриває інтерфейс, знизу ~190 px — поле відповіді
   function loadImg(src) {
     return new Promise(function (res) {
       if (!src) return res(null);
@@ -2845,8 +2845,8 @@
       var L = wide
         ? { cx: 400, logoW: 280, logoY: 112, titleY: 262, subY: 302, photoY: 500, R: 122, nameY: 722, nameW: 660, nameS: 62, placeY: 776,
             px: 780, py: 210, pw: 580, ph: 560, footY: 952, botY: 998, footX: W / 2, glowX: 400, glowY: 470, fishX: W - 980, fishY: 640, fishW: 960 }
-        : { cx: W / 2, logoW: 340, logoY: 214, titleY: 390, subY: 434, photoY: 640, R: 118, nameY: 878, nameW: 920, nameS: 78, placeY: 936,
-            px: 90, py: 1010, pw: W - 180, ph: 520, footY: 1600, botY: 1648, footX: W / 2, glowX: W / 2, glowY: 560, fishX: W - 1180 - 10, fishY: 1240, fishW: 1180 };
+        : { cx: W / 2, logoW: 340, logoY: 150, titleY: 326, subY: 370, photoY: 600, R: 118, nameY: 838, nameW: 920, nameS: 78, placeY: 896,
+            px: 90, py: 980, pw: W - 180, ph: 560, footY: 1676, botY: 1724, footX: W / 2, glowX: W / 2, glowY: 560, fishX: W - 1180 - 10, fishY: 1240, fishW: 1180 };
 
       // фон: глибокий чорний, м'яке зелене світло, ледь помітна форель (голова праворуч)
       c.fillStyle = '#08090a'; c.fillRect(0, 0, W, H);
@@ -4043,12 +4043,12 @@
       var font = function (w, size) { c.font = w + ' ' + size + 'px ' + F; };
       var MED = { 1: '#e8c35a', 2: '#c9d0da', 3: '#d79a6a' }, GREEN = '#8fd12a';
 
-      // Розкладка. Сторіс: зверху ~200 px і знизу ~260 px перекриває інтерфейс Instagram/Telegram — там лише фон
+      // Розкладка. Сторіс: зверху ~150 px і знизу ~190 px перекриває інтерфейс Instagram/Telegram — там лише фон
       var L = post
-        ? { logoY: 56, logoW: 200, titleY: 170, subY: 204, headY: 268, headS: 52, podY: 300, podH: 300, R1: 74, R: 58,
-            listY: 690, rowH: 62, gapY: 30, footY: 1300, rowR: 22 }
-        : { logoY: 210, logoW: 260, titleY: 350, subY: 388, headY: 470, headS: 62, podY: 510, podH: 360, R1: 92, R: 72,
-            listY: 930, rowH: 76, gapY: 36, footY: 1690, rowR: 26 };
+        ? { logoY: 40, logoW: 190, titleY: 148, subY: 182, headY: 246, headS: 52, podY: 276, R1: 62, R: 48,
+            listY: 630, rowH: 66, gapY: 30, footY: 1318, rowR: 22 }
+        : { logoY: 150, logoW: 250, titleY: 284, subY: 322, headY: 404, headS: 62, podY: 440, R1: 76, R: 60,
+            listY: 850, rowH: 84, gapY: 36, footY: 1770, rowR: 26 };
 
       // фон
       c.fillStyle = '#08090a'; c.fillRect(0, 0, W, H);

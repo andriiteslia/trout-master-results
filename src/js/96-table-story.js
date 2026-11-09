@@ -58,12 +58,12 @@
       var font = function (w, size) { c.font = w + ' ' + size + 'px ' + F; };
       var MED = { 1: '#e8c35a', 2: '#c9d0da', 3: '#d79a6a' }, GREEN = '#8fd12a';
 
-      // Розкладка. Сторіс: зверху ~200 px і знизу ~260 px перекриває інтерфейс Instagram/Telegram — там лише фон
+      // Розкладка. Сторіс: зверху ~150 px і знизу ~190 px перекриває інтерфейс Instagram/Telegram — там лише фон
       var L = post
-        ? { logoY: 56, logoW: 200, titleY: 170, subY: 204, headY: 268, headS: 52, podY: 300, podH: 300, R1: 74, R: 58,
-            listY: 690, rowH: 62, gapY: 30, footY: 1300, rowR: 22 }
-        : { logoY: 210, logoW: 260, titleY: 350, subY: 388, headY: 470, headS: 62, podY: 510, podH: 360, R1: 92, R: 72,
-            listY: 930, rowH: 76, gapY: 36, footY: 1690, rowR: 26 };
+        ? { logoY: 40, logoW: 190, titleY: 148, subY: 182, headY: 246, headS: 52, podY: 276, R1: 62, R: 48,
+            listY: 630, rowH: 66, gapY: 30, footY: 1318, rowR: 22 }
+        : { logoY: 150, logoW: 250, titleY: 284, subY: 322, headY: 404, headS: 62, podY: 440, R1: 76, R: 60,
+            listY: 850, rowH: 84, gapY: 36, footY: 1770, rowR: 26 };
 
       // фон
       c.fillStyle = '#08090a'; c.fillRect(0, 0, W, H);

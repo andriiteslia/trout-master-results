@@ -99,7 +99,7 @@
     };
   }
   // ----- Картинка-сторіс з результатом учасника (1080×1920) -----
-  // Важливе — в «безпечній зоні» сторіс Instagram/Telegram: зверху ~200 px перекриває інтерфейс, знизу ~260 px — поле відповіді
+  // Важливе — в «безпечній зоні» сторіс Instagram/Telegram: зверху ~150 px перекриває інтерфейс, знизу ~190 px — поле відповіді
   function loadImg(src) {
     return new Promise(function (res) {
       if (!src) return res(null);
@@ -189,8 +189,8 @@
       var L = wide
         ? { cx: 400, logoW: 280, logoY: 112, titleY: 262, subY: 302, photoY: 500, R: 122, nameY: 722, nameW: 660, nameS: 62, placeY: 776,
             px: 780, py: 210, pw: 580, ph: 560, footY: 952, botY: 998, footX: W / 2, glowX: 400, glowY: 470, fishX: W - 980, fishY: 640, fishW: 960 }
-        : { cx: W / 2, logoW: 340, logoY: 214, titleY: 390, subY: 434, photoY: 640, R: 118, nameY: 878, nameW: 920, nameS: 78, placeY: 936,
-            px: 90, py: 1010, pw: W - 180, ph: 520, footY: 1600, botY: 1648, footX: W / 2, glowX: W / 2, glowY: 560, fishX: W - 1180 - 10, fishY: 1240, fishW: 1180 };
+        : { cx: W / 2, logoW: 340, logoY: 150, titleY: 326, subY: 370, photoY: 600, R: 118, nameY: 838, nameW: 920, nameS: 78, placeY: 896,
+            px: 90, py: 980, pw: W - 180, ph: 560, footY: 1676, botY: 1724, footX: W / 2, glowX: W / 2, glowY: 560, fishX: W - 1180 - 10, fishY: 1240, fishW: 1180 };
 
       // фон: глибокий чорний, м'яке зелене світло, ледь помітна форель (голова праворуч)
       c.fillStyle = '#08090a'; c.fillRect(0, 0, W, H);
