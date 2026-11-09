@@ -3793,7 +3793,7 @@
     if (VENUE) h += '<button type="button" class="kpi hlink" data-info="map">' + I_PIN +
       '<span class="hlink__txt"><b>Як доїхати</b><small>Навігатор</small></span>' + I_GO + '</button>';
     if (rules) h += '<button type="button" class="kpi hlink" data-info="rules">' + I_DOC +
-      '<span class="hlink__txt"><b>Положення</b><small>Розклад і правила</small></span>' + I_GO + '</button>';
+      '<span class="hlink__txt"><b>Положення</b><small>Прочитати</small></span>' + I_GO + '</button>';
     if (box.innerHTML !== h) box.innerHTML = h;
     box.classList.toggle('hlinks--1', !(VENUE && rules));
   }
