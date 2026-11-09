@@ -2395,3 +2395,8 @@ input, textarea, select { caret-color: var(--nav); }
   .foot, .has-regbar .foot, .tg .foot, .tg.has-regbar .foot { margin-top: 32px; padding: 44px 0 28px; }   /* нижньої кнопки на комп'ютері немає */
   .sel-on .foot, .sel-on.has-regbar .foot { padding-bottom: 104px; }   /* місце під плаваючою таблеткою */
 }
+
+/* В апці Telegram ми вже в боті: посилання на бота ховаємо, натомість — сайт (відкривається в браузері) */
+.foot__tg { display: none !important; }
+.tg .foot__tg { display: inline-flex !important; }
+.tg .foot__web { display: none !important; }
