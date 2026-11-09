@@ -117,8 +117,11 @@
 .btn2-dark { background: #0a0a0a; color: #fff; padding: 0 20px; }
 @media (hover: hover) { .btn2-dark:hover { background: #262626; } }
 .btn2-light { background: #fff; color: var(--text); border-color: #d0d5dd; }
-.btn2 svg.tg-ic { width: 20px; height: 20px; stroke: none; }
-.btn2-tg { text-decoration: none; }
+.btn2 svg.tg-ic { width: 19px; height: 19px; stroke: none; margin-left: -2px; }
+.btn2-tg { text-decoration: none; color: #fff; border-color: transparent; background: linear-gradient(180deg, #40B3E0 0%, #229ED9 100%); box-shadow: 0 4px 12px rgba(34, 158, 217, 0.28); transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease; }
+@media (hover: hover) { .btn2-tg:hover { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 8px 18px rgba(34, 158, 217, 0.36); } }
+.btn2-tg:active { transform: scale(0.97); }
+.btn2-tg:focus-visible { outline: 3px solid rgba(34, 158, 217, 0.45); outline-offset: 3px; }
 @media (hover: hover) { .btn2-light:hover { background: #f2f4f7; } }
 .btn2-white { background: #fff; color: #0a0a0a; height: 40px; padding: 0 16px; font-weight: 650; }
 
