@@ -39,3 +39,14 @@
 .foot__tg { display: none !important; }
 .tg .foot__tg { display: inline-flex !important; }
 .tg .foot__web { display: none !important; }
+
+/* Телефон: коли під нижньою кнопкою вже чорний футер — світла підкладка плавно стає чорною, а чорна кнопка — білою */
+.regbar::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0;
+  background: linear-gradient(to top, var(--nav) 55%, rgba(8, 8, 8, 0)); transition: opacity 0.25s ease;
+}
+.foot-in .regbar { background: transparent; }
+.foot-in .regbar::before { opacity: 1; }
+.regbar .btn-primary:not(#cardOpen) { transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease, transform 0.1s ease; }
+.foot-in .regbar .btn-primary:not(#cardOpen) { background: #fff; color: #0a0a0a; box-shadow: none; }
+.foot-in .regbar #cardOpen { box-shadow: none; }

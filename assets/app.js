@@ -2294,6 +2294,23 @@
     });
   })();
 
+  // Нижня кнопка над чорним футером: html.foot-in → темна підкладка й біла кнопка (див. 99-footer.css)
+  (function () {
+    var f = document.getElementById('siteFoot'), root = document.documentElement, raf = 0;
+    if (!f) return;
+    var check = function () {
+      raf = 0;
+      var bar = document.getElementById('regbar');
+      var barTop = bar && !bar.hidden ? bar.getBoundingClientRect().top + 24 : innerHeight;   // 24 — верхній відступ підкладки
+      root.classList.toggle('foot-in', f.getBoundingClientRect().top < barTop);
+    };
+    var on = function () { if (!raf) raf = requestAnimationFrame(check); };
+    window.addEventListener('scroll', on, { passive: true });
+    window.addEventListener('resize', on);
+    if (window.ResizeObserver) new ResizeObserver(on).observe(document.body);
+    on();
+  })();
+
   // Футер: рік, кліки по партнерах; в апці посилання t.me відкриваються всередині Telegram, решта — у браузері
   (function () {
     var f = document.getElementById('siteFoot');
