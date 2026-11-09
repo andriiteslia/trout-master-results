@@ -60,10 +60,14 @@
 
       // Розкладка. Сторіс: зверху ~150 px і знизу ~190 px перекриває інтерфейс Instagram/Telegram — там лише фон
       var L = post
-        ? { logoY: 40, logoW: 190, titleY: 148, subY: 182, headY: 246, headS: 52, podY: 276, R1: 62, R: 48,
-            listY: 630, rowH: 66, gapY: 30, footY: 1318, rowR: 22 }
-        : { logoY: 150, logoW: 250, titleY: 284, subY: 322, headY: 404, headS: 62, podY: 440, R1: 76, R: 60,
-            listY: 850, rowH: 84, gapY: 36, footY: 1770, rowR: 26 };
+      // Лого й підпис унизу — ті самі розмір і місце, що й на картинці-картці учасника (storyCanvas)
+        ? { logoY: 40, logoW: 210, titleY: 158, subY: 192, headY: 256, headS: 52, podY: 284, R1: 62, R: 48,
+            listY: 638, rowMax: 80, gapY: 30, footY: H - 128, botY: H - 82, rowR: 22 }
+        : { logoY: 150, logoW: 340, titleY: 326, subY: 364, headY: 444, headS: 62, podY: 478, R1: 76, R: 60,
+            listY: 888, rowMax: 104, gapY: 36, footY: 1676, botY: 1724, rowR: 26 };
+      // Висота рядка — щоб рядки заповнили місце до підпису; свій рядок (нижче 10-го) забирає місце лише тоді, коли він є
+      var nRows = list.length + (extra ? 1 : 0);
+      L.rowH = Math.min(L.rowMax, Math.floor((L.footY - 70 - L.listY - (extra ? L.gapY : 0)) / Math.max(nRows, 1)));
 
       // фон
       c.fillStyle = '#08090a'; c.fillRect(0, 0, W, H);
@@ -135,7 +139,7 @@
         var cy = y + h / 2;
         c.textAlign = 'center'; font(700, post ? 30 : 34); c.fillStyle = mine ? GREEN : '#7d8696'; c.textBaseline = 'middle';
         c.fillText(String(r.place), x0 + 26, cy + 1);
-        var ar = post ? 22 : 26;
+        var ar = Math.round(Math.min(34, h * 0.36));
         face(im, r.name, x0 + 92, cy, ar, null);
         c.textAlign = 'left'; c.fillStyle = '#fff';
         var nameX = x0 + 92 + ar + 22, numW = 250;
@@ -160,8 +164,8 @@
       }
 
       // підпис
-      track(4); font(500, 22); c.fillStyle = '#6b7380'; c.fillText('РЕЗУЛЬТАТИ Й СТАТИСТИКА', W / 2, L.footY - 46); track(0);
-      font(600, 34); c.fillStyle = '#9bd83a'; c.fillText('troutmaster.app', W / 2, L.footY);
+      track(4); font(500, 22); c.fillStyle = '#6b7380'; c.fillText('РЕЗУЛЬТАТИ Й СТАТИСТИКА', W / 2, L.footY); track(0);
+      font(600, 36); c.fillStyle = '#9bd83a'; c.fillText('troutmaster.app', W / 2, L.botY);
       return cv;
     });
   }
