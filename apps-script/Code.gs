@@ -82,6 +82,7 @@ var CARD_OFF = 'Приховати';
 var REG_SHEET = 'Учасники';
 var REG_COL_NUM = 1;     // A — порядковий номер
 var REG_COL_NAME = 2;    // B — прізвище та ім'я
+var REG_COL_PAID = 3;    // C — оплата (галочка; бачить лише організатор, на сайт не йде)
 var REG_COL_PHONE = 5;   // E — телефон (лише для організатора)
 var REG_COL_TIME = 6;    // F — час реєстрації
 var REG_COL_TG_ID = 7;   // G — Telegram ID (якщо реєструвались через бота)
@@ -295,6 +296,7 @@ function setupSync() {
       var c = reg.getRange(1, x[0]);
       if (!String(c.getDisplayValue()).trim()) c.setValue(x[1]).setFontWeight('bold');
     });
+    setupPaidColumn_(reg);
   }
 
   // Блок діапазонів: заповнюємо лише порожні клітинки, щоб не затерти ваші значення
@@ -636,6 +638,38 @@ function drawNames_(ss) {
   return names;
 }
 
+/**
+ * Колонка «Оплата» (C) на аркуші «Учасники»: галочка навпроти кожного учасника,
+ * у заголовку — скільки оплатили, напр. «Оплата: 12/28». На сайт не потрапляє.
+ */
+function setupPaidColumn_(reg) {
+  var head = reg.getRange(1, REG_COL_PAID);
+  var hv = String(head.getDisplayValue()).trim();
+  if (!hv || hv.indexOf('Оплата') === 0) {
+    var col = String.fromCharCode(64 + REG_COL_PAID), nameCol = String.fromCharCode(64 + REG_COL_NAME);
+    var sep = formulaSep_(head);
+    head.setFormula('="Оплата: "&COUNTIF(' + col + '2:' + col + sep + 'TRUE)&"/"&COUNTA(' + nameCol + '2:' + nameCol + ')')
+      .setFontWeight('bold').setHorizontalAlignment('center')
+      .setNote('Поставте галочку, коли учасник оплатив участь. Бачите лише ви — на сайт це не потрапляє.');
+  }
+  var last = reg.getLastRow();
+  if (last < 2) return;
+  var names = reg.getRange(2, REG_COL_NAME, last - 1, 1).getDisplayValues();
+  for (var i = 0; i < names.length; i++) if (String(names[i][0]).trim()) paidCheckbox_(reg, i + 2);
+  reg.getRange(2, REG_COL_PAID, last - 1, 1).setHorizontalAlignment('center');
+  if (reg.getColumnWidth(REG_COL_PAID) < 90) reg.setColumnWidth(REG_COL_PAID, 110);
+}
+
+/** Галочка «Оплата» в рядку учасника (якщо її ще немає; уже вписані ✅/так стають поставленою галочкою). */
+function paidCheckbox_(sh, row) {
+  var c = sh.getRange(row, REG_COL_PAID);
+  var dv = c.getDataValidation();
+  if (dv && dv.getCriteriaType() === SpreadsheetApp.DataValidationCriteriaType.CHECKBOX) return;
+  var v = String(c.getDisplayValue()).trim().toLowerCase();
+  c.insertCheckboxes();
+  if (v && /^(✅|✔|✔️|\+|так|да|yes|true|1|ok|оплачено|оплатив)$/.test(v)) c.check(); else c.uncheck();
+}
+
 /** Вписує імена учасників у колонку B «Жеребкування» (лише там, де вони змінилися). */
 function syncDrawNames_(ss, draw) {
   var sh = ss.getSheetByName(DRAW_SHEET);
@@ -764,6 +798,7 @@ function register_(data) {
     var number = existingNum > 0 ? existingNum : maxNum + 1;
     if (!(existingNum > 0)) numCell.setValue(number);
     sh.getRange(row, REG_COL_NAME).setValue(name);
+    paidCheckbox_(sh, row);
     sh.getRange(row, REG_COL_PHONE).setNumberFormat('@').setValue(formatPhone_(phone));
     sh.getRange(row, REG_COL_TIME).setValue(new Date()).setNumberFormat('dd.MM.yyyy HH:mm');
     if (tgUser) {
