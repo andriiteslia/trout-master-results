@@ -707,7 +707,7 @@ function paidCheckbox_(sh, row) {
   var c = sh.getRange(row, REG_COL_PAID);
   if (c.isPartOfMerge()) return;   // об'єднана клітинка — спершу запустіть setupSync
   var dv = c.getDataValidation();
-  if (dv && dv.getCriteriaType() === SpreadsheetApp.DataValidationCriteriaType.CHECKBOX) return;
+  if (dv && dv.getCriteriaType() === SpreadsheetApp.DataValidationCriteria.CHECKBOX) return;
   var v = String(c.getDisplayValue()).trim().toLowerCase();
   c.insertCheckboxes();
   if (v && /^(✅|✔|✔️|\+|так|да|yes|true|1|ok|оплачено|оплатив)$/.test(v)) c.check(); else c.uncheck();
