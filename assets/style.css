@@ -2056,6 +2056,13 @@ input, textarea, select { caret-color: var(--nav); }
 .pond-row { display: flex; }
 .pond-row .pond-sec { flex: 1 1 0; min-width: 0; }
 
+
+/* ===== Кнопка «Оплатити участь» (телефон, режим «Список учасників») ===== */
+.paybox { margin-top: 12px; }
+.paybtn { display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; border-radius: 999px; background: #fff; color: #0a0a0a; font-size: 17px; font-weight: 700; text-decoration: none; -webkit-tap-highlight-color: transparent; transition: transform .12s ease, background-color .12s ease; }
+.paybtn img { width: 30px; height: 30px; object-fit: contain; flex: none; }
+.paybtn:active { transform: scale(.98); background: #eceef1; }
+.paybox__fee { margin: 10px 0 0; text-align: center; font-size: 14px; color: rgba(255, 255, 255, .62); }
 /* ===== src/css/90-motion.css ===== */
 /* Скелетони завантаження: м'який перелив, мінімум деталей */
 .skel { padding: 8px 16px 16px; }

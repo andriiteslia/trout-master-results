@@ -203,6 +203,19 @@ const TESTS = {
     await t.ctx.close(); return t.errors;
   },
 
+  'pay: кнопка «Оплатити участь» — телефон у списку учасників; у результатах і на компі немає': async (b) => {
+    const t = await page(b, MOB, 'list', { tg: true });
+    assert(await visible(t.p, '#payBox'), 'немає кнопки оплати в списку (телефон)');
+    assert(/send\.monobank\.ua\/jar\//.test(await t.p.getAttribute('#payBtn', 'href')), 'кнопка оплати веде не на банку');
+    assert(/Вартість участі/.test(await t.p.textContent('#payFee')), 'під кнопкою немає вартості участі');
+    await shot(t.p, 'mob-pay'); await t.ctx.close();
+    const r = await page(b, MOB, 'results');
+    assert(!(await visible(r.p, '#payBox')), 'кнопка оплати видна в результатах'); await r.ctx.close();
+    const d = await page(b, DESK, 'list');
+    assert(!(await visible(d.p, '#payBox')), 'кнопка оплати видна на компі'); await d.ctx.close();
+    return t.errors.concat(r.errors, d.errors);
+  },
+
   'list desktop: список, таблетка «Вибрано в списку»': async (b) => {
     const t = await page(b, DESK, 'list');
     assert((await t.p.locator('#board [data-key]').count()) >= 20, 'список учасників порожній');

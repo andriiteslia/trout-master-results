@@ -3127,11 +3127,10 @@
     var note = document.getElementById('regBotNote');
     if (note) note.hidden = !(state.view === 'reg' && IN_TG && open && !state.regDone);
     // Вартість участі — з таблиці (аркуш «Сайт», B14). Число → «1 700 грн», текст — як є
-    var feeEl = document.getElementById('regFee'), fee = String((state.payload && state.payload.fee) || '').trim();
+    var feeEl = document.getElementById('regFee'), fee = feeText();
     if (feeEl) {
       feeEl.hidden = !fee;
       if (fee) {
-        if (/^\d[\d\s]*$/.test(fee)) fee = fee.replace(/\s/g, '').replace(/\B(?=(\d{3})+$)/g, '\u00a0') + '\u00a0грн';
         feeEl.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6.5 9.5v5M17.5 9.5v5"/></svg>' +
           '<span>Вартість участі — ' + esc(fee) + '</span>';
       }
@@ -3204,7 +3203,35 @@
       : days + ' <small>' + plural(days, 'день', 'дні', 'днів') + '</small>';
     return { v: v, date: m[1] + ' ' + m[2].toLowerCase() };
   }
+  // Вартість участі з таблиці (B14): число → «1 700 грн», текст — як є; порожньо → ''
+  function feeText() {
+    var fee = String((state.payload && state.payload.fee) || '').trim();
+    if (/^\d[\d\s]*$/.test(fee)) fee = fee.replace(/\s/g, '').replace(/\B(?=(\d{3})+$)/g, '\u00a0') + '\u00a0грн';
+    return fee;
+  }
+  // Біла кнопка «Оплатити участь» під плитками (телефон, лише в режимі «Список учасників»)
+  var PAY_URL = String(CFG.PAY_URL || '').trim();
+  function renderPay() {
+    var box = document.getElementById('payBox');
+    if (!box) return;
+    var on = !!(PAY_URL && state.payload && isListMode());
+    box.hidden = !on;
+    if (!on) return;
+    var btn = document.getElementById('payBtn');
+    if (btn.getAttribute('href') !== PAY_URL) btn.setAttribute('href', PAY_URL);
+    var fee = feeText(), f = document.getElementById('payFee');
+    f.hidden = !fee;
+    if (fee) f.innerHTML = '<span>Вартість участі — ' + esc(fee) + '</span><span class="paybox__via"> · Monobank</span>';
+  }
+  (function () {   // в апці Telegram посилання відкриваємо через openLink (інакше Telegram може його не відкрити)
+    var btn = document.getElementById('payBtn');
+    if (btn) btn.addEventListener('click', function (e) {
+      var tg = IN_TG ? tgApp() : null;
+      if (tg && typeof tg.openLink === 'function') { e.preventDefault(); tg.openLink(btn.href); }
+    });
+  })();
   function renderKpis() {
+    renderPay();
     var p = state.payload, h = '';
     if (!p) {   // ще вантажимо: три легкі плитки-скелетони
       v2.kpis.innerHTML = state.error ? '' : [0, 1, 2].map(function (i) {
