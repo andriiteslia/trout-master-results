@@ -2958,12 +2958,14 @@
     story.st = st;
     if (!story.fmt) { try { story.fmt = localStorage.getItem('tm:storyFmt') || 'story'; } catch (x) { story.fmt = 'story'; } }
     story.el.hidden = false;
+    story.el.querySelector('.story__fmt')._seg = null;   // при відкритті — одразу на місці, без «приїзду»
     document.documentElement.classList.add('story-open');
     renderStory();
   }
   function renderStory() {
     var st = story.st, fmt = story.fmt === 'wide' ? 'wide' : 'story';
     [].forEach.call(story.el.querySelectorAll('[data-fmt]'), function (b) { b.setAttribute('aria-checked', String(b.getAttribute('data-fmt') === fmt)); });
+    segSlide(story.el.querySelector('.story__fmt'), '[aria-checked="true"]');   // біла «таблетка» їде, як в інших перемикачах
     var box = story.el.querySelector('.story__img');
     box.classList.toggle('is-wide', fmt === 'wide');
     box.innerHTML = '<span class="story__spin" aria-hidden="true"></span>';
