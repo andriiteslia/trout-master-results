@@ -124,3 +124,7 @@
 .paybtn img { width: 30px; height: 30px; object-fit: contain; flex: none; }
 .paybtn:active { transform: scale(.98); background: #eceef1; }
 .paybox__fee { margin: 10px 0 0; text-align: center; font-size: 14px; color: rgba(255, 255, 255, .62); }
+.paybtn[hidden] { display: none; }
+.paybox__ok { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0; font-size: 15px; font-weight: 650; color: #b9e58f; }
+.paybox__ok[hidden] { display: none; }
+.paybox__ok svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }

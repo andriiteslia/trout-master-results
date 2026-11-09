@@ -209,6 +209,11 @@ const TESTS = {
     assert(/send\.monobank\.ua\/jar\//.test(await t.p.getAttribute('#payBtn', 'href')), 'кнопка оплати веде не на банку');
     assert(/Вартість участі/.test(await t.p.textContent('#payFee')), 'під кнопкою немає вартості участі');
     await shot(t.p, 'mob-pay'); await t.ctx.close();
+    const m = await page(b, MOB, 'list', { tg: true, names: ['Повар Олександр'] });   // у фікстурі з галочкою «Оплата»
+    assert(await visible(m.p, '#payOk'), 'оплаченому не показано «Участь оплачена»');
+    assert(!(await visible(m.p, '#payBtn')), 'оплаченому показано кнопку оплати');
+    await shot(m.p, 'mob-pay-ok'); await m.ctx.close();
+    t.errors.push(...m.errors);
     const r = await page(b, MOB, 'results');
     assert(!(await visible(r.p, '#payBox')), 'кнопка оплати видна в результатах'); await r.ctx.close();
     const d = await page(b, DESK, 'list');

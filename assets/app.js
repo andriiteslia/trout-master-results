@@ -2167,7 +2167,7 @@
     }).then(function (r) { return r.ok ? r.json() : null; })
       .then(function (res) {
         if (res && res.ok && res.canWrite === true) state.canWrite = true;
-        if (res && res.ok && Array.isArray(res.names)) applyMyNames(res.names);
+        if (res && res.ok && Array.isArray(res.names)) { applyMyNames(res.names); renderPay(); }
         nbarReady();
       })
       .catch(function () { nbarReady(); /* не вийшло — нічого страшного */ });
@@ -3217,10 +3217,17 @@
     var on = !!(PAY_URL && state.payload && isListMode());
     box.hidden = !on;
     if (!on) return;
+    // Учасник, якого апка впізнала (Telegram), уже з галочкою «Оплата» — замість кнопки легкий зелений текст
+    var paid = {};
+    (Array.isArray(state.payload.paid) ? state.payload.paid : []).forEach(function (n) { paid[normName(n)] = 1; });
+    var mine = state.myNames || [];
+    var paidMe = mine.length > 0 && mine.every(function (n) { return paid[normName(n)]; });
+    document.getElementById('payOk').hidden = !paidMe;
     var btn = document.getElementById('payBtn');
+    btn.hidden = paidMe;
     if (btn.getAttribute('href') !== PAY_URL) btn.setAttribute('href', PAY_URL);
     var fee = feeText(), f = document.getElementById('payFee');
-    f.hidden = !fee;
+    f.hidden = !fee || paidMe;
     if (fee) f.innerHTML = '<span>Вартість участі — ' + esc(fee) + '</span><span class="paybox__via"> · Monobank</span>';
   }
   (function () {   // в апці Telegram посилання відкриваємо через openLink (інакше Telegram може його не відкрити)

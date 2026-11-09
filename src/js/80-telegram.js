@@ -183,7 +183,7 @@
     }).then(function (r) { return r.ok ? r.json() : null; })
       .then(function (res) {
         if (res && res.ok && res.canWrite === true) state.canWrite = true;
-        if (res && res.ok && Array.isArray(res.names)) applyMyNames(res.names);
+        if (res && res.ok && Array.isArray(res.names)) { applyMyNames(res.names); renderPay(); }
         nbarReady();
       })
       .catch(function () { nbarReady(); /* не вийшло — нічого страшного */ });
