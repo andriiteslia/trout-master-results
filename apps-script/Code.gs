@@ -316,6 +316,7 @@ function setupSync() {
     .setFontColor('#475467');
 
   setupBroadcast_(sh);
+  setupResults_(sh);
 
   // Одна активна таблиця: старі тригери прибираємо
   ScriptApp.getProjectTriggers().forEach(function (t) {
@@ -348,7 +349,8 @@ function handleSiteSync(e) {
     return;
   }
   if (sh.getName() !== SYNC_SHEET) return;
-  // Блок «Розсилка в Telegram»
+  // Блоки «Особисті результати в Telegram» і «Розсилка в Telegram»
+  if (handleResultsEdit_(e, sh)) return;
   if (handleBroadcastEdit_(e, sh)) return;
   var a1 = e.range.getA1Notation();
   var v = String(e.value == null ? '' : e.value).trim();
@@ -602,6 +604,7 @@ function publish_(ss) {
     sheets: sheets
   };
   saveSnapshot_(JSON.stringify(payload));
+  try { resSavePlaces_(payload); } catch (err) { console.error(err); }
   return payload;
 }
 
@@ -744,7 +747,15 @@ function saveSnapshot_(json) {
 
 function writeStatus_(sh, p) {
   var t = Utilities.formatDate(new Date(p.changedAt), 'Europe/Kiev', 'dd.MM.yyyy HH:mm:ss');
-  sh.getRange(CELL_STATUS).setValue('✅ ' + t + ' • ' + p.mode + ' • ' + summary_(p));
+  var extra = '';
+  try {
+    if (p.mode === MODE_RES && titleRow_(sh, RES_TITLE)) {
+      var d = resData_(p.sheets);
+      if (d && d.round) extra = ' • 📨 можна надіслати особисті результати після ' + d.round + ' туру (блок «' + RES_TITLE + '» нижче)';
+    }
+    resRefresh_(sh.getParent(), sh);
+  } catch (err) { console.error(err); }
+  sh.getRange(CELL_STATUS).setValue('✅ ' + t + ' • ' + p.mode + ' • ' + summary_(p) + extra);
 }
 
 /**
@@ -1649,7 +1660,7 @@ function handleBroadcastEdit_(e, sh) {
   if (!r) return false;
   // Змінили назви в табличці «Картинки для розсилки» — оновлюємо список у «Фото»
   var pr = e.range.getColumn() === 1 ? bcPicsRow_(sh) : 0;
-  if (pr && e.range.getLastRow() >= pr + 2 && e.range.getRow() <= pr + 1 + BC_PICS_ROWS) { bcPhotoRule_(sh, r, pr); return true; }
+  if (pr && e.range.getLastRow() >= pr + 2 && e.range.getRow() <= pr + 1 + BC_PICS_ROWS) { bcPhotoRule_(sh, r, pr); resPhotoRule_(sh); return true; }
   if (e.range.getColumn() !== 2 || e.range.getNumRows() !== 1) return false;
   var row = e.range.getRow();
   if (row < r + BC_TEXT || row > r + BC_STATUS) return false;
@@ -1790,6 +1801,367 @@ function broadcast_(ss, sh, r, test) {
   } catch (err) {
     console.error(err);
     bcStatus_(sh, r, '⚠️ Помилка розсилки: ' + (err && err.message ? err.message : err));
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Особисті результати в Telegram: після публікації кожен учасник, якому бот може писати,
+// отримує своє місце (і зміну), бали, перемоги, улов, відрив до місця вище, останні тури
+// й кнопку «Моя картка». Блок на аркуші «Сайт» під табличкою картинок; надсилання — вручну.
+// ---------------------------------------------------------------------------
+
+var RES_TITLE = 'Особисті результати в Telegram';
+var RES_PHOTO = 1, RES_ACTION = 2, RES_STATUS = 3, RES_HELP = 4;
+var RES_IDLE = '—';
+var RES_TEST = 'Надіслати тест собі';
+var RES_SEND = 'Надіслати учасникам';
+var RES_RESEND = 'Надіслати учасникам ще раз';
+var RES_CODES = { 'В': 1, 'П': 1, 'РН': 1, 'БН': 1 };
+
+/** Рядок заголовка блоку за назвою в колонці A (0 — немає). */
+function titleRow_(sh, title) {
+  var last = sh.getLastRow();
+  if (last < 1) return 0;
+  var col = sh.getRange(1, 1, last, 1).getDisplayValues();
+  for (var i = 0; i < col.length; i++) if (String(col[i][0]).trim() === title) return i + 1;
+  return 0;
+}
+
+/** Назви картинок з таблички «Картинки для розсилки». */
+function picsNames_(sh) {
+  var p = bcPicsRow_(sh);
+  return p ? sh.getRange(p + 2, 1, BC_PICS_ROWS, 1).getDisplayValues()
+    .map(function (x) { return String(x[0]).trim(); }).filter(function (n) { return n && n !== BC_NO_PHOTO; }) : [];
+}
+
+/** Посилання на картинку за назвою (або ''). */
+function picLink_(sh, name) {
+  var p = bcPicsRow_(sh);
+  if (!p || !name || name === BC_NO_PHOTO) return '';
+  var rows = sh.getRange(p + 2, 1, BC_PICS_ROWS, 2).getDisplayValues();
+  for (var i = 0; i < rows.length; i++) if (String(rows[i][0]).trim() === name) return String(rows[i][1]).trim();
+  return '';
+}
+
+function resPhotoRule_(sh, r) {
+  r = r || titleRow_(sh, RES_TITLE);
+  if (!r) return;
+  var cell = sh.getRange(r + RES_PHOTO, 2);
+  cell.clearDataValidations();
+  cell.setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInList([BC_NO_PHOTO].concat(picsNames_(sh)), true).setAllowInvalid(false)
+    .setHelpText('Картинка з таблички «' + BC_PICS_TITLE + '» — однакова для всіх, під нею кожен бачить свій текст.').build());
+}
+
+/** Створює (або оновлює оформлення) блоку під табличкою картинок. */
+function setupResults_(sh) {
+  var r = titleRow_(sh, RES_TITLE);
+  if (!r) {
+    var p = bcPicsRow_(sh);
+    r = p ? p + 2 + BC_PICS_ROWS + 2 : sh.getLastRow() + 3;
+  }
+  sh.getRange(r, 1).setValue(RES_TITLE).setFontWeight('bold').setFontSize(12);
+  sh.getRange(r + RES_PHOTO, 1, 3, 1).setValues([['Фото'], ['Дія'], ['Стан']]).setFontWeight('bold');
+  var photo = sh.getRange(r + RES_PHOTO, 2);
+  var cur = String(photo.getDisplayValue()).trim();
+  resPhotoRule_(sh, r);
+  if (!cur) photo.setValue(picsNames_(sh).indexOf('Проміжні результати') !== -1 ? 'Проміжні результати' : BC_NO_PHOTO);
+  photo.setFontWeight('bold').setBackground('#e3f0fa');
+  var act = sh.getRange(r + RES_ACTION, 2);
+  act.clearDataValidations();
+  act.setValue(RES_IDLE);
+  act.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList([RES_IDLE, RES_TEST, RES_SEND, RES_RESEND], true).setAllowInvalid(false).build())
+    .setFontWeight('bold').setBackground('#fde7e7');
+  sh.getRange(r + RES_STATUS, 2).setWrap(true);
+  var help = sh.getRange(r + RES_HELP, 1, 1, 2);
+  help.merge().setWrap(true).setFontColor('#475467').setVerticalAlignment('top');
+  help.setValue('Після кожної публікації результатів (B3) кожен учасник, якому бот може писати, отримує особисте повідомлення: ' +
+    'місце і зміну місця з минулої публікації (▲▼), бали, перемоги, улов, скільки балів до місця вище, результати останніх турів ' +
+    'і кнопку «' + BC_BUTTON_ME + '». Текст складається сам. ' +
+    '\n«Фото» — картинка з таблички «' + BC_PICS_TITLE + '» (після останнього туру оберіть «Підсумкові результати»). ' +
+    '\n«' + RES_TEST + '» — лише вам, на ID з рядка «Тест — мій Telegram ID» блоку розсилки (з вашими даними, а якщо ви не учасник — з даними 1-го місця). ' +
+    '«' + RES_SEND + '» — по-справжньому, скасувати не можна. Двічі за той самий тур не надішле — для цього є «' + RES_RESEND + '» (напр. після виправлення помилки в таблиці). ' +
+    '\nОтримають лише ті, хто натиснув Start у боті або дозволив повідомлення в апці.');
+  sh.setRowHeight(r + RES_HELP, 120);
+  resRefresh_(sh.getParent(), sh);
+}
+
+/**
+ * Дані для повідомлень з опублікованих аркушів: { round, total, people: {ключ: {name, place, pts, wins, fish, codes}} }
+ * round — скільки турів зіграно (0 — ще жодного), total — скільки турів у таблиці.
+ */
+function resData_(sheets) {
+  var low = function (s) { return String(s == null ? '' : s).trim().toLowerCase(); };
+  var keyOf = resKey_;
+  var num = function (s) { var x = Number(String(s == null ? '' : s).replace(',', '.').replace(/\s/g, '')); return isNaN(x) ? 0 : x; };
+  var resSh = (sheets || []).find(function (x) { return /результат/i.test(x.name || ''); });
+  if (!resSh || !resSh.values || resSh.values.length < 2) return null;
+  var v = resSh.values, w = 0;
+  v.forEach(function (row) { w = Math.max(w, row.length); });
+  var labels = [];
+  for (var c = 0; c < w; c++) {
+    var l = '';
+    for (var h = 0; h < 2 && h < v.length; h++) if (String(v[h][c] || '').trim()) l = low(v[h][c]);
+    labels.push(l);
+  }
+  var find = function (re) { for (var i = 0; i < labels.length; i++) if (re.test(labels[i])) return i; return -1; };
+  var cName = find(/учасник|прізвище|піб/), cPlace = find(/^(#|№|місце)$/), cPts = find(/^бали/), cWins = find(/^виграш|^перемог/), cFish = find(/^риб/);
+  if (cName < 0 || cPlace < 0) return null;
+  var people = {}, any = false;
+  v.forEach(function (row) {
+    var name = String(row[cName] || '').replace(/\s+/g, ' ').trim();
+    var place = parseInt(row[cPlace], 10);
+    if (!name || !(place > 0)) return;
+    var p = { name: name, place: place, pts: cPts >= 0 ? num(row[cPts]) : 0, wins: cWins >= 0 ? num(row[cWins]) : null, fish: cFish >= 0 ? num(row[cFish]) : 0, codes: [] };
+    if (p.pts > 0 || p.fish > 0) any = true;
+    people[keyOf(name)] = p;
+  });
+  if (!any) return { round: 0, total: 0, people: people };
+  // Тури: «Тур N» у першому рядку заголовка; під ним — результат (В/П/РН/БН) і риба
+  var round = 0, total = 0;
+  var tSh = (sheets || []).find(function (x) { return /^тур/i.test(x.name || ''); });
+  if (tSh && tSh.values && tSh.values.length > 2) {
+    var head = tSh.values[0], cols = {}, tName = -1;
+    head.forEach(function (x, i) {
+      var m = /^тур\s*(\d+)/i.exec(String(x || '').trim());
+      if (m) { cols[Number(m[1])] = i; total = Math.max(total, Number(m[1])); }
+      if (/учасник|прізвище|піб/i.test(String(x || ''))) tName = i;
+    });
+    if (tName < 0) tName = 1;
+    tSh.values.slice(1).forEach(function (row) {
+      var p = people[keyOf(row[tName] || '')];
+      if (!p) return;
+      for (var n = 1; n <= total; n++) {
+        var code = cols[n] != null ? String(row[cols[n]] || '').trim().toUpperCase() : '';
+        p.codes[n - 1] = RES_CODES[code] ? code : '';
+        if (RES_CODES[code]) round = Math.max(round, n);
+      }
+    });
+    Object.keys(people).forEach(function (k) {
+      var p = people[k];
+      if (p.wins == null) p.wins = p.codes.filter(function (x) { return x === 'В'; }).length;
+    });
+  }
+  if (!round) round = 1;   // результати є, а турів не знайшли — вважаємо, що зіграно хоча б один
+  return { round: round, total: total, people: people };
+}
+
+/** Місця після кожної публікації результатів — щоб показати ▲▼. Зберігаємо по турах. */
+function resSavePlaces_(payload) {
+  if (!payload) return;
+  var props = PropertiesService.getScriptProperties();
+  if (payload.mode === MODE_REG) {   // новий турнір (реєстрація) — минулі місця й «уже надіслано» більше не потрібні
+    Object.keys(props.getProperties()).forEach(function (k) { if (/^res:/.test(k)) props.deleteProperty(k); });
+    return;
+  }
+  if (payload.mode !== MODE_RES) return;
+  var d = resData_(payload.sheets);
+  if (!d || !d.round) return;
+  var places = {};
+  Object.keys(d.people).forEach(function (k) { places[k] = d.people[k].place; });
+  props.setProperty('res:places:' + d.round, JSON.stringify(places));
+}
+
+/** Місця з найближчої попередньої публікації (тур < round), або null. */
+function resPrevPlaces_(round) {
+  var all = PropertiesService.getScriptProperties().getProperties(), best = 0;
+  Object.keys(all).forEach(function (k) {
+    var m = /^res:places:(\d+)$/.exec(k);
+    if (m && Number(m[1]) < round && Number(m[1]) > best) best = Number(m[1]);
+  });
+  if (!best) return null;
+  try { return { round: best, places: JSON.parse(all['res:places:' + best]) }; } catch (e) { return null; }
+}
+
+/** Ключ імені: малими, один пробіл, однаковий апостроф (В'югін = В’югін). */
+function resKey_(n) { return String(n == null ? '' : n).replace(/[’ʼ`]/g, "'").replace(/\s+/g, ' ').trim().toLowerCase(); }
+
+function resEsc_(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function resNum_(x) { return String(Math.round(x * 10) / 10).replace('.', ','); }
+
+/** HTML-текст особистого повідомлення. */
+function resText_(p, d, prev) {
+  var parts = p.name.split(' ');
+  var first = vocative_(parts[1] || parts[0]);
+  var R = d.round, T = d.total;
+  var medal = { 1: '🥇', 2: '🥈', 3: '🥉' }[p.place] || '📍';
+  var final = T && R >= T;
+  var lines = [];
+  lines.push(resEsc_(first) + ', ' + (final ? 'підсумкові результати турніру 🏆' : 'результати після ' + R + ' туру 🎣'));
+  lines.push('');
+  var change = '';
+  if (prev && prev.places) {
+    var was = prev.places[resKey_(p.name)];
+    if (was > 0) change = was > p.place ? ' ▲' + (was - p.place) : was < p.place ? ' ▼' + (p.place - was) : ' · без змін';
+  }
+  lines.push(medal + ' <b>' + ordinal_(p.place) + ' місце</b>' + change);
+  lines.push(resNum_(p.pts) + ' ' + plural_(Math.round(p.pts), 'бал', 'бали', 'балів') + ' · ' +
+    p.wins + ' ' + plural_(p.wins, 'перемога', 'перемоги', 'перемог') + ' · ' +
+    p.fish + ' ' + plural_(p.fish, 'риба', 'риби', 'риб'));
+  // Відрив: до місця вище (або від 2-го, якщо лідер)
+  var byPlace = {};
+  Object.keys(d.people).forEach(function (k) { byPlace[d.people[k].place] = d.people[k]; });
+  if (p.place > 1 && byPlace[p.place - 1]) {
+    var gap = byPlace[p.place - 1].pts - p.pts;
+    lines.push(gap > 0 ? 'До ' + (p.place - 1) + '-го місця — ' + resNum_(gap) + ' ' + plural_(Math.round(gap), 'бал', 'бали', 'балів')
+      : 'З ' + (p.place - 1) + '-м місцем — однаково балів');
+  } else if (p.place === 1 && byPlace[2]) {
+    var lead = p.pts - byPlace[2].pts;
+    lines.push(lead > 0 ? 'Відрив від 2-го місця — ' + resNum_(lead) + ' ' + plural_(Math.round(lead), 'бал', 'бали', 'балів')
+      : 'З 2-м місцем — однаково балів');
+  }
+  // Останні тури (до 5)
+  if (p.codes && p.codes.length) {
+    var from = Math.max(1, R - 4), codes = [];
+    for (var n = from; n <= R; n++) codes.push(p.codes[n - 1] || '—');
+    lines.push((from === R ? 'Тур ' + R : 'Тури ' + from + '–' + R) + ': ' + codes.join(' · '));
+  }
+  lines.push('');
+  if (final) lines.push('Дякуємо за участь! 🙌');
+  else if (T > R) lines.push('Попереду ще ' + (T - R) + ' ' + plural_(T - R, 'тур', 'тури', 'турів') + ' — успіхів! 💪');
+  return lines.join('\n');
+}
+
+/** Стан блоку: що буде надіслано і кому. */
+function resRefresh_(ss, sh) {
+  sh = sh || ss.getSheetByName(SYNC_SHEET);
+  var r = sh ? titleRow_(sh, RES_TITLE) : 0;
+  if (!r) return;
+  sh.getRange(r + RES_STATUS, 2).setValue(resInfo_(ss));
+}
+
+function resInfo_(ss) {
+  var snap = null;
+  try { snap = JSON.parse(getSnapshot_() || 'null'); } catch (e) { snap = null; }
+  if (!snap || snap.mode !== MODE_RES) return 'Спершу опублікуйте результати (режим «' + MODE_RES + '», B3)';
+  var d = resData_(snap.sheets);
+  if (!d || !d.round || !Object.keys(d.people).length) return 'Ще немає зіграних турів — надсилати нічого';
+  var list = bcRecipients_(ss, true).filter(function (x) { return x.person && d.people[resKey_(x.person.name)]; });
+  var squad = mainSquad_(ss).length;
+  var info = 'Готово: ' + (d.total && d.round >= d.total ? 'підсумкові результати' : 'результати після ' + d.round + ' туру') +
+    ' · отримають до ' + list.length + ' з ' + squad + ' (кому бот може писати)';
+  var sent = null;
+  try { sent = JSON.parse(PropertiesService.getScriptProperties().getProperty('res:sent') || 'null'); } catch (e) { sent = null; }
+  if (sent && sent.round === d.round) info += '\n⚠️ Після ' + d.round + ' туру вже надіслано ' + sent.at + ' (' + sent.sent + ' з ' + sent.total + ')';
+  else if (sent) info += '\nОстаннє надсилання: після ' + sent.round + ' туру, ' + sent.at;
+  return info;
+}
+
+/** Правка в блоці. Повертає true, якщо правка стосувалась блоку. */
+function handleResultsEdit_(e, sh) {
+  var r = titleRow_(sh, RES_TITLE);
+  if (!r || e.range.getColumn() !== 2 || e.range.getNumRows() !== 1) return false;
+  var row = e.range.getRow();
+  if (row < r + RES_PHOTO || row > r + RES_STATUS) return false;
+  if (row !== r + RES_ACTION) return true;
+  var v = String(e.value == null ? '' : e.value).trim();
+  if (v === RES_TEST || v === RES_SEND || v === RES_RESEND) resSend_(e.source || sh.getParent(), sh, r, v);
+  return true;
+}
+
+function resSend_(ss, sh, r, how) {
+  var act = sh.getRange(r + RES_ACTION, 2);
+  var status = function (t) { sh.getRange(r + RES_STATUS, 2).setValue(t); };
+  var now = function () { return Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone() || 'Europe/Kyiv', 'dd.MM.yyyy HH:mm'); };
+  act.setValue(RES_IDLE);   // одразу повертаємо «—», щоб випадково не надіслати двічі
+  if (!PropertiesService.getScriptProperties().getProperty('BOT_TOKEN')) { status('⚠️ Немає BOT_TOKEN у властивостях скрипта'); return; }
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) { status('⚠️ Розсилка вже йде, спробуйте за хвилину'); return; }
+  try {
+    var snap = null;
+    try { snap = JSON.parse(getSnapshot_() || 'null'); } catch (e0) { snap = null; }
+    if (!snap || snap.mode !== MODE_RES) { status('⚠️ Спершу опублікуйте результати (режим «' + MODE_RES + '», B3)'); return; }
+    var d = resData_(snap.sheets);
+    if (!d || !d.round) { status('⚠️ Ще немає зіграних турів'); return; }
+    var test = how === RES_TEST;
+    var props = PropertiesService.getScriptProperties();
+    var sent0 = null;
+    try { sent0 = JSON.parse(props.getProperty('res:sent') || 'null'); } catch (e1) { sent0 = null; }
+    if (how === RES_SEND && sent0 && sent0.round === d.round) {
+      status('⚠️ Не надіслано: після ' + d.round + ' туру вже надсилали ' + sent0.at + '. Якщо треба ще раз — оберіть «' + RES_RESEND + '»');
+      return;
+    }
+    var prev = resPrevPlaces_(d.round);
+    var all = bcRecipients_(ss, true);
+    var list;
+    if (test) {
+      var br = bcRow_(sh);
+      var tid = br ? String(sh.getRange(br + BC_TESTID, 2).getDisplayValue()).replace(/\s/g, '') : '';
+      if (!/^\d{3,15}$/.test(tid)) { status('⚠️ Вкажіть свій Telegram ID у рядку «Тест — мій Telegram ID» блоку «' + BC_TITLE + '»'); return; }
+      var mine = all.find(function (x) { return x.id === tid && x.person && d.people[resKey_(x.person.name)]; });
+      var sample = mine ? mine.person : null;
+      if (!sample) {   // ви не учасник — показуємо на прикладі 1-го місця
+        var top = Object.keys(d.people).map(function (k) { return d.people[k]; }).sort(function (a, b) { return a.place - b.place; })[0];
+        var squadTop = mainSquad_(ss).find(function (p) { return resKey_(p.name) === resKey_(top.name); });
+        sample = squadTop || { name: top.name, num: '' };
+      }
+      list = [{ id: tid, person: sample, visitRow: 0 }];
+    } else {
+      list = all.filter(function (x) { return x.person && d.people[resKey_(x.person.name)]; });
+      if (!list.length) { status('⚠️ Немає кому надсилати: ніхто з учасників ще не натиснув Start у боті'); return; }
+    }
+
+    var picName = String(sh.getRange(r + RES_PHOTO, 2).getDisplayValue()).trim(), photo = null;
+    if (picName && picName !== BC_NO_PHOTO) {
+      var link = picLink_(sh, picName);
+      if (!link) { status('⚠️ Для «' + picName + '» немає посилання в табличці «' + BC_PICS_TITLE + '»'); return; }
+      try { photo = bcFetchPhoto_(link); } catch (err) { status('⚠️ ' + err.message); return; }
+    }
+
+    status('⏳ Надсилаю… 0 з ' + list.length);
+    SpreadsheetApp.flush();
+    var sent = 0, blocked = 0, noStart = 0, gone = 0, failed = 0, errs = {}, vs = ss.getSheetByName(VISITS_SHEET);
+    var send = function (chatId, html, markup) {
+      if (!photo) return tgApi_('sendMessage', { chat_id: chatId, text: html, parse_mode: 'HTML', reply_markup: markup, disable_web_page_preview: true });
+      var res = tgPhoto_(chatId, photo, html, markup);
+      if (res && res.ok && typeof photo !== 'string') {
+        var sizes = res.result && res.result.photo;
+        if (sizes && sizes.length) photo = sizes[sizes.length - 1].file_id;
+      }
+      return res;
+    };
+    for (var i = 0; i < list.length; i++) {
+      var x = list[i];
+      var p = d.people[resKey_(x.person.name)];
+      var html = resText_(p, d, prev);
+      var url = SETTINGS.SITE_URL + (x.person.num ? '?sel=' + encodeURIComponent(x.person.num) : '');
+      var markup = { inline_keyboard: [[{ text: BC_BUTTON_ME, web_app: { url: url } }]] };
+      var res = send(x.id, html, markup);
+      if (res && !res.ok && res.error_code === 429) {
+        Utilities.sleep(((res.parameters && res.parameters.retry_after) || 1) * 1000 + 200);
+        res = send(x.id, html, markup);
+      }
+      if (res && res.ok) {
+        sent++;
+        if (vs && x.visitRow && !test) vs.getRange(x.visitRow, VISITS_COL_WRITE).setValue('так');
+      } else {
+        var why = bcWhy_(res);
+        if (why === 'blocked') blocked++;
+        else if (why === 'nostart') noStart++;
+        else if (why === 'gone') gone++;
+        else { failed++; var dsc = String((res && res.description) || 'немає відповіді').replace(/^Bad Request:\s*/i, ''); errs[dsc] = (errs[dsc] || 0) + 1; }
+        if (why && vs && x.visitRow && !test) vs.getRange(x.visitRow, VISITS_COL_WRITE).setValue('ні');
+      }
+      if (i % 10 === 9) { status('⏳ Надсилаю… ' + (i + 1) + ' з ' + list.length); SpreadsheetApp.flush(); }
+      Utilities.sleep(60);
+    }
+    var what = d.total && d.round >= d.total ? 'підсумкові результати' : 'результати після ' + d.round + ' туру';
+    if (test) {
+      status('🧪 ' + now() + ' · ' + (sent ? 'тест надіслано собі: ' + what + ' (з даними: ' + list[0].person.name + ')' : 'тест не дійшов — перевірте ID і чи натиснули ви Start у боті') +
+        '\n' + resInfo_(ss));
+      return;
+    }
+    props.setProperty('res:sent', JSON.stringify({ round: d.round, at: now(), sent: sent, total: list.length }));
+    status('✅ ' + now() + ' · ' + what + ': надіслано ' + sent + ' з ' + list.length +
+      (noStart ? ' · ' + noStart + ' ще не натискали Start у боті' : '') +
+      (blocked ? ' · ' + blocked + ' заблокували бота' : '') +
+      (gone ? ' · ' + gone + ' видалили акаунт' : '') +
+      (failed ? ' · ' + failed + ' помилка (' + Object.keys(errs).slice(0, 2).join('; ') + ')' : ''));
+  } catch (err) {
+    console.error(err);
+    status('⚠️ Помилка: ' + (err && err.message ? err.message : err));
   } finally {
     lock.releaseLock();
   }
