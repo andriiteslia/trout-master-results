@@ -1864,7 +1864,7 @@ input, textarea, select { caret-color: var(--nav); }
 .story__acts { display: flex; gap: 8px; }
 .story__acts > * { flex: 1; }
 .story__acts [hidden] { display: none; }
-.story__share { background: linear-gradient(135deg, #4a9112 0%, #2b660a 100%); color: #fff; border-color: transparent; }
+.story__share, .story__save--main { background: linear-gradient(135deg, #4a9112 0%, #2b660a 100%); color: #fff; border-color: transparent; }
 .story-open body { overflow: hidden; }
 @supports (corner-shape: squircle) { .story, .story__box, .story__img, .story__img img, .story__spin { corner-shape: round; } }   /* супереліпс тут ламає малювання затемнення в Chrome */
 .story__acts a.btn { text-decoration: none; }
@@ -1872,7 +1872,7 @@ input, textarea, select { caret-color: var(--nav); }
 .pc-story { margin: 0 0 12px; }
 @media (min-width: 980px) { .pc-story { margin: 0 0 24px; } }
 /* Градієнт під прозорою рамкою: малюємо від краю рамки, інакше на боках видно «шов» повторення градієнта */
-#cardOpen, #selCard, .pc-story, .story__share { background-origin: border-box; background-repeat: no-repeat; }
+#cardOpen, #selCard, .pc-story, .story__share, .story__save--main { background-origin: border-box; background-repeat: no-repeat; }
 
 /* «Поділитися результатом»: на комп'ютері — у шапці картки поруч із «Поділитися карткою» */
 .pc-sharestory {
@@ -1934,7 +1934,7 @@ input, textarea, select { caret-color: var(--nav); }
   .story__img img { max-height: calc(100dvh - 216px); border-radius: 20px; box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55); }
 }
 /* Ховер «Поділитися» у перегляді: лишається зеленим, лише трохи світлішає (а не сіріє, як звичайна кнопка) */
-@media (hover: hover) { .story__share:hover { background: linear-gradient(135deg, #52a014 0%, #30720b 100%); color: #fff; border-color: transparent; } }
+@media (hover: hover) { .story__share:hover, .story__save--main:hover { background: linear-gradient(135deg, #52a014 0%, #30720b 100%); color: #fff; border-color: transparent; } }
 .story__share:active { background: linear-gradient(135deg, #3f7d0f 0%, #245708 100%); color: #fff; }
 
 /* ===== src/css/85-banners-partner-lang.css ===== */

@@ -3062,6 +3062,7 @@
         story.el.querySelector('.story__share').hidden = !canShare;
         var save = story.el.querySelector('.story__save');
         save.href = story.url; save.setAttribute('download', fname);
+        save.classList.toggle('story__save--main', !canShare);   // без «Поділитися» головна дія — «Зберегти», зелена
         save.hidden = IN_TG && canShare;   // у Telegram «Зберегти» через посилання не працює — є «Поділитися» → «Зберегти зображення»
         // Підказка «утримуй» — лише там, де немає системного «Поділитися» (у Telegram утримання часто нічого не дає)
         story.el.querySelector('.story__hint').hidden = canShare || !IN_TG;
