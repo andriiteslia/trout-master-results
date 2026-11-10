@@ -46,7 +46,7 @@
   function closeMapSheet() {
     if (!mapSheet || mapSheet.hidden) return;
     mapSheet.classList.remove('is-on');
-    setTimeout(function () { mapSheet.hidden = true; }, REDUCED ? 0 : 220);
+    setTimeout(function () { mapSheet.hidden = true; }, REDUCED ? 0 : 280);
   }
   if (mapSheet) mapSheet.addEventListener('click', function (e) {
     var t = e.target.closest('[data-map]');
@@ -145,7 +145,7 @@
   function closePaySheet() {
     if (!paySheet || paySheet.hidden) return;
     paySheet.classList.remove('is-on');
-    setTimeout(function () { paySheet.hidden = true; }, REDUCED ? 0 : 220);
+    setTimeout(function () { paySheet.hidden = true; }, REDUCED ? 0 : 280);
   }
   function copyText(t) {
     if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t);

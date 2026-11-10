@@ -2265,15 +2265,15 @@ input, textarea, select { caret-color: var(--nav); }
 /* Вибір навігатора — аркуш знизу */
 .mapsheet { position: fixed; inset: 0; z-index: 250; }
 .mapsheet__bg { position: absolute; inset: 0; background: rgba(10, 10, 10, .5); opacity: 0; transition: opacity .2s ease; }
-/* Попап «плаває» з відступом 4 px від країв і низу екрана, а нижні кути концентричні з кутами екрана iPhone:
-   радіус екрана (~55 px на сучасних iPhone) − відступ 4 px ≈ 51 px. */
-.mapsheet { --scr-r: 55px; --gap: 4px; }
-.mapsheet__box { position: absolute; left: var(--gap); right: var(--gap); bottom: var(--gap); max-width: 480px; margin: 0 auto;
-  background: #fff; border-radius: 28px 28px calc(var(--scr-r) - var(--gap)) calc(var(--scr-r) - var(--gap));
-  padding: 18px 14px 24px;   /* під «Скасувати» — 24 px */ display: flex; flex-direction: column; gap: 8px;
-  transform: translateY(24px); opacity: 0; transition: transform .22s cubic-bezier(.2, .9, .3, 1.15), opacity .18s ease; box-shadow: 0 18px 44px rgba(10, 10, 10, .28); }
+/* Попап — аркуш знизу на всю ширину екрана: заокруглений лише зверху (екрани телефонів заокруглені по-різному,
+   тож під кути не підганяємо). Знизу 24 px під «Скасувати» + зона смужки «додому». */
+.mapsheet__box { position: absolute; left: 0; right: 0; bottom: 0; max-width: 560px; margin: 0 auto;
+  background: #fff; border-radius: 28px 28px 0 0;
+  padding: 18px 16px calc(24px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px)));
+  display: flex; flex-direction: column; gap: 8px;
+  transform: translateY(100%); transition: transform .28s cubic-bezier(.2, .9, .3, 1); box-shadow: 0 -8px 32px rgba(10, 10, 10, .18); }
 .mapsheet.is-on .mapsheet__bg { opacity: 1; }
-.mapsheet.is-on .mapsheet__box { transform: none; opacity: 1; }
+.mapsheet.is-on .mapsheet__box { transform: none; }
 .mapsheet__t { margin: 0; text-align: center; font-size: 17px; font-weight: 750; }
 .mapsheet__s { margin: 0 0 6px; text-align: center; font-size: 14px; color: var(--muted); }
 .mapsheet__btn { display: flex; align-items: center; justify-content: center; height: 52px; border-radius: 999px; border: 0; background: #f3f4f6; color: #0a0a0a; font: inherit; font-size: 16px; font-weight: 650; text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
