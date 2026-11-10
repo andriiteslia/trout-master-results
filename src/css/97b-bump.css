@@ -1,5 +1,5 @@
 /* ===== «Як змінювались місця» — графік місць по турах (статистика) ===== */
-.bump__scroll { position: relative; max-height: 60vh; max-height: 60dvh; min-height: 260px; overflow-y: auto; overscroll-behavior: contain; margin: 10px -4px 0; padding: 0 4px; border-radius: 12px; -webkit-overflow-scrolling: touch; }
+.bump__scroll { position: relative; max-height: 50vh; max-height: 50dvh; min-height: 260px; overflow-y: auto; overscroll-behavior: contain; margin: 10px -4px 0; padding: 0 4px; border-radius: 12px; -webkit-overflow-scrolling: touch; }
 .bump__ticks { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; height: 26px; background: linear-gradient(#fff 70%, rgba(255, 255, 255, 0)); }
 .bump__tl { width: 26px; flex: none; font-size: 10px; color: #98a2b3; text-transform: uppercase; letter-spacing: .04em; }
 .bump__tk { position: relative; flex: 1; height: 100%; margin: 0 14px 0 14px; }
