@@ -16,6 +16,9 @@
     box.hidden = !on;
     if (!on) { box.innerHTML = ''; return; }
     var h = '';
+    // Широке вікно Telegram: перша плитка — «Оплатити участь» (на телефоні замість неї біла кнопка під плитками)
+    if (canPay()) h += '<button type="button" class="kpi hlink hlink--pay d-only" data-info="pay"><img src="assets/icons/paid.webp?v=2" alt="" aria-hidden="true">' +
+      '<span class="hlink__txt"><b>Оплатити участь</b><small>' + esc(feeText() ? 'Вартість: ' + feeText() : 'Monobank') + '</small></span>' + I_GO + '</button>';
     if (VENUE) h += '<button type="button" class="kpi hlink" data-info="map">' + I_PIN +
       '<span class="hlink__txt"><b>Як доїхати</b><small>Навігатор</small></span>' + I_GO + '</button>';
     if (rules) h += '<button type="button" class="kpi hlink" data-info="rules">' + I_DOC +
@@ -61,7 +64,9 @@
   document.getElementById('heroLinks').addEventListener('click', function (e) {
     var b = e.target.closest('[data-info]');
     if (!b) return;
-    if (b.getAttribute('data-info') === 'map') openMapSheet();
+    var k = b.getAttribute('data-info');
+    if (k === 'map') openMapSheet();
+    else if (k === 'pay') startPay();
     else goRules();
   });
 

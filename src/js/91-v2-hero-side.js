@@ -130,14 +130,24 @@
   }
   // Біла кнопка «Оплатити участь» під плитками (телефон, лише в режимі «Список учасників»)
   var PAY_URL = String(CFG.PAY_URL || '').trim();
+  // Учасник, якого апка впізнала (Telegram), уже з галочкою «Оплата» — оплату не показуємо (досить значка в його рядку)
+  function isPaidMe() {
+    var paid = {}, mine = state.myNames || [];
+    ((state.payload && state.payload.paid) || []).forEach(function (n) { paid[normName(n)] = 1; });
+    return mine.length > 0 && mine.every(function (n) { return paid[normName(n)]; });
+  }
+  function canPay() { return !!(PAY_URL && state.payload && isListMode() && !isPaidMe()); }
+  // Натиснули «Оплатити участь» (кнопка або плитка): є реквізити — попап, інакше одразу Monobank
+  function startPay(e) {
+    if (state.payload && state.payload.payCard) { if (e) e.preventDefault(); openPaySheet(); return; }
+    var tg = IN_TG ? tgApp() : null;
+    if (tg && typeof tg.openLink === 'function') { if (e) e.preventDefault(); tg.openLink(PAY_URL); }
+    else if (!e) window.open(PAY_URL, '_blank', 'noopener');
+  }
   function renderPay() {
     var box = document.getElementById('payBox');
     if (!box) return;
-    // Учасник, якого апка впізнала (Telegram), уже з галочкою «Оплата» — кнопку не показуємо (досить значка в його рядку)
-    var paid = {}, mine = state.myNames || [];
-    ((state.payload && state.payload.paid) || []).forEach(function (n) { paid[normName(n)] = 1; });
-    var paidMe = mine.length > 0 && mine.every(function (n) { return paid[normName(n)]; });
-    var on = !!(PAY_URL && state.payload && isListMode() && !paidMe);
+    var on = canPay();
     box.hidden = !on;
     if (!on) return;
     var btn = document.getElementById('payBtn');
@@ -148,12 +158,7 @@
   }
   (function () {
     var btn = document.getElementById('payBtn');
-    if (btn) btn.addEventListener('click', function (e) {
-      // Є реквізити (C14 на «Сайті») — попап «Скопіювати реквізити / Оплатити в Monobank»
-      if (state.payload && state.payload.payCard) { e.preventDefault(); openPaySheet(); return; }
-      var tg = IN_TG ? tgApp() : null;   // в апці Telegram посилання відкриваємо через openLink
-      if (tg && typeof tg.openLink === 'function') { e.preventDefault(); tg.openLink(btn.href); }
-    });
+    if (btn) btn.addEventListener('click', startPay);
   })();
   function renderKpis() {
     renderPay();

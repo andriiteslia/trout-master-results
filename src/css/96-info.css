@@ -111,3 +111,7 @@ html:has(.mapsheet:not([hidden])) .toast { z-index: 260; }
   .hlink__txt small { font-size: 13px; color: var(--muted); }
   .hlink__go { stroke: #98a2b3; }
 }
+@media (min-width: 980px) {
+  .hlink--pay > img { width: 30px; height: 30px; object-fit: contain; flex: none; }
+  .hlink--pay .hlink__txt b, .hlink--pay .hlink__txt small { white-space: normal; }
+}
