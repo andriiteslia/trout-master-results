@@ -4352,6 +4352,14 @@
       el.style.top = (BUMP_PAD + (p - 1) * BUMP_ROW) + 'px';
       el.classList.toggle('is-right', xPct > 55);   // ім'я з того боку, де є місце
     });
+    // Під час ▶︎ графік сам прокручується за підсвіченим учасником, коли той підходить до краю вікна
+    if (BUMP.raf && BUMP.hl) {
+      var sc = document.getElementById('bumpScroll'), hd = root.querySelector('.bump__dot.is-hl');
+      if (sc && hd && sc.scrollHeight > sc.clientHeight + 4) {
+        var y = parseFloat(hd.style.top) + 26, top = sc.scrollTop, h = sc.clientHeight, m = Math.min(90, h * 0.25);
+        if (y < top + m + 26 || y > top + h - m) sc.scrollTop = top + (y - h / 2 - top) * 0.12;   // м'яко, без ривків
+      }
+    }
     var cr = document.getElementById('bumpClipR');
     if (cr) cr.setAttribute('width', String(xPct * 10 + 20));
     var rg = document.getElementById('bumpRange');
