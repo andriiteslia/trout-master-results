@@ -848,12 +848,41 @@ function doPost(e) {
     else if (data.action === 'writeAccess') out = writeAccess_(data);
     else if (data.action === 'visit') out = visit_(data);
     else if (data.action === 'pclick') out = partnerClick_(data);
+    else if (data.action === 'shareMsg') out = shareMsg_(data);
     else out = fail_('bad_request', 'Невідомий запит.');
   } catch (err) {
     out = fail_('server', 'Не вдалося зберегти заявку. Спробуйте ще раз за хвилину.');
     console.error(err);
   }
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * «Поділитися» в апці Telegram: готує повідомлення від бота (фото-прев'ю сайту + підпис + кнопка з посиланням),
+ * яке людина надсилає в будь-який чат через рідне вікно Telegram (WebApp.shareMessage, Bot API 8.0).
+ * Картинка для всіх однакова — og.jpg сайту; підпис і посилання — свої (картка учасника або результати).
+ */
+var SHARE_PHOTO = 'https://troutmaster.app/assets/og.jpg?v=2';
+function shareMsg_(data) {
+  if (!PropertiesService.getScriptProperties().getProperty('BOT_TOKEN')) return fail_('no_token', 'Немає BOT_TOKEN.');
+  var user = telegramUser_(data.tg);
+  if (!user) return fail_('auth', 'Не вдалося перевірити Telegram.');
+  var url = String(data.url || '');
+  if (!/^https:\/\/(t\.me\/troutmasterua_bot(\?startapp(=[\w-]{1,32})?)?|troutmaster\.app\/(#[\w-]{1,32})?)$/.test(url)) return fail_('url', 'Невідоме посилання.');
+  var text = String(data.text || '').replace(/[<>]/g, '').trim().slice(0, 300);
+  var btn = String(data.btn || '').replace(/[<>]/g, '').trim().slice(0, 40) || 'Відкрити в TROUT MASTER';
+  var res = tgApi_('savePreparedInlineMessage', {
+    user_id: Number(user.id),
+    result: {
+      type: 'photo', id: 'sh' + Date.now().toString(36),
+      photo_url: SHARE_PHOTO, thumbnail_url: SHARE_PHOTO,
+      caption: text + '\n' + url,
+      reply_markup: { inline_keyboard: [[{ text: btn, url: url }]] }
+    },
+    allow_user_chats: true, allow_bot_chats: true, allow_group_chats: true, allow_channel_chats: true
+  });
+  if (!res || !res.ok || !res.result) return fail_('tg', (res && res.description) || 'Telegram не прийняв повідомлення.');
+  return { ok: true, id: res.result.id };
 }
 
 function fail_(code, error) { return { ok: false, code: code, error: error }; }

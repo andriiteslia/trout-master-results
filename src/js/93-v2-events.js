@@ -101,15 +101,51 @@
     });
   })();
 
-  function shareLink(url, text) {
+  // Картинка-прев'ю сайту (як og:image) — для «Поділитися» з фото. Вантажимо заздалегідь: системне меню
+  // поділитися вимагає, щоб виклик ішов одразу з тапу, без очікування мережі.
+  var SHARE_IMG = 'assets/og.jpg?v=2', shareFile = null;
+  function preloadShareImg() {
+    if (shareFile || !window.File || !window.fetch) return;
+    fetch(SHARE_IMG).then(function (r) { return r.ok ? r.blob() : null; }).then(function (b) {
+      if (b) shareFile = new File([b], 'trout-master.jpg', { type: 'image/jpeg' });
+    }).catch(function () {});
+  }
+  setTimeout(preloadShareImg, 2500);
+  // Telegram: рідне повідомлення від бота (фото + підпис + кнопка) через WebApp.shareMessage; інакше — як раніше
+  function tgShareMessage(tg, url, text, btn, fallback) {
+    var done = false, to = setTimeout(function () { if (!done) { done = true; fallback(); } }, 6000);
+    fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'shareMsg', tg: tg.initData, url: url, text: text, btn: btn }) })
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        if (done) return;
+        done = true; clearTimeout(to);
+        if (res && res.ok && res.id) tg.shareMessage(res.id, function () {});
+        else fallback();
+      })
+      .catch(function () { if (!done) { done = true; clearTimeout(to); fallback(); } });
+  }
+  function shareLink(url, text, btn) {
     text = I18N.tr(text);
     var tg = window.Telegram && window.Telegram.WebApp;
+    if (tg && tg.initData && typeof tg.shareMessage === 'function' && API && (!tg.isVersionAtLeast || tg.isVersionAtLeast('8.0'))) {
+      tgShareMessage(tg, url, text, I18N.tr(btn || 'Відкрити в TROUT MASTER'), function () { shareLinkPlain(url, text, tg); });
+      return;
+    }
+    shareLinkPlain(url, text, tg);
+  }
+  function shareLinkPlain(url, text, tg) {
     try {
       if (tg && tg.initData && tg.openTelegramLink) {
         tg.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text));
         return;
       }
     } catch (e) { /* */ }
+    // Системне меню (телефон і Mac): фото-прев'ю + підпис із посиланням
+    if (shareFile && navigator.canShare && navigator.share) {
+      var d = { files: [shareFile], text: text + '\n' + url };
+      try { if (navigator.canShare(d)) { navigator.share(d).catch(function () {}); return; } } catch (e) { /* */ }
+    }
     if (navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
       navigator.share({ title: text, text: text, url: url }).catch(function () {});
       return;
@@ -120,7 +156,7 @@
   }
   if (v2.share) v2.share.addEventListener('click', function () {
     var ev = (state.payload && state.payload.event) || {};
-    shareLink(shareUrl(), (ev.title || 'TROUT MASTER') + ': результати наживо');
+    shareLink(shareUrl(), (ev.title || 'TROUT MASTER') + ': результати наживо', 'Дивитися результати');
   });
   // Клавіатура: Enter/пробіл на рядку = тап
   el.board.addEventListener('keydown', function (e) {

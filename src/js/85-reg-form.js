@@ -225,7 +225,7 @@
     if (act === 'story') { openStory(selectedPlayerName()); return; }
     if (act === 'share') {
       var nm = selectedPlayerName(), dp = nm ? drawPlayer(nm) : null;
-      shareLink(shareUrl(dp && dp.n), (nm || 'Учасник') + ': картка учасника TROUT MASTER');
+      shareLink(shareUrl(dp && dp.n), (nm || 'Учасник') + ': картка учасника TROUT MASTER', 'Відкрити картку');
     }
   });
   ts.open.addEventListener('click', goStats);

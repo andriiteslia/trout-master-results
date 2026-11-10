@@ -290,6 +290,19 @@ const TESTS = {
     return t.errors;
   },
 
+  'share: картка в браузері — системне меню з фото-прев\'ю і посиланням': async (b) => {
+    const t = await page(b, MOB, 'results');
+    await t.p.evaluate(() => { window.__ns = []; navigator.canShare = () => true; navigator.share = (d) => { window.__ns.push({ n: (d.files || []).length, text: d.text }); return Promise.resolve(); }; });
+    await t.p.waitForTimeout(2500);   // фото-прев'ю довантажується заздалегідь
+    await t.p.locator('#board [data-key]').nth(4).click(); await t.p.waitForTimeout(400);
+    await t.p.click('#cardOpen'); await t.p.waitForTimeout(1500);
+    await t.p.locator('[data-act="share"]:visible').first().click(); await t.p.waitForTimeout(800);
+    const ns = await t.p.evaluate(() => window.__ns);
+    assert(ns.length === 1 && ns[0].n === 1 && /картка учасника[\s\S]*troutmaster\.app\/#p\d+/.test(ns[0].text), 'поділитися карткою: немає фото або посилання ' + JSON.stringify(ns));
+    await t.ctx.close();
+    return t.errors;
+  },
+
   'list desktop: список, таблетка «Вибрано в списку»': async (b) => {
     const t = await page(b, DESK, 'list');
     assert((await t.p.locator('#board [data-key]').count()) >= 20, 'список учасників порожній');
