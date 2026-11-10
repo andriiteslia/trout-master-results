@@ -2367,6 +2367,11 @@ html:has(.mapsheet:not([hidden])) .toast { z-index: 260; }
   .hlink--pay > img { width: 30px; height: 30px; object-fit: contain; flex: none; }
   .hlink--pay .hlink__txt b, .hlink--pay .hlink__txt small { white-space: normal; }
 }
+
+/* Та сама пігулка оплат біля «Список учасників» (комп) */
+.btools__h { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.btools__title .plist-paid { font-size: 13px; color: #0a0a0a; }
+.btools__title .plist-paid[hidden] { display: none; }
 /* ===== src/css/97-compare.css ===== */
 /* Порівняння двох учасників («Двобій») — у контейнері картки (.pcard) */
 

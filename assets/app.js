@@ -3478,6 +3478,7 @@
     var m = currentModel();
     var tours = !!m && /^тур/i.test(m.name.trim()) && !!toursData();
     v2.legend.hidden = !tours;
+    if (!list) { var bp = document.getElementById('boardPaid'); if (bp) bp.hidden = true; }   // пігулка оплат — лише в списку
     if (list) {
       v2.bTitle.textContent = 'Список учасників';
       v2.bSub.textContent = 'У порядку реєстрації';
@@ -3664,6 +3665,8 @@
     // Лічильник оплат основного складу в шапці (телефон): біла пігулка «💵 7/28»; поки ніхто не оплатив — не показуємо
     var nPaid = main.filter(function (p) { return paid[normName(p.name)]; }).length;
     var paidPill = nPaid ? '<span class="plist-paid" title="Оплатили участь"><img src="assets/icons/paid.webp?v=2" width="20" height="20" alt="">' + nPaid + '/' + main.length + '</span>' : '';
+    var bp = document.getElementById('boardPaid');   // та сама пігулка біля «Список учасників» на комп'ютері
+    if (bp) { bp.hidden = !nPaid; bp.innerHTML = nPaid ? '<img src="assets/icons/paid.webp?v=2" width="20" height="20" alt="">' + nPaid + '/' + main.length : ''; }
     var h = '<div class="plist-head m-only" aria-hidden="true"><span>Учасник</span><span class="plist-head__r">' + paidPill + '<span>№</span></span></div>' + olOpen(vis.length + nFree) + vis.map(item).join('');
     if (nFree) {
       for (var k = 0; k < nFree; k++) {
