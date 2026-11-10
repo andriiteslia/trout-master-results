@@ -231,6 +231,11 @@ const TESTS = {
     await shot(t.p, 'mob-map');
     await t.p.click('#mapSheet [data-map="close"].mapsheet__btn'); await t.p.waitForTimeout(400);
     assert(!(await visible(t.p, '#mapSheet')), 'вибір навігатора не закрився');
+    await t.p.click('#payBtn'); await t.p.waitForTimeout(500);   // є реквізити (payCard) — попап, а не одразу Monobank
+    assert(await visible(t.p, '#paySheet'), 'не відкрився попап оплати');
+    assert(/4441 1144 2233 5566/.test(await t.p.textContent('#payCard')), 'у попапі немає номера картки');
+    await shot(t.p, 'mob-paysheet');
+    await t.p.click('#paySheet .mapsheet__btn--x'); await t.p.waitForTimeout(400);
     await t.p.click('#heroLinks [data-info="rules"]'); await t.p.waitForTimeout(800);
     assert((await t.p.textContent('#tsTitle')) === 'Положення', 'не відкрився екран «Положення»');
     assert((await t.p.locator('.rules__sched li').count()) >= 4, 'розклад не став таблицею');

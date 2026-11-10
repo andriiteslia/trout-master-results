@@ -83,3 +83,16 @@
 .plist-head__r { display: inline-flex; align-items: center; gap: 14px; }
 .plist-paid { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 9px 0 5px; border-radius: 999px; background: #fff; border: 1px solid var(--card-line); color: #0a0a0a; font-size: 13px; font-weight: 700; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
 .plist-paid img { width: 20px; height: 20px; object-fit: contain; }
+
+/* Попап оплати: реквізити й Monobank */
+.paycard { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 2px 0 8px; padding: 14px 12px; border-radius: 16px; background: #f3f4f6; text-align: center; }
+.paycard b { font-size: 22px; font-weight: 750; letter-spacing: .04em; font-variant-numeric: tabular-nums; color: #0a0a0a; }
+.paycard b.paycard__txt { font-size: 16px; letter-spacing: 0; white-space: pre-line; }
+.paycard small { font-size: 14px; color: var(--muted); }
+.paysheet__ic { width: 22px; height: 22px; margin-right: 10px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.mapsheet__btn--mono { background: #0a0a0a; color: #fff; }
+.mapsheet__btn--mono:active { background: #262626; }
+.mapsheet__btn[hidden] { display: none; }
+/* Тост поверх відкритого попапа (інакше ховається під затемненням) */
+html:has(.mapsheet:not([hidden])) .toast { z-index: 260; }
+.mapsheet__btn.is-done .paysheet__ic { display: none; }

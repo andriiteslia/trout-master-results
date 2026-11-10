@@ -3255,12 +3255,14 @@
     if (btn.getAttribute('href') !== PAY_URL) btn.setAttribute('href', PAY_URL);
     var fee = feeText(), f = document.getElementById('payFee');
     f.hidden = !fee;
-    if (fee) f.innerHTML = '<span>Вартість участі — ' + esc(fee) + '</span><span class="paybox__via"> · Monobank</span>';
+    if (fee) f.innerHTML = '<span>Вартість участі — ' + esc(fee) + '</span>';
   }
-  (function () {   // в апці Telegram посилання відкриваємо через openLink (інакше Telegram може його не відкрити)
+  (function () {
     var btn = document.getElementById('payBtn');
     if (btn) btn.addEventListener('click', function (e) {
-      var tg = IN_TG ? tgApp() : null;
+      // Є реквізити (C14 на «Сайті») — попап «Скопіювати реквізити / Оплатити в Monobank»
+      if (state.payload && state.payload.payCard) { e.preventDefault(); openPaySheet(); return; }
+      var tg = IN_TG ? tgApp() : null;   // в апці Telegram посилання відкриваємо через openLink
       if (tg && typeof tg.openLink === 'function') { e.preventDefault(); tg.openLink(btn.href); }
     });
   })();
@@ -3927,6 +3929,58 @@
     var a = e.target.closest('.rules a[href]');
     if (a && openLinkOut(a.href)) e.preventDefault();   // у Telegram — через openLink
   });
+
+  // ---------- Оплата участі: попап з реквізитами (C14) і Monobank ----------
+  var paySheet = document.getElementById('paySheet');
+  function cardDigits(s) { var m = String(s || '').replace(/[\s-]/g, '').match(/\d{16}/); return m ? m[0] : ''; }
+  function openPaySheet() {
+    var pl = state.payload || {}, card = String(pl.payCard || ''), num = cardDigits(card);
+    var rest = num ? card.replace(/[\d\s-]{16,23}/, '').replace(/^[\s·,—-]+|[\s·,—-]+$/g, '') : card;
+    document.getElementById('payCard').innerHTML = num
+      ? '<b>' + num.replace(/(\d{4})(?=\d)/g, '$1 ') + '</b>' + (rest ? '<small>' + esc(rest) + '</small>' : '')
+      : '<b class="paycard__txt">' + esc(card) + '</b>';
+    var fee = feeText();
+    document.getElementById('payFeeS').textContent = fee ? 'Вартість участі — ' + fee : '';
+    document.getElementById('payFeeS').hidden = !fee;
+    document.getElementById('payCopyTxt').textContent = 'Скопіювати реквізити';
+    paySheet.querySelector('[data-pay="copy"]').classList.remove('is-done');
+    paySheet.querySelector('[data-pay="mono"]').href = PAY_URL;
+    paySheet.querySelector('[data-pay="mono"]').hidden = !PAY_URL;
+    paySheet.hidden = false;
+    requestAnimationFrame(function () { paySheet.classList.add('is-on'); });
+  }
+  function closePaySheet() {
+    if (!paySheet || paySheet.hidden) return;
+    paySheet.classList.remove('is-on');
+    setTimeout(function () { paySheet.hidden = true; }, REDUCED ? 0 : 220);
+  }
+  function copyText(t) {
+    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t);
+    return new Promise(function (res, rej) {
+      var ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy') ? res() : rej(); } catch (e) { rej(e); }
+      ta.remove();
+    });
+  }
+  if (paySheet) paySheet.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-pay]');
+    if (!t) return;
+    var k = t.getAttribute('data-pay');
+    if (k === 'close') { closePaySheet(); return; }
+    if (k === 'copy') {
+      var card = String((state.payload && state.payload.payCard) || ''), num = cardDigits(card) || card;
+      copyText(num).then(function () {
+        document.getElementById('payCopyTxt').textContent = '✓ Скопійовано';
+        t.classList.add('is-done');
+        toast(cardDigits(card) ? '✓ Номер картки скопійовано' : '✓ Реквізити скопійовано');
+        try { var h = IN_TG && tgApp() && tgApp().HapticFeedback; if (h) h.notificationOccurred('success'); } catch (er) { /* */ }
+      }, function () { toast('Не вдалося скопіювати'); });
+      return;
+    }
+    if (k === 'mono') { if (openLinkOut(t.href)) e.preventDefault(); closePaySheet(); }
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePaySheet(); });
   // ===== src/js/95-deeplinks.js — Посилання на картку (#p9 / startapp=p9) і на виділений рядок (?sel=9) =====
 
   // Посилання на картку: t.me/…?startapp=p9 (Telegram) або …/#p9 (браузер) — номер із жеребкування

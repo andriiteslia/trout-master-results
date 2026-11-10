@@ -144,12 +144,14 @@
     if (btn.getAttribute('href') !== PAY_URL) btn.setAttribute('href', PAY_URL);
     var fee = feeText(), f = document.getElementById('payFee');
     f.hidden = !fee;
-    if (fee) f.innerHTML = '<span>Вартість участі — ' + esc(fee) + '</span><span class="paybox__via"> · Monobank</span>';
+    if (fee) f.innerHTML = '<span>Вартість участі — ' + esc(fee) + '</span>';
   }
-  (function () {   // в апці Telegram посилання відкриваємо через openLink (інакше Telegram може його не відкрити)
+  (function () {
     var btn = document.getElementById('payBtn');
     if (btn) btn.addEventListener('click', function (e) {
-      var tg = IN_TG ? tgApp() : null;
+      // Є реквізити (C14 на «Сайті») — попап «Скопіювати реквізити / Оплатити в Monobank»
+      if (state.payload && state.payload.payCard) { e.preventDefault(); openPaySheet(); return; }
+      var tg = IN_TG ? tgApp() : null;   // в апці Telegram посилання відкриваємо через openLink
       if (tg && typeof tg.openLink === 'function') { e.preventDefault(); tg.openLink(btn.href); }
     });
   })();

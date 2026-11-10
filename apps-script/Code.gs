@@ -75,6 +75,7 @@ var CELL_DEADLINE_TIME = 'C11'; // час завершення, напр. 20:00 
 var CELL_CARD = 'B12';          // «Картка учасника» на сайті: показувати чи ні
 var CELL_SECTORS = 'B13';       // скільки секторів на водоймі (по половині на кожному березі)
 var CELL_FEE = 'B14';           // вартість участі: показується у формі реєстрації під кнопкою
+var CELL_PAYCARD = 'C14';       // реквізити для оплати (номер картки, можна з ім'ям): кнопка «Скопіювати реквізити» в апці
 var CARD_ON = 'Показувати';
 var CARD_OFF = 'Приховати';
 
@@ -268,6 +269,8 @@ function setupSync() {
   feeCell.clearDataValidations();
   feeCell.setNumberFormat('@').setNote('Вартість участі. Число (1700) — на сайті «1 700 грн». Можна текстом. Порожньо — не показувати.');
   feeCell.setFontWeight('bold').setBackground('#fdf3e1').setHorizontalAlignment('left');
+  sh.getRange(CELL_PAYCARD).setNumberFormat('@').setBackground('#fdf3e1').setHorizontalAlignment('left')
+    .setNote('Реквізити для оплати: номер картки (можна з ім\'ям, напр. «4441 1111 2222 3333 · Тесля А.»). В апці «Оплатити участь» → «Скопіювати реквізити» копіює номер картки. Порожньо — лише «Оплатити в Monobank».');
 
   // Кількість місць і дата завершення реєстрації
   var seatsCell = sh.getRange(CELL_SEATS);
@@ -373,7 +376,7 @@ function handleSiteSync(e) {
   var isMoves = a1 === CELL_MOVES && (v === MOVES_ON || v === MOVES_OFF);
   var isRegSetting = a1 === CELL_SEATS || a1 === CELL_DEADLINE || a1 === CELL_DEADLINE_TIME;
   var isCard = a1 === CELL_CARD && (v === CARD_ON || v === CARD_OFF);
-  var isSectors = a1 === CELL_SECTORS || a1 === CELL_FEE;
+  var isSectors = a1 === CELL_SECTORS || a1 === CELL_FEE || a1 === CELL_PAYCARD;
   var row = e.range.getRow();
   var isRange = e.range.getColumn() === 2 && e.range.getNumRows() === 1 &&
     row >= rangeRowFirst_(sh) && row < rangeRowFirst_(sh) + RANGE_KEYS.length;
@@ -585,6 +588,7 @@ function publish_(ss) {
   var regDeadline = registration && deadline ? deadline.toISOString() : null;
   var seats = seats_(sh);
   var fee = sh ? String(sh.getRange(CELL_FEE).getDisplayValue()).trim() || null : null;
+  var payCard = sh ? String(sh.getRange(CELL_PAYCARD).getDisplayValue()).trim() || null : null;
   var paid = [];
   try { paid = paidNames_(ss); } catch (err) { console.error(err); }
   var showMoves = !sh || String(sh.getRange(CELL_MOVES).getDisplayValue()).trim() !== MOVES_OFF;
@@ -594,7 +598,7 @@ function publish_(ss) {
   var now = new Date().toISOString();
   var rules = null;
   try { rules = readRules_(ss); } catch (err) { console.error(err); }
-  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw, showCard, sectors, sectorsSplit, fee, paid, rules]);
+  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw, showCard, sectors, sectorsSplit, fee, paid, rules, payCard]);
   var hash = Utilities.base64EncodeWebSafe(
     Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, body, Utilities.Charset.UTF_8));
 
@@ -607,6 +611,7 @@ function publish_(ss) {
     regDeadline: regDeadline,
     seats: seats,
     fee: fee,
+    payCard: payCard,
     paid: paid,
     rules: rules,
     showMoves: showMoves,
