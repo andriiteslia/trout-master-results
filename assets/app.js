@@ -3640,7 +3640,7 @@
     // Хто оплатив участь (галочка «Оплата» в таблиці) — значок праворуч
     var paid = {};
     (Array.isArray(pl.paid) ? pl.paid : []).forEach(function (n) { paid[normName(n)] = 1; });
-    var PAID_IC = '<img class="pt__paid" src="assets/icons/paid.webp?v=1" width="28" height="28" alt="Оплачено" title="Участь оплачена" decoding="async">';
+    var PAID_IC = '<img class="pt__paid" src="assets/icons/paid.webp?v=2" width="28" height="28" alt="Оплачено" title="Участь оплачена" decoding="async">';
     // На комп'ютері дві колонки: ліва — перша половина списку, права — друга
     var half = 1;
     function z2(j) { return (j % half) % 2 ? ' z2' : ''; }
