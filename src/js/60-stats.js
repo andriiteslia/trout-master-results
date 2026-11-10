@@ -165,6 +165,10 @@
     L.push([2, '<section class="card pc-block"><h2 class="pc-h2">Улов по турах</h2>' + tourBars(S) +
       '<p class="pc-legend">Скільки риби спіймали всі учасники за тур</p></section>']);
 
+    // Як змінювались місця (графік зі слайдером) — після улову, перед картою водойми
+    var bh = bumpHtml();
+    if (bh) L.push([2, bh]);
+
     // Карта водойми і карта секторів
     if (S.heat && S.heat.rows.length) {
       L.push([3, '<div id="pondWrap">' + pondHtml(S) + '</div>']);
@@ -201,6 +205,7 @@
       '</ul></section>']);
 
     ts.body.innerHTML = h + twoCols(L, R) + '</div>';
+    bumpInit();
     if (!grownStats && state.view === 'stats') { grownStats = true; growCharts(ts.body); }
 
     function pct(n) { return S.entries ? Math.round(n / S.entries * 100) + '%' : '—'; }

@@ -271,6 +271,22 @@ const TESTS = {
     return t.errors.concat(l.errors);
   },
 
+  'bump: «Як змінювались місця» — слайдер рухає кружечки, тап підсвічує': async (b) => {
+    const t = await page(b, MOB, 'results');
+    await t.p.evaluate(() => document.getElementById('navStats').click()); await t.p.waitForTimeout(1500);
+    assert(await t.p.locator('#bump').count() === 1, 'немає графіка «Як змінювались місця»');
+    const top0 = await t.p.locator('#bump .bump__dot').nth(0).evaluate(e => e.style.top + '|' + e.style.left);
+    await t.p.locator('#bumpRange').evaluate(e => { e.value = '1'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+    const top1 = await t.p.locator('#bump .bump__dot').nth(0).evaluate(e => e.style.top + '|' + e.style.left);
+    assert(top0 !== top1, 'слайдер не рухає кружечки');
+    assert((await t.p.textContent('#bumpCur')).trim() === 'Тур 1', 'підпис туру не оновився');
+    await t.p.locator('#bump .bump__dot').nth(3).click(); await t.p.waitForTimeout(300);
+    assert(await t.p.locator('#bump.has-hl .bump__dot.is-hl').count() === 1, 'тап не підсвітив учасника');
+    await shot(t.p, 'mob-bump');
+    await t.ctx.close();
+    return t.errors;
+  },
+
   'list desktop: список, таблетка «Вибрано в списку»': async (b) => {
     const t = await page(b, DESK, 'list');
     assert((await t.p.locator('#board [data-key]').count()) >= 20, 'список учасників порожній');
