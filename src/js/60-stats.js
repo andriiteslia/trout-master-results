@@ -185,8 +185,8 @@
       S.dry.who.map(function (n) { return [n, '']; }), 'суперник не спіймав жодної риби'));
     if (rec.length) R.push([5, '<section class="card pc-block"><h2 class="pc-h2">Рекорди</h2><dl class="pc-stats">' + rec.join('') + '</dl></section>']);
 
-    // Топ за уловом
-    L.push([6, '<section class="card pc-block"><h2 class="pc-h2">Топ за уловом</h2><ol class="ts-top">' +
+    // Топ за уловом (на компі — права колонка)
+    R.push([6, '<section class="card pc-block"><h2 class="pc-h2">Топ за уловом</h2><ol class="ts-top">' +
       S.fishTop.map(function (x, i) {
         return '<li><span class="ts-top__n">' + (i + 1) + '</span><span class="ts-top__name">' + esc(x.name) + '</span>' +
           '<span class="ts-top__fish">' + x.fish + ' <small>' + fishWord(x.fish) + '</small></span>' +
