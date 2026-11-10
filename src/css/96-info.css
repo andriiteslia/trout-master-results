@@ -120,3 +120,5 @@ html:has(.mapsheet:not([hidden])) .toast { z-index: 260; }
 .btools__h { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .btools__title .plist-paid { font-size: 13px; color: #0a0a0a; }
 .btools__title .plist-paid[hidden] { display: none; }
+/* Телефон: легенда В/РН/БН/П («По турах») — окремим рядком під перемикачем, інакше стискає «Підсумок / По турах» поруч із кнопкою ⤴ */
+@media (max-width: 979px) { .btools .legend { flex: 1 1 100%; } }

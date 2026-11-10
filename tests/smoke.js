@@ -254,6 +254,9 @@ const TESTS = {
   'table share: картинка таблиці з шапки таблиці і з картки («Картка | Таблиця»)': async (b) => {
     const t = await page(b, MOB, 'results');
     assert(await visible(t.p, '#tableShare'), 'немає кнопки «Поділитися таблицею»');
+    await t.p.locator('#tabs button').nth(1).click(); await t.p.waitForTimeout(900);   // «По турах»: легенда не має стискати перемикач
+    assert(await t.p.locator('#tabs').evaluate(e => e.getBoundingClientRect().width) > 250, 'на «По турах» перемикач стиснувся (легенда в одному рядку з ним)');
+    await t.p.locator('#tabs button').nth(0).click(); await t.p.waitForTimeout(700);
     await t.p.click('#tableShare'); await t.p.waitForTimeout(2500);
     assert(await visible(t.p, '.story__img img'), 'картинка таблиці не згенерувалась');
     assert(!(await visible(t.p, '.story__kind')), 'без вибраного учасника не має бути перемикача «Картка | Таблиця»');
