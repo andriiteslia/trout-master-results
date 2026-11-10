@@ -342,9 +342,10 @@
           '<button type="button" role="radio" data-fmt="story" aria-checked="true">Сторіс 9:16</button>' +
           '<button type="button" role="radio" data-fmt="wide" aria-checked="false"><span class="fmt-c">Допис 4:3</span><span class="fmt-t">Допис 4:5</span></button></div>' +
         '<p class="story__hint" hidden>Утримуй картинку, щоб зберегти її. Якщо не виходить — відкрий апку в браузері.</p>' +
-        '<div class="story__acts"><button type="button" class="btn btn-primary story__share">Поділитися</button>' +
+        // зліва — «Закрити», справа — головна дія («Поділитися»; у браузері без неї — «Зберегти»)
+        '<div class="story__acts"><button type="button" class="btn btn-secondary story__close">Закрити</button>' +
         '<a class="btn btn-secondary story__save" download>Зберегти</a>' +
-        '<button type="button" class="btn btn-secondary story__close">Закрити</button></div></div>';
+        '<button type="button" class="btn btn-primary story__share">Поділитися</button></div></div>';
       document.body.appendChild(story.el);
       story.el.addEventListener('click', function (e) { if (e.target === story.el || e.target.closest('.story__close')) closeStory(); });
       document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && story.el && !story.el.hidden) closeStory(); });
