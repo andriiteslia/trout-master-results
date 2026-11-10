@@ -144,7 +144,7 @@
     if (btn.getAttribute('href') !== PAY_URL) btn.setAttribute('href', PAY_URL);
     var fee = feeText(), f = document.getElementById('payFee');
     f.hidden = !fee;
-    if (fee) f.innerHTML = '<span>Вартість участі — ' + esc(fee) + '</span>';
+    if (fee) f.innerHTML = '<span>Вартість: ' + esc(fee) + '</span>';
   }
   (function () {
     var btn = document.getElementById('payBtn');

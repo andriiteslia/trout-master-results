@@ -130,10 +130,10 @@
     var pl = state.payload || {}, card = String(pl.payCard || ''), num = cardDigits(card);
     var rest = num ? card.replace(/[\d\s-]{16,23}/, '').replace(/^[\s·,—-]+|[\s·,—-]+$/g, '') : card;
     document.getElementById('payCard').innerHTML = num
-      ? '<b>' + num.replace(/(\d{4})(?=\d)/g, '$1 ') + '</b>' + (rest ? '<small>' + esc(rest) + '</small>' : '')
+      ? '<b>' + num.slice(0, 4) + ' **** **** ' + num.slice(-4) + '</b>' + (rest ? '<small>' + esc(rest) + '</small>' : '')   // повністю не показуємо — лише копіюємо
       : '<b class="paycard__txt">' + esc(card) + '</b>';
     var fee = feeText();
-    document.getElementById('payFeeS').textContent = fee ? 'Вартість участі — ' + fee : '';
+    document.getElementById('payFeeS').textContent = fee ? 'Вартість: ' + fee : '';
     document.getElementById('payFeeS').hidden = !fee;
     document.getElementById('payCopyTxt').textContent = 'Скопіювати реквізити';
     paySheet.querySelector('[data-pay="copy"]').classList.remove('is-done');

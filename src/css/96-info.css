@@ -96,3 +96,5 @@
 /* Тост поверх відкритого попапа (інакше ховається під затемненням) */
 html:has(.mapsheet:not([hidden])) .toast { z-index: 260; }
 .mapsheet__btn.is-done .paysheet__ic { display: none; }
+/* Тост: в один рядок по центру (left: 50% інакше обмежує ширину половиною екрана й текст переноситься) */
+.toast { white-space: nowrap; max-width: calc(100vw - 32px); text-align: center; overflow: hidden; text-overflow: ellipsis; }

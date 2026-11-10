@@ -233,7 +233,7 @@ const TESTS = {
     assert(!(await visible(t.p, '#mapSheet')), 'вибір навігатора не закрився');
     await t.p.click('#payBtn'); await t.p.waitForTimeout(500);   // є реквізити (payCard) — попап, а не одразу Monobank
     assert(await visible(t.p, '#paySheet'), 'не відкрився попап оплати');
-    assert(/4441 1144 2233 5566/.test(await t.p.textContent('#payCard')), 'у попапі немає номера картки');
+    assert(/^4441 \*{4} \*{4} 5566/.test((await t.p.textContent('#payCard')).trim()), 'у попапі номер картки не замаскований «4441 **** **** 5566»');
     await shot(t.p, 'mob-paysheet');
     await t.p.click('#paySheet .mapsheet__btn--x'); await t.p.waitForTimeout(400);
     await t.p.click('#heroLinks [data-info="rules"]'); await t.p.waitForTimeout(800);
