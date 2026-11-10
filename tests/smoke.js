@@ -207,7 +207,7 @@ const TESTS = {
     const t = await page(b, MOB, 'list', { tg: true });
     assert(await visible(t.p, '#payBox'), 'немає кнопки оплати в списку (телефон)');
     assert(/send\.monobank\.ua\/jar\//.test(await t.p.getAttribute('#payBtn', 'href')), 'кнопка оплати веде не на банку');
-    assert(/Вартість участі/.test(await t.p.textContent('#payFee')), 'під кнопкою немає вартості участі');
+    assert(/^Вартість: /.test((await t.p.textContent('#payFee')).trim()), 'під кнопкою немає «Вартість: …»');
     assert(/^\d+\/\d+$/.test((await t.p.textContent('.plist-paid')).trim()), 'у шапці списку немає лічильника оплат «N/M»');
     await shot(t.p, 'mob-pay'); await t.ctx.close();
     const m = await page(b, MOB, 'list', { tg: true, names: ['Повар Олександр'] });   // у фікстурі з галочкою «Оплата»
