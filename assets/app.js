@@ -3654,7 +3654,10 @@
     }
     var vis = main.filter(function (p) { return matchQuery(p.name); });
     var nFree = free && !state.query ? free : 0;
-    var h = '<div class="plist-head m-only" aria-hidden="true"><span>Учасник</span><span>№</span></div>' + olOpen(vis.length + nFree) + vis.map(item).join('');
+    // Лічильник оплат основного складу в шапці (телефон): біла пігулка «💵 7/28»; поки ніхто не оплатив — не показуємо
+    var nPaid = main.filter(function (p) { return paid[normName(p.name)]; }).length;
+    var paidPill = nPaid ? '<span class="plist-paid" title="Оплатили участь"><img src="assets/icons/paid.webp?v=2" width="20" height="20" alt="">' + nPaid + '/' + main.length + '</span>' : '';
+    var h = '<div class="plist-head m-only" aria-hidden="true"><span>Учасник</span><span class="plist-head__r">' + paidPill + '<span>№</span></span></div>' + olOpen(vis.length + nFree) + vis.map(item).join('');
     if (nFree) {
       for (var k = 0; k < nFree; k++) {
         var j = vis.length + k, nn = all.length + k + 1;

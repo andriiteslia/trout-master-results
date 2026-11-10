@@ -2329,6 +2329,12 @@ input, textarea, select { caret-color: var(--nav); }
 .story__kind[hidden] { display: none; }
 .story__img.is-post { aspect-ratio: 4 / 5; }
 .story:has(.story__kind:not([hidden])) .story__img { max-height: calc(100dvh - var(--tg-top, 0px) - 236px); }
+
+/* Лічильник оплат у шапці списку учасників (телефон) */
+.plist-head { align-items: center; }
+.plist-head__r { display: inline-flex; align-items: center; gap: 14px; }
+.plist-paid { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 9px 0 5px; border-radius: 999px; background: #fff; border: 1px solid var(--card-line); color: #0a0a0a; font-size: 13px; font-weight: 700; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+.plist-paid img { width: 20px; height: 20px; object-fit: contain; }
 /* ===== src/css/97-compare.css ===== */
 /* Порівняння двох учасників («Двобій») — у контейнері картки (.pcard) */
 
