@@ -2265,12 +2265,12 @@ input, textarea, select { caret-color: var(--nav); }
 /* Вибір навігатора — аркуш знизу */
 .mapsheet { position: fixed; inset: 0; z-index: 250; }
 .mapsheet__bg { position: absolute; inset: 0; background: rgba(10, 10, 10, .5); opacity: 0; transition: opacity .2s ease; }
-/* Попап «плаває» з відступом 16 px від країв і низу екрана, а нижні кути концентричні з кутами екрана iPhone:
-   радіус екрана (~55 px на сучасних iPhone) − відступ 16 px ≈ 39 px. Знизу додатковий внутрішній відступ — під смужку «додому». */
-.mapsheet { --scr-r: 55px; --gap: 16px; }
+/* Попап «плаває» з відступом 4 px від країв і низу екрана, а нижні кути концентричні з кутами екрана iPhone:
+   радіус екрана (~55 px на сучасних iPhone) − відступ 4 px ≈ 51 px. */
+.mapsheet { --scr-r: 55px; --gap: 4px; }
 .mapsheet__box { position: absolute; left: var(--gap); right: var(--gap); bottom: var(--gap); max-width: 480px; margin: 0 auto;
   background: #fff; border-radius: 28px 28px calc(var(--scr-r) - var(--gap)) calc(var(--scr-r) - var(--gap));
-  padding: 18px 14px calc(10px + max(0px, max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px)) - var(--gap))); display: flex; flex-direction: column; gap: 8px;
+  padding: 18px 14px 24px;   /* під «Скасувати» — 24 px */ display: flex; flex-direction: column; gap: 8px;
   transform: translateY(24px); opacity: 0; transition: transform .22s cubic-bezier(.2, .9, .3, 1.15), opacity .18s ease; box-shadow: 0 18px 44px rgba(10, 10, 10, .28); }
 .mapsheet.is-on .mapsheet__bg { opacity: 1; }
 .mapsheet.is-on .mapsheet__box { transform: none; opacity: 1; }
