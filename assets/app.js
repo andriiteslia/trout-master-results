@@ -3573,6 +3573,14 @@
     var flashOn = Date.now() - state.changeTime < 3500;
     var changed = state.changed[s.model.name] || {};
     var rows = s.rows.filter(function (r) { return matchQuery(r.name); });
+    // Стрілки ▲▼ є лише після оновлення в цьому сеансі (state.moves не кешуються). Коли всі тури зіграно —
+    // показуємо їх 5 с і плавно ховаємо
+    var tt = toursData(), fin = !!(tt && playedTours(tt) >= tt.rounds);
+    var mvLeft = fin ? 5000 - (Date.now() - state.changeTime) : Infinity, mvOn = mvLeft > 0;
+    clearTimeout(state.mvTimer);
+    if (fin && mvOn) state.mvTimer = setTimeout(function () {
+      [].forEach.call(document.querySelectorAll('.rk .mv'), function (e) { e.classList.add('mv-out'); });
+    }, mvLeft);
     var head = '<div class="rk-row rk-head" role="row">' +
       '<span class="c-pl" role="columnheader">Місце</span><span class="c-nm" role="columnheader">Учасник</span>' +
       (hasT ? '<span class="c-form d-only" role="columnheader">Останні 5</span><span class="c-wdl d-only" role="columnheader">В · РН · БН · П</span>' : '') +
@@ -3587,14 +3595,14 @@
       var wdl = r.cnt ? '<b class="c-w">' + r.cnt.w + '</b> · <b class="c-d">' + r.cnt.d + '</b> · <b class="c-z">' + r.cnt.z + '</b> · <b class="c-l">' + r.cnt.l + '</b>' : '';
       var wdlM = r.cnt ? r.cnt.w + 'В · ' + r.cnt.d + 'РН · ' + r.cnt.z + 'БН · ' + r.cnt.l + 'П' : '';
       return '<div class="' + cls + '" role="row" data-key="' + esc(r.key) + '" tabindex="0" aria-selected="' + sel + '">' +
-        '<span class="c-pl" role="cell"><span class="pc">' + (r.place != null ? r.place : '') + '</span>' + moveHtml(r.move) + '</span>' +
+        '<span class="c-pl" role="cell"><span class="pc">' + (r.place != null ? r.place : '') + '</span>' + (mvOn ? moveHtml(r.move) : '') + '</span>' +
         '<span class="c-nm" role="cell">' + avatarHtml(r.name) + '<span class="nmw">' +
           '<span class="rk-nm">' + esc(r.name) + '</span>' +
           (r.num ? '<span class="sub d-only">№ ' + r.num + '</span>' : '') +
           (r.cnt ? '<span class="msub m-only">' + wdlM + '</span>' : '') +
         '</span></span>' +
         (hasT ? '<span class="c-form d-only" role="cell">' + form + '</span><span class="c-wdl d-only" role="cell">' + wdl + '</span>' : '') +
-        '<span class="c-pts" role="cell"><b>' + (r.pts != null ? r.pts : '') + '</b>' +
+        '<span class="c-pts" role="cell"><b>' + (mvOn && r.move ? '<span class="m-only">' + moveHtml(r.move) + '</span>' : '') + (r.pts != null ? r.pts : '') + '</b>' +
           (r.fish != null ? '<small class="m-only">' + r.fish + ' ' + fishWord(r.fish) + '</small>' : '') + '</span>' +
         '<span class="c-win d-only" role="cell">' + (r.wins != null ? r.wins : '') + '</span>' +
         '<span class="c-fish d-only" role="cell">' + (r.fish != null ? r.fish : '') + '</span>' +
