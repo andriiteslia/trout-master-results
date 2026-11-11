@@ -450,3 +450,10 @@ html, body { background: var(--nav); }
   box-shadow: 0 8px 24px rgba(16, 24, 40, 0.24);
 }
 
+
+/* Стрілка ▲▼ не стискає кружечок місця; на телефоні — під номером (колонка 30 px) */
+.c-pl .pc { flex: none; }
+@media (max-width: 979px) {
+  .rk-row .c-pl { flex-direction: column; justify-content: center; gap: 2px; }
+  .rk-row .c-pl .mv { margin-left: 0; font-size: 10px; line-height: 1; }
+}
