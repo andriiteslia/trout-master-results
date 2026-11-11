@@ -59,8 +59,11 @@
         (f ? '<img src="assets/players/' + encodeURIComponent(f) + '?v=' + PHOTO_V + '" alt="" loading="lazy" decoding="async">' : '') + '</span>' +
         '<span class="bump__nm">' + esc(r.name) + '</span></button>';
     }).join('');
-    var axis = '';
-    for (var i = 1; i <= D.n; i++) axis += '<span style="top:' + Y(i) + 'px">' + i + '</span>';
+    var axis = '', grid = '';
+    for (var i = 1; i <= D.n; i++) {
+      axis += '<span style="top:' + Y(i) + 'px">' + i + '</span>';
+      grid += '<line x1="0" x2="1000" y1="' + Y(i) + '" y2="' + Y(i) + '"/>';   // легкі горизонталі місць
+    }
     var ticks = '';
     for (var t = 1; t <= T; t++) ticks += '<span style="left:' + (X(t) / 10) + '%">' + t + '</span>';
     BUMP.hl = meKey && D.rows.some(function (r) { return r.key === meKey; }) ? meKey : null;
@@ -73,7 +76,7 @@
           '<div class="bump__area">' +
             '<svg class="bump__svg" viewBox="0 0 1000 ' + H + '" preserveAspectRatio="none" aria-hidden="true">' +
               '<defs><clipPath id="bumpClip"><rect id="bumpClipR" x="-20" y="-20" width="1040" height="' + (H + 40) + '"/></clipPath></defs>' +
-              '<g class="bump__ghost">' + lines + '</g><g class="bump__lines" clip-path="url(#bumpClip)">' + lines + '</g></svg>' +
+              '<g class="bump__grid">' + grid + '</g><g class="bump__ghost">' + lines + '</g><g class="bump__lines" clip-path="url(#bumpClip)">' + lines + '</g></svg>' +
             dots +
           '</div>' +
         '</div>' +

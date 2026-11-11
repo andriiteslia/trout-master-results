@@ -40,3 +40,6 @@
 .bump__range::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; margin-top: -9px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 0 0 1px rgba(16, 24, 40, .12), 0 2px 6px rgba(16, 24, 40, .25); }
 .bump__range::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: #fff; border: 0; box-shadow: 0 0 0 1px rgba(16, 24, 40, .12), 0 2px 6px rgba(16, 24, 40, .25); }
 @supports (corner-shape: squircle) { .bump__av, .bump__play, .bump__range { corner-shape: round; } }
+
+/* легкі горизонталі місць під лініями */
+.bump__grid line { stroke: #eef0f3; stroke-width: 1; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; }
