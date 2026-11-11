@@ -1179,6 +1179,9 @@
 
   function tapRow(key) {
     var prim = Array.from(state.selected)[0] || null;
+    // Перший виділений із попереднього режиму (напр. зі списку учасників), якого немає в результатах, —
+    // не тримаємо: тап просто виділяє новий рядок і показує «Картка учасника»
+    if (prim && canCompare() && !hasCardData(keyName(prim))) prim = null;
     if (!canCompare() || !prim) { selectOnly(prim === key ? null : key); return; }
     if (key === prim) { selectOnly(state.cmpKey || null); return; }        // зняли першого — другий стає першим
     if (key === state.cmpKey) { state.cmpKey = null; renderReg(); return; } // зняли другого

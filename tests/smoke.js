@@ -331,6 +331,18 @@ const TESTS = {
     await t2.ctx.close(); return t.errors.concat(t2.errors);
   },
 
+  'stale selection: виділений зі списку, якого немає в результатах, не ламає «Картку»': async (b) => {
+    const ctx = await b.newContext(Object.assign({ locale: 'uk-UA' }, MOB));
+    await ctx.addInitScript(() => { try { localStorage.setItem('tm:lang', 'uk'); localStorage.setItem('tm:selected', JSON.stringify(['Мельник Тарас'])); } catch (e) { /* */ } });
+    await ctx.route('https://script.google.com/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: FIX('results') }));
+    const p = await ctx.newPage(); const errors = []; p.on('pageerror', (e) => errors.push(e.message));
+    await p.goto('http://localhost:' + PORT + '/'); await p.waitForTimeout(1800);
+    await p.locator('#board .r[data-key]').nth(5).click(); await p.waitForTimeout(600);
+    assert(await visible(p, '#cardOpen'), 'кнопки «Картка» немає після тапу');
+    assert(!(await p.locator('#cardOpen').evaluate((e) => e.classList.contains('is-cmp'))), 'замість «Картка» — «Порівняти»');
+    await ctx.close(); return errors;
+  },
+
   'list mobile: реєстрація відкривається': async (b) => {
     const t = await page(b, MOB, 'list');
     assert(await visible(t.p, '#regOpen'), 'немає кнопки «Зареєструватися»');
