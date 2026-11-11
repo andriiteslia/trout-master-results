@@ -591,6 +591,8 @@ function publish_(ss) {
   var payCard = sh ? String(sh.getRange(CELL_PAYCARD).getDisplayValue()).trim() || null : null;
   var paid = [];
   try { paid = paidNames_(ss); } catch (err) { console.error(err); }
+  var regAt = {};
+  try { regAt = recentRegs_(ss); } catch (err) { console.error(err); }
   var showMoves = !sh || String(sh.getRange(CELL_MOVES).getDisplayValue()).trim() !== MOVES_OFF;
   var secCfg = sectorsCfg_(sh);
   var sectors = secCfg ? secCfg.n : null;
@@ -598,7 +600,7 @@ function publish_(ss) {
   var now = new Date().toISOString();
   var rules = null;
   try { rules = readRules_(ss); } catch (err) { console.error(err); }
-  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw, showCard, sectors, sectorsSplit, fee, paid, rules, payCard]);
+  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw, showCard, sectors, sectorsSplit, fee, paid, rules, payCard, regAt]);
   var hash = Utilities.base64EncodeWebSafe(
     Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, body, Utilities.Charset.UTF_8));
 
@@ -613,6 +615,7 @@ function publish_(ss) {
     fee: fee,
     payCard: payCard,
     paid: paid,
+    regAt: regAt,
     rules: rules,
     showMoves: showMoves,
     draw: draw,
@@ -754,6 +757,24 @@ function paidNames_(ss) {
   for (var i = 0; i < n; i++) {
     var nm = String(names[i][0]).replace(/\s+/g, ' ').trim(), v = paid[i][0];
     if (nm && (v === true || /^(✅|✔️?|true)$/i.test(String(v).trim()))) out.push(nm);
+  }
+  return out;
+}
+
+/**
+ * Час реєстрації тих, хто зареєструвався за останні 2 доби (колонка F): { «Ім'я»: мс }.
+ * Сайт показує біля них мітку «new», доки минуло менше доби. Телефони й ID сюди не потрапляють.
+ */
+function recentRegs_(ss) {
+  var reg = ss.getSheetByName(REG_SHEET);
+  if (!reg || reg.getLastRow() < 2) return {};
+  var n = reg.getLastRow() - 1, since = Date.now() - 48 * 3600 * 1000;
+  var names = reg.getRange(2, REG_COL_NAME, n, 1).getDisplayValues();
+  var times = reg.getRange(2, REG_COL_TIME, n, 1).getValues();
+  var out = {};
+  for (var i = 0; i < n; i++) {
+    var nm = String(names[i][0]).replace(/\s+/g, ' ').trim(), t = times[i][0];
+    if (nm && t instanceof Date && t.getTime() > since) out[nm] = t.getTime();
   }
   return out;
 }

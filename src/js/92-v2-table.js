@@ -206,8 +206,19 @@
       return { key: row.key, i: i, n: m.placeCol ? row.cells[m.placeCol.c] : String(i + 1), name: m.nameCol ? row.cells[m.nameCol.c] : row.key };
     });
     var main = seats ? all.slice(0, seats) : all, reserve = seats ? all.slice(seats) : [];
-    var free = seats && all.length < seats ? seats - all.length : 0;
-    var newest = all.length - 2;   // останні дві реєстрації — «нове»
+    // Реєстрацію закрито — вільних місць уже ніхто не займе, «new» теж ховаємо
+    var open = !!pl.registration;
+    var free = open && seats && all.length < seats ? seats - all.length : 0;
+    // «new» — хто зареєструвався менше доби тому (payload.regAt: ім'я → мс, з колонки F «Учасників»).
+    // Старий Code.gs без regAt — як раніше, дві останні реєстрації.
+    var regAt = pl.regAt && typeof pl.regAt === 'object' ? pl.regAt : null, regAtN = {};
+    if (regAt) Object.keys(regAt).forEach(function (k) { regAtN[normName(k)] = +regAt[k]; });
+    var newest = all.length - 2;
+    function isNew(p) {
+      if (!open) return false;
+      if (regAt) { var t = regAtN[normName(p.name)]; return !!t && Date.now() - t < 864e5; }
+      return p.i >= newest && p.i > 0 && all.length > 3;
+    }
     // Хто оплатив участь (галочка «Оплата» в таблиці) — значок праворуч
     var paid = {};
     (Array.isArray(pl.paid) ? pl.paid : []).forEach(function (n) { paid[normName(n)] = 1; });
@@ -220,7 +231,7 @@
       var sel = isSel(p.key);
       return '<li class="pt r' + (j % 2 ? ' z1' : '') + z2(j) + (sel ? ' is-sel' : '') + '" data-key="' + esc(p.key) + '">' +
         '<span class="pt__n">' + esc(p.n) + '</span>' + avatarHtml(p.name) +
-        '<span class="pt__nm">' + esc(p.name) + '</span>' + (p.i >= newest && p.i > 0 && all.length > 3 ? '<span class="pt__new">new</span>' : '') +
+        '<span class="pt__nm">' + esc(p.name) + '</span>' + (isNew(p) ? '<span class="pt__new">new</span>' : '') +
         (paid[normName(p.name)] ? PAID_IC : '') + '</li>';
     }
     var vis = main.filter(function (p) { return matchQuery(p.name); });

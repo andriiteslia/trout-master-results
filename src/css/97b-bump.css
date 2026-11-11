@@ -3,10 +3,10 @@
 .bump__ticks { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; height: 26px; background: linear-gradient(#fff 70%, rgba(255, 255, 255, 0)); }
 .bump__tl { width: 26px; flex: none; font-size: 10px; color: #98a2b3; text-transform: uppercase; letter-spacing: .04em; }
 .bump__tk { position: relative; flex: 1; height: 100%; margin: 0 14px 0 14px; }
-.bump__tk span { position: absolute; top: 6px; transform: translateX(-50%); font-size: 11px; font-weight: 650; color: #98a2b3; font-variant-numeric: tabular-nums; }
+.bump__tk span { position: absolute; top: 6px; transform: translateX(-50%); font-size: 11px; font-weight: 650; color: #98a2b3; }
 .bump__plot { position: relative; display: flex; }
 .bump__axis { position: relative; width: 26px; flex: none; }
-.bump__axis span { position: absolute; left: 0; width: 20px; transform: translateY(-50%); text-align: right; font-size: 11px; font-weight: 650; color: #98a2b3; font-variant-numeric: tabular-nums; }
+.bump__axis span { position: absolute; left: 0; width: 20px; transform: translateY(-50%); text-align: right; font-size: 11px; font-weight: 650; color: #98a2b3; }
 .bump__area { position: relative; flex: 1; margin: 0 14px; }
 .bump__svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .bump__svg path { fill: none; stroke: #d0d5dd; stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; transition: opacity .2s ease, stroke .2s ease; }
@@ -33,7 +33,7 @@
 .bump__play svg { width: 18px; height: 18px; fill: currentColor; }
 .bump__play .i-pause, .bump__play.is-on .i-play { display: none; }
 .bump__play.is-on .i-pause { display: inline; }
-.bump__cur { flex: none; min-width: 52px; text-align: right; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.bump__cur { flex: none; min-width: 52px; text-align: right; font-size: 14px; font-weight: 700; }
 .bump__range { --fill: 100%; flex: 1; min-width: 0; height: 28px; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; cursor: pointer; }
 .bump__range::-webkit-slider-runnable-track { height: 6px; border-radius: 999px; background: linear-gradient(90deg, var(--brand, #76b11d) var(--fill), #e4e7ec var(--fill)); }
 .bump__range::-moz-range-track { height: 6px; border-radius: 999px; background: linear-gradient(90deg, var(--brand, #76b11d) var(--fill), #e4e7ec var(--fill)); }

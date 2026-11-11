@@ -47,7 +47,7 @@
 .rules__sched { margin: 10px 0 0; padding: 0; list-style: none; }
 .rules__sched li { display: grid; grid-template-columns: 64px 1fr; gap: 12px; padding: 9px 0; border-top: 1px solid var(--row-line); font-size: 15px; line-height: 1.4; }
 .rules__sched li:first-child { border-top: 0; }
-.rules__time { font-weight: 750; font-variant-numeric: tabular-nums; }
+.rules__time { font-weight: 750; }
 .rules__sched li.is-gap { color: var(--muted); font-size: 14px; padding: 6px 0; }
 .rules__sched li.is-gap .rules__time { font-weight: 600; }
 .rules__note { display: block !important; color: var(--muted); }
@@ -81,12 +81,12 @@
 /* Лічильник оплат у шапці списку учасників (телефон) */
 .plist-head { align-items: center; }
 .plist-head__r { display: inline-flex; align-items: center; gap: 14px; }
-.plist-paid { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 9px 0 5px; border-radius: 999px; background: #fff; border: 1px solid var(--card-line); color: #0a0a0a; font-size: 13px; font-weight: 700; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+.plist-paid { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 9px 0 5px; border-radius: 999px; background: #fff; border: 1px solid var(--card-line); color: #0a0a0a; font-size: 13px; font-weight: 700; letter-spacing: 0; text-transform: none; }
 .plist-paid img { width: 20px; height: 20px; object-fit: contain; }
 
 /* Попап оплати: реквізити й Monobank */
 .paycard { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 2px 0 8px; padding: 14px 12px; border-radius: 16px; background: #f3f4f6; text-align: center; }
-.paycard b { font-size: 22px; font-weight: 750; letter-spacing: .04em; font-variant-numeric: tabular-nums; color: #0a0a0a; }
+.paycard b { font-size: 22px; font-weight: 750; letter-spacing: .04em; color: #0a0a0a; }
 .paycard b.paycard__txt { font-size: 16px; letter-spacing: 0; white-space: pre-line; }
 .paycard small { font-size: 14px; color: var(--muted); }
 .paysheet__ic { width: 22px; height: 22px; margin-right: 10px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }

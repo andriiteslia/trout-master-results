@@ -58,7 +58,7 @@ async function page(b, opts, fixture, extra) {
   await p.route('https://script.google.com/**', (r) => {
     const q = r.request();
     if (q.method() === 'POST') { posts.push(q.postData()); return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, names: extra.names || [] }) }); }
-    return r.fulfill({ status: 200, contentType: 'application/json', body: FIX(extra.fx ? extra.fx.name : fixture) });
+    return r.fulfill({ status: 200, contentType: 'application/json', body: extra.body || FIX(extra.fx ? extra.fx.name : fixture) });
   });
   await p.route('https://telegram.org/**', (r) => r.fulfill({ status: 200, contentType: 'text/javascript', body: '' }));
   await p.route('https://t.me/**', (r) => r.fulfill({ status: 200, body: 'ok' }));
@@ -312,6 +312,23 @@ const TESTS = {
     assert((await t.p.locator('#selLbl').innerText()) === 'Вибрано в списку', 'не той підпис у таблетці');
     await shot(t.p, 'desk-list');
     await t.ctx.close(); return t.errors;
+  },
+
+  'list new/closed: «new» лише за добу; закрито — без вільних місць і «new»': async (b) => {
+    const d = JSON.parse(FIX('list')), now = Date.now();
+    d.seats = 28; d.registration = true; d.hash = 'new-1';
+    d.regAt = { 'Гуменюк Петро': now - 5 * 3600e3, 'Журавель Сергій': now - 30 * 3600e3, 'Повар Олександр': now - 2 * 3600e3 };
+    let t = await page(b, DESK, 'list', { body: JSON.stringify(d) });
+    const news = await t.p.$$eval('#board .pt__new', (a) => a.map((x) => x.closest('li').querySelector('.pt__nm').textContent));
+    assert(news.length === 2 && news.includes('Гуменюк Петро') && news.includes('Повар Олександр'), '«new» не за добою: ' + news);
+    assert((await t.p.locator('#board .pt--free').count()) === 3, 'немає вільних місць у відкритій реєстрації');
+    await t.ctx.close();
+    d.registration = false; d.regDeadline = null; d.hash = 'new-2';
+    const t2 = await page(b, DESK, 'list', { body: JSON.stringify(d) });
+    assert((await t2.p.locator('#board .pt--free').count()) === 0, 'реєстрацію закрито, а вільні місця лишились');
+    assert((await t2.p.locator('#board .pt__new').count()) === 0, 'реєстрацію закрито, а «new» лишились');
+    await shot(t2.p, 'desk-list-closed');
+    await t2.ctx.close(); return t.errors.concat(t2.errors);
   },
 
   'list mobile: реєстрація відкривається': async (b) => {

@@ -11,7 +11,7 @@ window.RESULTS_CONFIG = {
   PAY_URL: "https://send.monobank.ua/jar/5W1aTAunWv",
 
   // Локація турніру для плитки «Як доїхати» (лише в Telegram, режим «Список учасників»). Порожньо — плитки немає.
-  VENUE: { name: "Krychevychy Area Fishing", lat: 49.766483, lng: 25.014995, google: "https://maps.app.goo.gl/BcJhvYt1R3XnpPLP7" },
+  VENUE: { name: "Krychevychi Area Fishing", lat: 49.766483, lng: 25.014995, google: "https://maps.app.goo.gl/BcJhvYt1R3XnpPLP7" },
 
   // Як часто сайт перевіряє, чи є нова публікація, у секундах (не менше 10).
   REFRESH_SECONDS: 15
