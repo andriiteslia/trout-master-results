@@ -56,3 +56,8 @@
   .view-card .pcard:has(.pc-storybar) .pc-sheet { padding-bottom: 24px; }
   html.view-card:has(.pc-storybar) .foot { padding-bottom: calc(112px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px))); }
 }
+
+/* Футер завжди внизу: якщо контенту мало, основна частина розтягується до висоти вікна */
+body { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+body > .main { flex: 1 0 auto; width: 100%; }
+body > .topbar, body > .hero, body > .foot { flex: none; }
