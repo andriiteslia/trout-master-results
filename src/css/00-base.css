@@ -97,6 +97,8 @@ body::before {
   .tg body { background: var(--nav); display: flex; flex-direction: column; min-height: 100vh; }
   .tg .main { flex: 1; background: var(--page); border-radius: 8px 8px 0 0; }
   .tg .bh { box-shadow: none; }
+  /* Поки «аркуш» не доїхав до панелі Telegram, смуги немає: темна шапка й hero просто їдуть під кнопки Telegram */
+  .tg:not(.tg-stuck) body::before { height: 0; }
   /* Коли сторінку прокручено: кути лишаються під панеллю Telegram, над шапкою таблиці */
   .tg.tg-stuck body::before { height: calc(var(--tg-top) + 8px); }
   .tg.tg-stuck body::after {
