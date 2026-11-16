@@ -4337,6 +4337,7 @@
 
   var BUMP = { v: 1, raf: 0, hl: null, D: null };
   var BUMP_ROW = 34, BUMP_PAD = 18;   // висота рядка й відступ зверху/знизу (px)
+  var BUMP_SX = 0.35;                 // приблизно px екрана на одиницю X (viewBox 1000 по ширині ~350 px) — для заокруглення зламів
 
   function bumpHtml() {
     var D = bumpData();
@@ -4348,11 +4349,21 @@
     var MED = { 1: '#d4a72c', 2: '#98a2b3', 3: '#c27a45' };
     var me = selectedPlayerName(), meKey = me ? normName(me) : null;
     var lines = D.rows.map(function (r) {
-      var d = r.pos.map(function (p, i) {
-        if (!i) return 'M' + X(1) + ' ' + Y(p);
-        var x0 = X(i), x1 = X(i + 1), y0 = Y(r.pos[i - 1]), y1 = Y(p), cx = (x0 + x1) / 2;
-        return 'C' + cx + ' ' + y0 + ' ' + cx + ' ' + y1 + ' ' + x1 + ' ' + y1;   // плавні переходи між турами
-      }).join(' ');
+      // Прямі відрізки між турами, злами ледь заокруглені (зріз ~4 px від вершини → дуга відхиляється на 1–2 px).
+      // SVG розтягнуто по ширині (preserveAspectRatio="none"), тож зріз рахуємо в пікселях екрана: sx — px на одиницю X
+      var sx = BUMP_SX, R = 4;
+      var P = r.pos.map(function (p, i) { return [X(i + 1), Y(p)]; });
+      function cut(a, b) {   // точка на відрізку від a до b на відстані R px від a
+        var dx = (b[0] - a[0]) * sx, dy = b[1] - a[1], L = Math.sqrt(dx * dx + dy * dy) || 1, k = Math.min(R, L / 2) / L;
+        return [+(a[0] + (b[0] - a[0]) * k).toFixed(2), +(a[1] + dy * k).toFixed(2)];
+      }
+      var d = 'M' + P[0][0] + ' ' + P[0][1];
+      for (var q = 1; q < P.length; q++) {
+        if (q < P.length - 1) {
+          var a1 = cut(P[q], P[q - 1]), b1 = cut(P[q], P[q + 1]);
+          d += ' L' + a1[0] + ' ' + a1[1] + ' Q' + P[q][0] + ' ' + P[q][1] + ' ' + b1[0] + ' ' + b1[1];
+        } else d += ' L' + P[q][0] + ' ' + P[q][1];
+      }
       var fin = r.pos[T - 1];
       return '<path class="bump__ln' + (fin <= 3 ? ' is-top' : '') + '" data-k="' + esc(r.key) + '" d="' + d + '"' +
         (fin <= 3 ? ' style="--c:' + MED[fin] + '"' : '') + '/>';
@@ -4403,7 +4414,7 @@
     v = Math.max(1, Math.min(T, v));
     BUMP.v = v;
     var i0 = Math.floor(v), i1 = Math.min(T, i0 + 1), f = v - i0;
-    var e = f * f * (3 - 2 * f);   // плавно, як лінії між турами
+    var e = f;   // рівномірно — по прямій, як лінії між турами
     var xPct = (v - 1) / (T - 1) * 100;
     var dots = root.querySelectorAll('.bump__dot');
     D.rows.forEach(function (r, j) {
