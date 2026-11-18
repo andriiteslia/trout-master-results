@@ -67,7 +67,11 @@
     pc.open.classList.toggle('btn-secondary', other);
     reg.bar.classList.toggle('two', other && showCard);
     var showBar = other || showCard;
-    reg.bar.hidden = !showBar;
+    // Без кнопок (реєстрацію закрито, турів ще немає) панель лишається в Telegram «порожньою» — заради кнопки партнера
+    var solo = !showBar && IN_TG && isList;
+    reg.bar.hidden = !showBar && !solo;
+    reg.bar.classList.toggle('solo', solo);
+    html.classList.toggle('has-partner-solo', solo);
     reg.live.hidden = !showReg;   // плашка «Триває реєстрація» над таблицею
     renderTimer();
     html.classList.toggle('has-regbar', showBar);

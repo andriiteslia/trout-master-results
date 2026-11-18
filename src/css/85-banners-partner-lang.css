@@ -124,3 +124,8 @@
 .paybtn img { width: 30px; height: 30px; object-fit: contain; flex: none; }
 .paybtn:active { transform: scale(.98); background: #eceef1; }
 .paybox__fee { margin: 10px 0 0; text-align: center; font-size: 14px; color: rgba(255, 255, 255, .62); }
+
+/* Нижніх кнопок немає (реєстрацію закрито, турів ще немає): лишається лише партнер у правому нижньому куті */
+.regbar.solo { background: none; padding-top: 0; }
+.regbar.solo::before { display: none; }
+@media (max-width: 979px) { .tg.has-partner-solo .foot { padding-bottom: calc(96px + var(--tg-safe-area-inset-bottom, 0px)); } }
