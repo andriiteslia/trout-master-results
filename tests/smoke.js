@@ -349,6 +349,19 @@ const TESTS = {
     await ctx.close(); return errors;
   },
 
+  'rules in results: у Telegram на телефоні плашка «Положення» є й у режимі результатів': async (b) => {
+    const d = JSON.parse(FIX('results')); d.rules = JSON.parse(FIX('rules')).rules; d.hash = 'rr';
+    const t = await page(b, MOB, 'results', { tg: true, body: JSON.stringify(d) });
+    assert((await t.p.locator('#heroLinks .hlink').filter({ visible: true }).count()) === 1, 'у результатах немає плашки «Положення»');
+    await t.p.locator('#heroLinks .hlink').first().click(); await t.p.waitForTimeout(1000);
+    assert(/Положення/.test(await t.p.textContent('#tstats')), 'екран «Положення» не відкрився');
+    assert(/Результати/.test(await t.p.textContent('#tstats .hero-back')), '«Назад» не «Результати»');
+    await t.ctx.close();
+    const w = await page(b, MOB, 'results', { body: JSON.stringify(d) });   // браузер — без плашки
+    assert((await w.p.locator('#heroLinks .hlink').filter({ visible: true }).count()) === 0, 'плашка «Положення» видна в браузері');
+    await w.ctx.close(); return t.errors.concat(w.errors);
+  },
+
   'list mobile: реєстрація відкривається': async (b) => {
     const t = await page(b, MOB, 'list');
     assert(await visible(t.p, '#regOpen'), 'немає кнопки «Зареєструватися»');

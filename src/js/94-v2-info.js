@@ -1,4 +1,4 @@
-  // ===== src/js/94-v2-info.js — «Як доїхати» і «Положення»: плитки під KPI (Telegram, режим «Список учасників») =====
+  // ===== src/js/94-v2-info.js — «Як доїхати» і «Положення»: плитки під KPI (Telegram; у режимі результатів — лише «Положення», телефон) =====
   var VENUE = CFG.VENUE && CFG.VENUE.lat && CFG.VENUE.lng ? CFG.VENUE : null;
   var I_PIN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.1-7-11.5a7 7 0 0 1 14 0C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
   var I_DOC = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>';
@@ -11,11 +11,20 @@
   function renderInfoLinks() {
     var box = document.getElementById('heroLinks');
     if (!box) return;
-    var rules = rulesData();
-    var on = IN_TG && !!state.payload && isListMode() && (!!VENUE || !!rules);
+    var rules = rulesData(), list = isListMode();
+    // У режимі результатів (телефон у Telegram) лишається тільки «Положення»
+    var on = IN_TG && !!state.payload && (list ? (!!VENUE || !!rules) : !!rules);
     box.hidden = !on;
+    box.classList.toggle('m-only', on && !list);
     if (!on) { box.innerHTML = ''; return; }
     var h = '';
+    if (!list) {
+      h = '<button type="button" class="kpi hlink" data-info="rules">' + I_DOC +
+        '<span class="hlink__txt"><b>Положення</b><small>Прочитати</small></span>' + I_GO + '</button>';
+      if (box.innerHTML !== h) box.innerHTML = h;
+      box.classList.add('hlinks--1');
+      return;
+    }
     // Широке вікно Telegram: перша плитка — «Оплатити участь» (на телефоні замість неї біла кнопка під плитками)
     if (canPay()) h += '<button type="button" class="kpi hlink hlink--pay d-only" data-info="pay"><img src="assets/icons/paid.webp?v=2" alt="" aria-hidden="true">' +
       '<span class="hlink__txt"><b>Оплатити участь</b><small>' + esc(feeText() ? 'Вартість: ' + feeText() : 'Monobank') + '</small></span>' + I_GO + '</button>';
@@ -96,7 +105,7 @@
     if (!rules) { ts.body.innerHTML = emptyState('Положення поки немає', 'Організатор ще не додав його.'); return; }
     var I_BACK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
     var h = '<header class="pc-hero ts-hero"><div class="pc-hero__bar">' +
-      '<button type="button" class="hero-back pc-back" data-act="back">' + I_BACK + '<span>Учасники</span></button></div>' +
+      '<button type="button" class="hero-back pc-back" data-act="back">' + I_BACK + '<span>' + (isListMode() ? 'Учасники' : 'Результати') + '</span></button></div>' +
       '<div class="ts-hero__main"><div class="pc-head__txt"><h1 class="title" id="tsTitle" tabindex="-1">Положення</h1>' +
       '<p class="pc-sub">' + esc([ev.title, ev.subtitle].filter(Boolean).join(' · ')) + '</p></div></div></header>' +
       '<div class="pc-sheet rules">';
