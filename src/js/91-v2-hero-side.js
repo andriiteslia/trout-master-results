@@ -136,7 +136,8 @@
     ((state.payload && state.payload.paid) || []).forEach(function (n) { paid[normName(n)] = 1; });
     return mine.length > 0 && mine.every(function (n) { return paid[normName(n)]; });
   }
-  function canPay() { return !!(PAY_URL && state.payload && isListMode() && !isPaidMe()); }
+  // payload.payOn === false — організатор сховав кнопку (D14 на аркуші «Сайт»)
+  function canPay() { return !!(PAY_URL && state.payload && state.payload.payOn !== false && isListMode() && !isPaidMe()); }
   // Натиснули «Оплатити участь» (кнопка або плитка): є реквізити — попап, інакше одразу Monobank
   function startPay(e) {
     if (state.payload && state.payload.payCard) { if (e) e.preventDefault(); openPaySheet(); return; }

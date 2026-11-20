@@ -218,7 +218,13 @@ const TESTS = {
     assert(!(await visible(r.p, '#payBox')), 'кнопка оплати видна в результатах'); await r.ctx.close();
     const d = await page(b, DESK, 'list');
     assert(!(await visible(d.p, '#payBox')), 'кнопка оплати видна на компі'); await d.ctx.close();
-    return t.errors.concat(r.errors, d.errors);
+    // D14 «Приховати» → payOn: false — кнопки немає ні на телефоні, ні плиткою в широкому Telegram
+    const off = JSON.parse(FIX('list')); off.payOn = false; off.hash = 'pay-off';
+    const o = await page(b, MOB, 'list', { tg: true, body: JSON.stringify(off) });
+    assert(!(await visible(o.p, '#payBox')), 'payOn=false, а кнопка оплати видна'); await o.ctx.close();
+    const ow = await page(b, DESK, 'list', { tg: true, body: JSON.stringify(off) });
+    assert((await ow.p.locator('.hlink--pay').count()) === 0, 'payOn=false, а плитка оплати є в широкому Telegram'); await ow.ctx.close();
+    return t.errors.concat(r.errors, d.errors, o.errors, ow.errors);
   },
 
   'info: «Як доїхати» і «Положення» — лише в Telegram у списку учасників': async (b) => {
