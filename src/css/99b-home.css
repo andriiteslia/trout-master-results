@@ -176,8 +176,9 @@ body > .home { flex: 1 0 auto; }
   .tabbar:not([hidden]) {
     position: fixed; z-index: 30; left: max(16px, env(safe-area-inset-left)); right: max(16px, env(safe-area-inset-right));
     bottom: calc(12px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px)));
-    display: flex; gap: 4px; padding: 5px; border-radius: 999px; background: #0a0a0a;
-    box-shadow: 0 18px 44px rgba(10, 10, 10, 0.28); transition: background-color 0.25s ease, box-shadow 0.25s ease;
+    display: flex; gap: 4px; padding: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.92);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4);
+    box-shadow: 0 0 0 1px #e4e7ec, 0 10px 28px rgba(16, 24, 40, 0.10); transition: background-color 0.25s ease, box-shadow 0.25s ease;
   }
   .tabbar button {
     position: relative; z-index: 1; flex: 1 1 0; min-width: 0; height: 56px; border: 0; border-radius: 999px; background: transparent;
@@ -187,13 +188,14 @@ body > .home { flex: 1 0 auto; }
   }
   .tabbar button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
   .tabbar button[aria-current="page"] { color: #0a0a0a; }
-  .tabbar:not(.has-seg) button[aria-current="page"] { background: #fff; }
+  .tabbar button { color: #667085; }
+  .tabbar:not(.has-seg) button[aria-current="page"] { background: #eef0f3; }
   .tabbar svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-  .tabbar .seg-ind { position: absolute; left: 0; top: 0; z-index: 0; border-radius: 999px; background: #fff; box-shadow: none;
+  .tabbar .seg-ind { position: absolute; left: 0; top: 0; z-index: 0; border-radius: 999px; background: #eef0f3; box-shadow: none;
     transition: transform 0.32s cubic-bezier(.3, 1.3, .5, 1), width 0.32s ease; }
   .tabbar button:active { transform: scale(0.96); }
-  /* Над чорним футером — світліша пігулка з рамкою, щоб не зливалась */
-  .foot-in .tabbar { background: #1c1c1c; box-shadow: 0 0 0 1px #2e2e2e; }
+  /* Над чорним футером — без тіні (на чорному вона лише бруднить край) */
+  .foot-in .tabbar { background: #fff; box-shadow: none; }
   /* Партнер — над таббаром, праворуч */
   .has-tabbar .regbar.solo { bottom: calc(78px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px))); padding-bottom: 0; }
   html.tg.has-tabbar .regbar.solo .partner { bottom: 14px; }
