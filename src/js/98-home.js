@@ -105,7 +105,8 @@
   function bannerSrc(u) {
     var m = /^https:\/\/drive\.google\.com\/thumbnail\?id=([\w-]+)/.exec(String(u || ''));
     var v = /[?&]v=(\d+)/.exec(String(u || ''));   // час зміни файлу: нова картинка в тому ж файлі — нова адреса
-    return m ? 'https://lh3.googleusercontent.com/d/' + m[1] + '=w1200' + (v ? '?v=' + v[1] : '') : u;
+    // версія — і в параметрах картинки (=w1200-v…): Google на iPhone ігнорує ?v= і віддає стару картинку з кешу
+    return m ? 'https://lh3.googleusercontent.com/d/' + m[1] + '=w1200' + (v ? '-v' + v[1] + '?v=' + v[1] : '') : u;
   }
   function bannerHtml(r, cls) {
     var ph = '<span class="hb-ph"><small>TROUT MASTER</small><b>ROUND ' + r.n + '</b></span>';
