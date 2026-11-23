@@ -149,6 +149,7 @@ var PULT_RES = 'B6';
 var PULT_RES_STATUS = 'B7';
 var PULT_TITLE = 'B8';      // назва раунду для сайту й картки на головній, напр. «TM • Round 2»
 var PULT_SUB = 'B9';        // дата і місце, напр. «12 грудня • Плугів, Krychevychi Area Fishing»
+var PULT_MODE = 'B10';      // що показувати: «Список учасників» / «Результати» (те саме, що B5 адмінки — синхронізуються)
 
 /**
  * «Раунди сезону» на аркуші «Сайт» адмінки (F1:H10): R1…R6 — посилання на таблицю раунду й банер.
@@ -242,7 +243,7 @@ function setupSync() {
   sh.getRange('A15:B15').merge().setWrap(true);
   sh.getRange('A15').setValue('B2 — поточний раунд: останній рядок у «' + SEASON_TITLE + '» (F1). Звідти беруться учасники, жеребкування й результати, ' +
     'а на його аркуші «' + PULT_SHEET + '» — «' + ACTION_PUBLISH + '», «Турів у раунді», назва й дата раунду, особисті результати. ' +
-    '\nB5 — що бачать глядачі: «' + MODE_REG + '» (аркуш «Учасники») або «' + MODE_RES +
+    '\nB5 — що бачать глядачі (те саме, що B10 на «Пульті» раунду): «' + MODE_REG + '» (аркуш «Учасники») або «' + MODE_RES +
     '» (вкладки «Результат» і «Тури»). \nЗміна режиму одразу публікує дані. Щоб оновити дані на сайті, у B3 виберіть «' +
     ACTION_PUBLISH + '». Заголовок і підзаголовок теж оновлюються при публікації. \nB8 — «' + REG_OPEN +
     '» показує на сайті кнопку «Зареєструватися» (заявки йдуть в аркуш «' + REG_SHEET + '», телефон у колонку E). \nB9 — показувати чи ні стрілки ▲▼, на скільки місць змістився учасник після оновлення. ' +
@@ -1100,7 +1101,11 @@ function writeStatus_(sh, p) {
   sh.getRange(CELL_STATUS).setValue(text);
   try {   // те саме — на «Пульті» таблиці раунду
     var pu = pultSheet_(sh.getParent());
-    if (pu) pu.getRange(PULT_STATUS).setValue(text.replace(' (блок «' + RES_TITLE + '» нижче)', ' (B6 нижче)'));
+    if (pu) {
+      pu.getRange(PULT_STATUS).setValue(text.replace(' (блок «' + RES_TITLE + '» нижче)', ' (B6 нижче)'));
+      var pm = pu.getRange(PULT_MODE);   // «Що показувати» на «Пульті» = B5 адмінки
+      if (String(pm.getDisplayValue()).trim() !== p.mode && String(pu.getRange('A10').getDisplayValue()).trim() === 'Що показувати') pm.setValue(p.mode);
+    }
   } catch (err) { console.error(err); }
 }
 
@@ -3008,8 +3013,19 @@ function setupPult_(rs, ss, n, prefill) {
     pu.getRange('A8:B8').breakApart();
     pu.getRange('A8:B9').clearContent();
   }
-  pu.getRange('A3:A9').setValues([['Дія'], ['Остання публікація'], ['Турів у раунді'], ['Особисті результати'], ['Стан розсилки'],
-    ['Назва раунду'], ['Дата і місце']]).setFontWeight('bold').setVerticalAlignment('top');
+  // Підказка була в A10:B10 — звільняємо рядок 10 під «Що показувати»
+  var oldHelp = pu.getRange('A10');
+  if (oldHelp.isPartOfMerge() || String(oldHelp.getDisplayValue()).indexOf('B3 —') === 0) {
+    pu.getRange('A10:B10').breakApart();
+    pu.getRange('A10:B10').clearContent();
+  }
+  pu.getRange('A3:A10').setValues([['Дія'], ['Остання публікація'], ['Турів у раунді'], ['Особисті результати'], ['Стан розсилки'],
+    ['Назва раунду'], ['Дата і місце'], ['Що показувати']]).setFontWeight('bold').setVerticalAlignment('top');
+  var modeC = pu.getRange(PULT_MODE);
+  modeC.clearDataValidations();
+  modeC.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList([MODE_REG, MODE_RES], true).setAllowInvalid(false).build());
+  modeC.setValue(currentMode_(ss.getSheetByName(SYNC_SHEET))).setFontWeight('bold').setBackground('#e3f0fa')
+    .setNote('Що бачать глядачі: «' + MODE_REG + '» або «' + MODE_RES + '». Те саме, що «Що показувати» (B5) в адмінці. Зміна одразу публікує дані.');
   var tCell = pu.getRange(PULT_TITLE), sCell = pu.getRange(PULT_SUB);
   var site0 = ss.getSheetByName(SYNC_SHEET);
   if (!String(tCell.getDisplayValue()).trim()) {
@@ -3044,7 +3060,7 @@ function setupPult_(rs, ss, n, prefill) {
 
   pu.getRange(PULT_RES_STATUS).setWrap(true).setVerticalAlignment('top');
 
-  var help = pu.getRange('A10:B10');
+  var help = pu.getRange('A11:B11');
   help.merge().setWrap(true).setFontColor('#475467').setVerticalAlignment('top');
   help.setValue('B3 — «' + ACTION_PUBLISH + '»: глядачі побачать поточні дані з цієї таблиці (що саме показувати — «Що показувати» в адмінці). ' +
     '\nB5 — турів у раунді. Тури понад це число на сайті не показуються, а після N-го туру результати стають підсумковими ' +
@@ -3055,7 +3071,8 @@ function setupPult_(rs, ss, n, prefill) {
     'фото «' + BC_CARD_PICS[0] + '» / «' + BC_CARD_PICS[1] + '» з таблички картинок в адмінці й кнопка на апку. Двічі за той самий тур не надішле. ' +
     '«' + RES_CHAT_TEST + '» — те саме повідомлення лише вам (ID з «Тест — мій Telegram ID» в адмінці).');
   help.setValue(help.getDisplayValue() + '\nB8, B9 — назва раунду й дата і місце: заголовок сторінки раунду й картка на головній сайту. Застосується після наступної публікації.');
-  pu.setRowHeight(10, 190);
+  help.setValue(help.getDisplayValue() + '\nB10 — що показувати на сайті: «' + MODE_REG + '» (реєстрація) або «' + MODE_RES + '». Зміна одразу публікує дані.');
+  pu.setRowHeight(11, 210);
   pu.setColumnWidth(1, 170);
   pu.setColumnWidth(2, 460);
   try { pu.getRange(PULT_RES_STATUS).setValue(resInfo_(ss)); } catch (err) { console.error(err); }
@@ -3081,6 +3098,15 @@ function handlePultEdit_(e, ss, pu) {
     } finally {
       e.range.setValue(ACTION_IDLE);
     }
+    return;
+  }
+  if (a1 === PULT_MODE) {
+    if (!MODES[v] || !site) return;
+    site.getRange(CELL_MODE).setValue(v);   // одне джерело — B5 адмінки
+    pu.getRange(PULT_STATUS).setValue('⏳ Публікуємо…');
+    SpreadsheetApp.flush();
+    try { writeStatus_(site, publish_(ss)); }
+    catch (err) { pu.getRange(PULT_STATUS).setValue('❌ Помилка: ' + ((err && err.message) || err)); }
     return;
   }
   if (a1 === PULT_TITLE || a1 === PULT_SUB) {
