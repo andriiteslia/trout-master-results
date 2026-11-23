@@ -16,7 +16,7 @@
   document.getElementById('logoHome').addEventListener('click', function (e) {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;   // нова вкладка — як звичайне посилання
     e.preventDefault();
-    if (hasHome()) { goHome(); return; }
+    if (hasHome()) { if (state.view === 'home' && HOME.sec !== 'tours') { openSec('tours'); return; } HOME.sec = 'tours'; goHome(); return; }
     if (state.view !== 'list') goList();
     else window.scrollTo({ top: 0, behavior: REDUCED ? 'auto' : 'smooth' });
   });

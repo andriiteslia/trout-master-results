@@ -92,6 +92,30 @@ const TESTS = {
     await t.ctx.close(); return t.errors;
   },
 
+  'навбар: Турніри / Лідерборд / Про лігу (комп)': async (b) => {
+    const t = await page(b, DESK, 'season');
+    assert(await visible(t.p, '#leagueNav'), 'на головній немає перемикача розділів');
+    assert((await t.p.getAttribute('#leagueNav [data-sec="tours"]', 'aria-current')) === 'page', '«Турніри» не активні');
+    await shot(t.p, 'desk-nav-tours');
+    await t.p.click('#leagueNav [data-sec="lb"]'); await t.p.waitForTimeout(500);
+    assert((await t.p.locator('#homeTitle').innerText()).includes('Лідерборд'), 'не відкрився «Лідерборд»');
+    await shot(t.p, 'desk-nav-lb');
+    await t.p.click('#leagueNav [data-sec="about"]'); await t.p.waitForTimeout(500);
+    assert((await t.p.locator('#homeTitle').innerText()).includes('Про лігу'), 'не відкрилось «Про лігу»');
+    await shot(t.p, 'desk-nav-about');
+    await t.p.click('#leagueNav [data-sec="tours"]'); await t.p.waitForTimeout(400);
+    await t.p.locator('[data-round="2"]').first().click(); await t.p.waitForTimeout(700);
+    assert(await visible(t.p, '#leagueNav'), 'на сторінці раунду немає перемикача');
+    assert((await t.p.getAttribute('#leagueNav [data-sec="tours"]', 'aria-current')) === 'page', 'на сторінці раунду мають бути активні «Турніри»');
+    await shot(t.p, 'desk-nav-round');
+    await t.p.click('#leagueNav [data-sec="lb"]'); await t.p.waitForTimeout(700);
+    assert(await visible(t.p, '#home') && (await t.p.locator('#homeTitle').innerText()).includes('Лідерборд'), 'з раунду не відкрився «Лідерборд»');
+    const m = await page(b, MOB, 'season');
+    assert(!(await visible(m.p, '#leagueNav')), 'на телефоні не має бути перемикача');
+    await m.ctx.close();
+    await t.ctx.close(); return t.errors;
+  },
+
   'раунд без даних: внизу «На головну» (телефон, Telegram)': async (b) => {
     const fx = JSON.parse(FIX('season'));
     fx.registration = false; fx.hash = 'empty-round';

@@ -89,6 +89,7 @@
     renderTimer();
     html.classList.toggle('has-regbar', showBar);
     if (typeof v2 !== 'undefined' && v2) renderChrome();
+    renderLeagueNav();
     if (!isReg) return;
 
     var ev = (state.payload && state.payload.event) || {};

@@ -2788,3 +2788,9 @@ body > .topbar, body > .hero, body > .foot { flex: none; }
 
 /* Футер завжди внизу й на головній (на сторінці раунду розтягується .main, тут — сама головна) */
 body > .home { flex: 1 0 auto; }
+
+/* Розділи ліги в навбарі (комп): Турніри / Лідерборд / Про лігу — видно й на головній */
+@media (min-width: 980px) { .view-home .leaguenav:not([hidden]) { display: flex !important; } }
+.home.is-sec .home__acts { display: none; }
+.home__col--wide { grid-column: 1 / -1; width: 100%; }
+.league-empty { padding-top: 48px; padding-bottom: 44px; }

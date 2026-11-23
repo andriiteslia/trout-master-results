@@ -1875,6 +1875,7 @@
     renderTimer();
     html.classList.toggle('has-regbar', showBar);
     if (typeof v2 !== 'undefined' && v2) renderChrome();
+    renderLeagueNav();
     if (!isReg) return;
 
     var ev = (state.payload && state.payload.event) || {};
@@ -3804,7 +3805,7 @@
   document.getElementById('logoHome').addEventListener('click', function (e) {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;   // нова вкладка — як звичайне посилання
     e.preventDefault();
-    if (hasHome()) { goHome(); return; }
+    if (hasHome()) { if (state.view === 'home' && HOME.sec !== 'tours') { openSec('tours'); return; } HOME.sec = 'tours'; goHome(); return; }
     if (state.view !== 'list') goList();
     else window.scrollTo({ top: 0, behavior: REDUCED ? 'auto' : 'smooth' });
   });
@@ -4776,7 +4777,59 @@
       '<svg class="hx-ch" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>';
   }
 
+  // ----- Розділи ліги в навбарі (комп): Турніри / Лідерборд / Про лігу -----
+  HOME.sec = 'tours';
+  var LEAGUE_NAV = document.getElementById('leagueNav');
+  var HOME_HEAD = { title: document.getElementById('homeTitle'), lead: document.querySelector('#home .home__lead') };
+  HOME_HEAD.titleHtml = HOME_HEAD.title.innerHTML;
+  HOME_HEAD.leadText = HOME_HEAD.lead.textContent;
+  var LEAGUE_SECS = {
+    lb: { title: 'Лідерборд', lead: 'Загальний залік сезону', empty: 'Лідерборд сезону з’явиться тут найближчим часом.' },
+    about: { title: 'Про лігу', lead: 'Що таке TROUT MASTER', empty: 'Розповідь про лігу, правила й формат з’являться тут найближчим часом.' }
+  };
+  function renderLeagueNav() {
+    if (!LEAGUE_NAV) return;
+    LEAGUE_NAV.hidden = !hasHome();
+    if (LEAGUE_NAV.hidden) return;
+    var cur = state.view === 'home' ? HOME.sec : 'tours';
+    [].forEach.call(LEAGUE_NAV.querySelectorAll('[data-sec]'), function (b) {
+      b.setAttribute('aria-current', b.getAttribute('data-sec') === cur ? 'page' : 'false');
+    });
+    segSlide(LEAGUE_NAV, '[aria-current="page"]');
+  }
+  function openSec(sec) {
+    var was = state.view === 'home' ? HOME.sec : null;
+    HOME.sec = LEAGUE_SECS[sec] ? sec : 'tours';
+    if (state.view === 'home') {
+      if (was === HOME.sec) { window.scrollTo({ top: 0, behavior: REDUCED ? 'auto' : 'smooth' }); return; }
+      renderHome(); renderLeagueNav(); window.scrollTo(0, 0); return;
+    }
+    goHome();
+  }
+  if (LEAGUE_NAV) LEAGUE_NAV.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-sec]');
+    if (b) openSec(b.getAttribute('data-sec'));
+  });
+  function secHtml(sec) {
+    var c = LEAGUE_SECS[sec];
+    return '<div class="home__col home__col--wide"><div class="card empty empty-state league-empty" role="status">' +
+      '<img class="empty-state__fish" src="assets/fish.webp?v=2" alt="" width="640" height="296" decoding="async">' +
+      '<strong>Скоро</strong><span>' + esc(c.empty) + '</span>' +
+      '<button type="button" class="btn btn-primary empty-state__btn" data-sec-go="tours">До турнірів</button></div></div>';
+  }
+  HOME.body.addEventListener('click', function (e) { if (e.target.closest('[data-sec-go]')) openSec('tours'); });
+
   function renderHome() {
+    var sec = LEAGUE_SECS[HOME.sec] ? HOME.sec : 'tours';
+    HOME.root.classList.toggle('is-sec', sec !== 'tours');
+    if (sec !== 'tours') {
+      HOME_HEAD.title.textContent = LEAGUE_SECS[sec].title;
+      HOME_HEAD.lead.textContent = LEAGUE_SECS[sec].lead;
+      HOME.body.innerHTML = secHtml(sec);
+      document.title = LEAGUE_SECS[sec].title + ' — Trout Master';
+      return;
+    }
+    if (HOME_HEAD.title.innerHTML !== HOME_HEAD.titleHtml) { HOME_HEAD.title.innerHTML = HOME_HEAD.titleHtml; HOME_HEAD.lead.textContent = HOME_HEAD.leadText; }
     var s = homeSeason();
     var kick = document.getElementById('homeSeason');
     if (!s) {
