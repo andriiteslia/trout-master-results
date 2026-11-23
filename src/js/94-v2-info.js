@@ -1,7 +1,7 @@
   // ===== src/js/94-v2-info.js — «Як доїхати» і «Положення»: плитки під KPI (Telegram; у режимі результатів — лише «Положення», телефон) =====
-  // Локація для «Як доїхати»: з «Пульта» раунду (payload.venue), інакше — з config.js
+  // Локація для «Як доїхати» — лише з «Пульта» раунду (payload.venue); не заповнено — плашки «Як доїхати» немає
   function venueCur() {
-    var v = (state.payload && state.payload.venue) || CFG.VENUE || null;
+    var v = (state.payload && state.payload.venue) || null;
     return v && (v.google || (v.lat != null && v.lng != null)) ? v : null;
   }
   var I_PIN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.1-7-11.5a7 7 0 0 1 14 0C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
@@ -17,8 +17,8 @@
     if (!box) return;
     var rules = rulesData(), list = isListMode();
     // У режимі результатів (телефон у Telegram) лишається тільки «Положення»
-    // Після останнього туру (підсумкові результати) положення вже не потрібне
-    var on = IN_TG && !!state.payload && (list ? (!!venueCur() || !!rules) : !!rules && !tournamentDone());
+    // Положення показується, якщо його не приховали на «Пульті» (B14) — тоді payload.rules порожнє
+    var on = IN_TG && !!state.payload && (list ? (!!venueCur() || !!rules) : !!rules);
     box.hidden = !on;
     box.classList.toggle('m-only', on && !list);
     if (!on) { box.innerHTML = ''; return; }

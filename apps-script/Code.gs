@@ -152,7 +152,10 @@ var PULT_SUB = 'B9';        // дата і місце, напр. «12 грудн
 var PULT_MODE = 'B10';
 var PULT_VENUE = 'B11';     // «Як доїхати»: назва локації, напр. «Krychevychi Area Fishing»
 var PULT_MAP = 'B12';       // посилання на Google Maps
-var PULT_COORDS = 'B13';    // координати «49.766483, 25.014995» (для Waze і точки на карті)      // що показувати: «Список учасників» / «Результати» (те саме, що B5 адмінки — синхронізуються)
+var PULT_COORDS = 'B13';    // координати «49.766483, 25.014995» (для Waze і точки на карті)
+var PULT_RULES = 'B14';     // «Положення» в апці: Показувати / Приховати
+var RULES_ON = 'Показувати';
+var RULES_OFF = 'Приховати';      // що показувати: «Список учасників» / «Результати» (те саме, що B5 адмінки — синхронізуються)
 
 /**
  * «Раунди сезону» на аркуші «Сайт» адмінки (F1:H10): R1…R6 — посилання на таблицю раунду й банер.
@@ -919,6 +922,9 @@ function buildArchives_(ss) {
  * Маркери «•», «-», «*» на початку й «;» у кінці пункту прибираються.
  */
 function readRules_(ss) {
+  var pu = pultSheet_(ss);   // «Положення» на «Пульті» — «Приховати»: в апці його немає
+  if (pu && String(pu.getRange('A14').getDisplayValue()).trim() === 'Положення' &&
+      String(pu.getRange(PULT_RULES).getDisplayValue()).trim() === RULES_OFF) return null;
   var sh = roundSheet_(ss, RULES_SHEET) || ss.getSheetByName(RULES_SHEET);   // своє положення в кожного раунду; немає — з адмінки
   if (!sh || sh.getLastRow() < 2) return null;
   var vals = sh.getRange(2, 1, sh.getLastRow() - 1, 2).getDisplayValues(), out = [];
@@ -3034,7 +3040,7 @@ function setupPult_(rs, ss, n, prefill) {
     pu.getRange('A8:B9').clearContent();
   }
   // Підказка була в A10:B10 або A11:B11 — звільняємо рядки під «Що показувати» й локацію
-  ['A10:B10', 'A11:B11'].forEach(function (a) {
+  ['A10:B10', 'A11:B11', 'A14:B14'].forEach(function (a) {
     var c = pu.getRange(a.split(':')[0]);
     if (c.isPartOfMerge() || String(c.getDisplayValue()).indexOf('B3 —') === 0) {
       pu.getRange(a).breakApart();
@@ -3048,6 +3054,13 @@ function setupPult_(rs, ss, n, prefill) {
   pu.getRange(PULT_VENUE).setNote('Назва місця для кнопки «Як доїхати», напр. «Krychevychi Area Fishing». Порожньо — як у налаштуваннях сайту.');
   pu.getRange(PULT_MAP).setNote('Посилання на місце в Google Maps (Поділитися → Копіювати посилання).');
   pu.getRange(PULT_COORDS).setNote('Широта, довгота, напр. «49.766483, 25.014995» (у Google Maps: правий клік по точці → перший рядок). Потрібні для Waze.');
+  pu.getRange('A14').setValue('Положення').setFontWeight('bold').setVerticalAlignment('top');
+  var rulesC = pu.getRange(PULT_RULES), curRules = String(rulesC.getDisplayValue()).trim();
+  rulesC.clearDataValidations();
+  rulesC.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList([RULES_ON, RULES_OFF], true).setAllowInvalid(false).build());
+  if (curRules !== RULES_ON && curRules !== RULES_OFF) rulesC.setValue(RULES_ON);
+  rulesC.setFontWeight('bold').setBackground('#e3f0fa')
+    .setNote('Плашка й екран «Положення» в апці (Telegram): «' + RULES_ON + '» або «' + RULES_OFF + '». Текст — аркуш «' + RULES_SHEET + '» цієї таблиці.');
   pu.getRange('A3:A10').setValues([['Дія'], ['Остання публікація'], ['Турів у раунді'], ['Особисті результати'], ['Стан розсилки'],
     ['Назва раунду'], ['Дата і місце'], ['Що показувати']]).setFontWeight('bold').setVerticalAlignment('top');
   var modeC = pu.getRange(PULT_MODE);
@@ -3089,7 +3102,7 @@ function setupPult_(rs, ss, n, prefill) {
 
   pu.getRange(PULT_RES_STATUS).setWrap(true).setVerticalAlignment('top');
 
-  var help = pu.getRange('A14:B14');
+  var help = pu.getRange('A15:B15');
   help.merge().setWrap(true).setFontColor('#475467').setVerticalAlignment('top');
   help.setValue('B3 — «' + ACTION_PUBLISH + '»: глядачі побачать поточні дані з цієї таблиці (що саме показувати — «Що показувати» в адмінці). ' +
     '\nB5 — турів у раунді. Тури понад це число на сайті не показуються, а після N-го туру результати стають підсумковими ' +
@@ -3102,7 +3115,8 @@ function setupPult_(rs, ss, n, prefill) {
   help.setValue(help.getDisplayValue() + '\nB8, B9 — назва раунду й дата і місце: заголовок сторінки раунду й картка на головній сайту. Застосується після наступної публікації.');
   help.setValue(help.getDisplayValue() + '\nB10 — що показувати на сайті: «' + MODE_REG + '» (реєстрація) або «' + MODE_RES + '». Зміна одразу публікує дані.');
   help.setValue(help.getDisplayValue() + '\nB11–B13 — «Як доїхати» (Telegram, режим «' + MODE_REG + '»): назва локації, посилання на Google Maps і координати для Waze. Застосується після наступної публікації.');
-  pu.setRowHeight(14, 230);
+  help.setValue(help.getDisplayValue() + '\nB14 — «Положення» в апці: показувати чи приховати (напр. після турніру). У режимі «' + MODE_REG + '» зміна публікується одразу.');
+  pu.setRowHeight(15, 250);
   pu.setColumnWidth(1, 170);
   pu.setColumnWidth(2, 460);
   try { pu.getRange(PULT_RES_STATUS).setValue(resInfo_(ss)); } catch (err) { console.error(err); }
@@ -3137,6 +3151,12 @@ function handlePultEdit_(e, ss, pu) {
     SpreadsheetApp.flush();
     try { writeStatus_(site, publish_(ss)); }
     catch (err) { pu.getRange(PULT_STATUS).setValue('❌ Помилка: ' + ((err && err.message) || err)); }
+    return;
+  }
+  if (a1 === PULT_RULES) {
+    if ((v === RULES_ON || v === RULES_OFF) && site && currentMode_(site) === MODE_REG) {
+      try { writeStatus_(site, publish_(ss)); } catch (err) { pu.getRange(PULT_STATUS).setValue('❌ Помилка: ' + ((err && err.message) || err)); }
+    } else pu.getRange(PULT_STATUS).setValue('Положення: ' + v + '. Застосується після «' + ACTION_PUBLISH + '» (B3).');
     return;
   }
   if (a1 === PULT_TITLE || a1 === PULT_SUB || a1 === PULT_VENUE || a1 === PULT_MAP || a1 === PULT_COORDS) {

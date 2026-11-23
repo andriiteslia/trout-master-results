@@ -445,10 +445,11 @@ const TESTS = {
     await ctx.close(); return errors;
   },
 
-  'rules in results: у Telegram на телефоні плашка «Положення» є під час турніру, після фіналу — немає': async (b) => {
+  'rules in results: у Telegram на телефоні плашка «Положення» є, а приховане на «Пульті» — немає': async (b) => {
     const fin = JSON.parse(FIX('results')); fin.rules = JSON.parse(FIX('rules')).rules; fin.hash = 'rr-fin';
-    const f = await page(b, MOB, 'results', { tg: true, body: JSON.stringify(fin) });
-    assert((await f.p.locator('#heroLinks .hlink').filter({ visible: true }).count()) === 0, 'після фіналу плашка «Положення» є');
+    const fin2 = JSON.parse(JSON.stringify(fin)); fin2.rules = null; fin2.hash = 'rr-off';   // «Приховати» на «Пульті»
+    const f = await page(b, MOB, 'results', { tg: true, body: JSON.stringify(fin2) });
+    assert((await f.p.locator('#heroLinks .hlink').filter({ visible: true }).count()) === 0, 'приховане положення видно');
     await f.ctx.close();
     // турнір триває: тури 8+ ще не зіграно
     const d = JSON.parse(JSON.stringify(fin)); d.hash = 'rr';
