@@ -14,6 +14,11 @@
     state.cardPending = true;
     goCard();
   }
+  // Головна з картками раундів: одразу, якщо сезон відомий зі збережених даних, інакше — скелетон до завантаження
+  if (HOME_FIRST && (!state.payload || hasHome())) {
+    try { history.replaceState({ tmView: 'home' }, '', location.href); } catch (e) { /* */ }
+    setView('home');
+  }
   renderStatus(false);
   load();
   if (wantReg) {

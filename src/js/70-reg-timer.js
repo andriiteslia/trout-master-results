@@ -46,6 +46,13 @@
     html.classList.toggle('view-card', state.view === 'card');
     html.classList.remove('deep-wait');
     html.classList.toggle('view-stats', state.view === 'stats');
+    html.classList.toggle('view-home', state.view === 'home');
+    if (HOME) HOME.root.hidden = state.view !== 'home';
+    // На сторінці раунду, коли є головна з картками, «Назад» веде до всіх раундів
+    var listHome = isList && hasHome();
+    html.classList.toggle('list-home', listHome);
+    var hb = document.querySelector('#heroBack span');
+    if (hb) hb.textContent = listHome ? 'Усі раунди' : 'Назад';
     ts.root.hidden = state.view !== 'stats';
     reg.root.hidden = !isReg;
     pc.root.hidden = state.view !== 'card';
@@ -99,8 +106,8 @@
     if (!tg || !tg.BackButton) return;
     try {
       if (!tg.isVersionAtLeast('6.1')) return;
-      tg.BackButton.offClick(goList);
-      if (show) { tg.BackButton.onClick(goList); tg.BackButton.show(); } else tg.BackButton.hide();
+      tg.BackButton.offClick(goBack);
+      if (show) { tg.BackButton.onClick(goBack); tg.BackButton.show(); } else tg.BackButton.hide();
     } catch (e) { /* */ }
   }
 
@@ -167,7 +174,7 @@
     if (v !== 'stats') { grownStats = false; state.rulesOpen = false; }
     if (formLift.spacer) setFormSpacer(0);
     renderReg();
-    tgBack(v !== 'list');
+    tgBack(v !== rootView());
     window.scrollTo(0, 0);
     if (v === 'stats') {
       renderStats();
@@ -177,6 +184,11 @@
       renderCard();
       var h = document.getElementById('pcTitle');
       if (h) { try { h.focus({ preventScroll: true }); } catch (e) { h.focus(); } }
+    } else if (v === 'home') {
+      renderHome();
+      renderStatus(false);
+      var ht = document.getElementById('homeTitle');
+      if (ht && state.payload) { try { ht.focus({ preventScroll: true }); } catch (e) { /* */ } }
     } else if (v === 'reg') {
       renderHeader();
       try { reg.title.focus({ preventScroll: true }); } catch (e) { reg.title.focus(); }
@@ -226,5 +238,5 @@
     try { history.replaceState({ tmView: 'reg' }, '', location.href); } catch (e) { /* */ }
     setView('reg');
   });
-  document.addEventListener('tm-tg-ready', function () { if (state.view !== 'list') tgBack(true); });
+  document.addEventListener('tm-tg-ready', function () { if (state.view !== rootView()) tgBack(true); });
 

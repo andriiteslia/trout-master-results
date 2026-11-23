@@ -1,0 +1,89 @@
+/* ===== src/css/99b-home.css — Головна: картки раундів сезону (src/js/98-home.js) ===== */
+.view-home .hero, .view-home .main, .view-home .topnav { display: none !important; }
+.home { background: var(--page); color: var(--text); }
+.home__inner { padding-top: 22px; padding-bottom: 32px; }
+@media (max-width: 979px) { .home { flex: 1 0 auto; } }
+
+.home__kicker { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; border-radius: 999px; background: #e9edf2; color: #475467; font-size: 13px; font-weight: 600; }
+.home__kicker i { width: 7px; height: 7px; border-radius: 50%; background: var(--brand); }
+.home__title { margin: 12px 0 4px; font-size: 32px; line-height: 1.08; font-weight: 800; font-stretch: 100%; letter-spacing: -0.02em; outline: none; }
+.home__lead { margin: 0 0 6px; color: #475467; font-size: 15px; }
+.home__sec { margin: 26px 0 12px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #475467; }
+.home__grid { display: block; }
+@media (min-width: 980px) {
+  .home__inner { padding-top: 32px; padding-bottom: 48px; }
+  .home__title { font-size: 44px; }
+  .home__grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 24px; align-items: start; margin-top: 8px; }
+}
+
+/* Банер: картинка з Drive поверх темної заглушки «ROUND N» (якщо банера немає або він не завантажився) */
+.hc-ban, .hx-th { position: relative; display: block; overflow: hidden; background: radial-gradient(60% 90% at 85% 30%, rgba(70, 160, 255, 0.4), transparent 60%), radial-gradient(50% 70% at 10% 100%, rgba(118, 177, 29, 0.25), transparent 60%), #07090c; }
+.hc-ban img, .hx-th img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.hb-ph { position: absolute; left: 7%; bottom: 14%; color: #fff; font-stretch: 100%; line-height: 0.9; }
+.hb-ph small { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.3em; color: #9fd3ff; }
+.hb-ph b { font-size: clamp(44px, 14vw, 84px); font-weight: 800; letter-spacing: -0.03em; }
+.hx-th .hb-ph { left: 10px; bottom: 9px; }
+.hx-th .hb-ph small { font-size: 6px; margin-bottom: 3px; letter-spacing: 0.2em; }
+.hx-th .hb-ph b { font-size: 17px; }
+
+/* Поточний раунд */
+.hc { background: #fff; border: 1px solid var(--border); border-radius: 20px; overflow: hidden; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05); }
+.hc-ban-btn { position: relative; display: block; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; }
+.hc-ban { aspect-ratio: 1200 / 630; }
+.hc-chip { position: absolute; left: 14px; top: 14px; display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 700; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.hc-chip i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.hc-chip--reg { background: rgba(236, 253, 243, 0.95); color: #067647; }
+.hc-chip--reg i { background: #17b26a; }
+.hc-chip--live { background: rgba(254, 243, 242, 0.95); color: #b42318; }
+.hc-chip--live i { background: #f04438; box-shadow: 0 0 0 4px rgba(240, 68, 56, 0.2); animation: hcPulse 1.6s ease-in-out infinite; }
+.hc-chip--fin, .hc-chip--off { background: rgba(16, 16, 16, 0.72); color: #fff; }
+.hc-chip--fin i, .hc-chip--off i { background: #98a2b3; }
+.hc-chip--soon { background: rgba(239, 248, 255, 0.95); color: #175cd3; }
+@keyframes hcPulse { 50% { box-shadow: 0 0 0 7px rgba(240, 68, 56, 0.08); } }
+@media (prefers-reduced-motion: reduce) { .hc-chip--live i { animation: none; } }
+.hc-body { padding: 16px 18px 18px; }
+.hc-t { margin: 0; font-size: 24px; font-weight: 800; font-stretch: 100%; letter-spacing: -0.015em; }
+.hc-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 6px 0 0; color: #475467; font-size: 14px; }
+.hc-meta span { display: inline-flex; align-items: center; gap: 6px; }
+.hc-meta svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.hc-seats { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+.hc-seats__r { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; color: #344054; }
+.hc-seats__r b { color: var(--text); font-weight: 700; }
+.hc-dl { margin: 0; font-size: 13px; color: #475467; }
+.hc-prog { display: flex; gap: 4px; margin-top: 16px; }
+.hc-prog span { flex: 1; height: 6px; border-radius: 9px; background: #eef1f4; }
+.hc-prog span.on { background: #f04438; }
+.hc-prog.is-fin span.on { background: var(--brand); }
+.hc-lead { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 12px; border-radius: 14px; background: #f6f8fa; }
+.hc-lead .av { width: 44px; height: 44px; font-size: 14px; flex: none; }
+.hc-lead small { display: block; font-size: 12px; font-weight: 600; color: #475467; }
+.hc-lead b { font-size: 16px; }
+.hc-lead__pts { margin-left: auto; text-align: right; font-size: 13px; color: #475467; white-space: nowrap; }
+.hc-lead__pts b { display: block; font-size: 20px; color: var(--text); }
+.hc-go { display: flex; align-items: center; justify-content: center; width: 100%; height: 48px; margin-top: 16px; border: 0; border-radius: 14px; background: #0b0b0b; color: #fff; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+@media (hover: hover) { .hc-go:hover { background: #2b2b2b; } .hx:hover { border-color: var(--border-strong); } }
+
+/* Минулі раунди */
+.hx-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.hx { display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 18px; background: #fff; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: border-color 0.15s ease; }
+.hx-th { flex: none; width: 100px; aspect-ratio: 16 / 10; border-radius: 12px; }
+.hx-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.hx-t { font-size: 18px; font-weight: 800; font-stretch: 100%; letter-spacing: -0.01em; }
+.hx-m { font-size: 14px; color: #475467; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hx-ch { flex: none; width: 20px; height: 20px; fill: none; stroke: #98a2b3; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.hx-empty { margin: 0; padding: 18px; border: 1.5px dashed var(--border-strong); border-radius: 18px; text-align: center; color: #475467; font-size: 14px; }
+.home-skel { display: grid; gap: 16px; margin-top: 24px; }
+.home-skel i { display: block; height: 240px; border-radius: 20px; background: linear-gradient(90deg, #eef1f4, #f6f8fa, #eef1f4); background-size: 200% 100%; animation: homeSkel 1.4s ease-in-out infinite; }
+.home-skel i + i { height: 110px; }
+@media (min-width: 980px) { .home-skel { grid-template-columns: 1.35fr 1fr; align-items: start; } .home-skel i { height: 420px; } }
+
+/* На сторінці раунду — «← Усі раунди» (як «Назад» у реєстрації) */
+.list-home .hero-back {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; height: 36px; padding: 0 12px 0 8px; margin-bottom: 10px;
+  border: 0; border-radius: 999px; background: #1a1a1a; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+@media (min-width: 980px) {
+  .list-home .hero-back { background: transparent; color: #344054; height: 36px; padding: 0 14px 0 8px; margin: 0 0 6px -8px; }
+}
+@media (min-width: 980px) and (hover: hover) { .list-home .hero-back:hover { background: #e4e7ec; } }
+@keyframes homeSkel { to { background-position: -200% 0; } }

@@ -176,6 +176,10 @@
     'Утримуй картинку, щоб зберегти її. Якщо не виходить — відкрий апку в браузері.': 'Press and hold the image to save it. If that doesn’t work, open the app in a browser.',
     'Зберегти': 'Save', 'Відрив': 'Lead', 'далі — резерв': 'then the reserve list', 'До закриття': 'Closes in',
     'Триває реєстрація': 'Registration open', 'Реєстрацію закрито': 'Registration closed', 'Сьогодні': 'Today', 'Завтра': 'Tomorrow',
+    'Турніри TROUT MASTER': 'TROUT MASTER tournaments', 'Реєстрація, результати онлайн і статистика кожного раунду': 'Registration, live results and stats for every round',
+    'Поточний раунд': 'Current round', 'Минулі раунди': 'Past rounds', 'Раунди сезону': 'Season rounds', 'Детальніше': 'Details',
+    'Реєстрація відкрита': 'Registration open', 'Завершено': 'Finished', 'Скоро старт': 'Starting soon', 'Усі раунди': 'All rounds',
+    'Тут з’являться наступні раунди сезону': 'Next rounds of the season will appear here',
     'Зареєстровано': 'Registered', 'Учасників': 'Participants', 'До старту': 'Starts in', 'Вільних місць': 'Free places', 'Вільно': 'Free',
     'усі місця зайняті': 'all places taken', 'До закриття реєстрації': 'Registration closes in', 'Закрита': 'Closed',
     'Переможець': 'Winner', 'Лідер': 'Leader', 'Риби': 'Fish', 'Середній': 'Average', 'риби на учасника за тур': 'fish per participant per round',
@@ -212,6 +216,11 @@
 
   // Фрази з числами — по черзі, до словника фраз
   var RULES = [
+    // Головна з картками раундів (src/js/98-home.js)
+    [/^Сезон (.+)$/, 'Season $1'],
+    [/^Наживо · Тур (\d+) з (\d+)$/, 'Live · Round $1 of $2'],
+    [/^Реєстрація до (.+) · залишилось (\d+) (?:день|дні|днів|days?)$/, 'Registration until $1 · $2 days left'],
+    [/^Реєстрація до /, 'Registration until '],
     // Порівняння учасників (src/js/57-compare.js)
     [/^([^,]+), краще: /, function (m, l) { return (EXACT[l] || l) + ', better: '; }],
     [/^([^,]+), порівну$/, function (m, l) { return (EXACT[l] || l) + ', tie'; }],

@@ -49,7 +49,7 @@ async function page(b, opts, fixture, extra) {
     await p.addInitScript(() => {
       window.Telegram = { WebApp: { initData: 'query_id=test&user=%7B%22id%22%3A1%7D&hash=x', initDataUnsafe: { user: { id: 1 } }, platform: 'ios', version: '8.0',
         ready() {}, expand() {}, onEvent() {}, offEvent() {}, setHeaderColor() {}, setBackgroundColor() {}, disableVerticalSwipes() {},
-        BackButton: { show() {}, hide() {}, onClick() {}, offClick() {} }, HapticFeedback: { impactOccurred() {}, selectionChanged() {} },
+        BackButton: { show() {}, hide() {}, onClick(h) { window.__tgBack = h; }, offClick() {} }, HapticFeedback: { impactOccurred() {}, selectionChanged() {} },
         CloudStorage: { getItem(k, cb) { cb && cb(null, ''); }, setItem() {} }, openTelegramLink() {}, openLink() {},
         isVersionAtLeast() { return true; }, requestWriteAccess(cb) { cb && cb(true); } } };
     });
@@ -58,6 +58,8 @@ async function page(b, opts, fixture, extra) {
   await p.route('https://script.google.com/**', (r) => {
     const q = r.request();
     if (q.method() === 'POST') { posts.push(q.postData()); return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, names: extra.names || [] }) }); }
+    const rn = /[?&]round=(\d+)/.exec(q.url());
+    if (rn) return r.fulfill({ status: 200, contentType: 'application/json', body: FIX('arch-' + rn[1]) });
     return r.fulfill({ status: 200, contentType: 'application/json', body: extra.body || FIX(extra.fx ? extra.fx.name : fixture) });
   });
   await p.route('https://telegram.org/**', (r) => r.fulfill({ status: 200, contentType: 'text/javascript', body: '' }));
@@ -87,6 +89,55 @@ const TESTS = {
     await t.p.click('#tab-1'); await t.p.waitForTimeout(600);
     assert((await t.p.getAttribute('#tab-1', 'aria-selected')) === 'true' && (await t.p.locator('#board .tgrid').count()) > 0, 'вкладка «По турах» не відкрилась');
     await shot(t.p, 'desk-tours');
+    await t.ctx.close(); return t.errors;
+  },
+
+  'головна: картки сезону → архів R1 → «Усі раунди» → поточний раунд': async (b) => {
+    for (const opts of [MOB, DESK]) {
+      const t = await page(b, opts, 'season');
+      const tag = opts === MOB ? 'mob' : 'desk';
+      assert(await visible(t.p, '#home'), 'головна не відкрилась');
+      assert(!(await visible(t.p, '#board')), 'на головній видно таблицю');
+      assert((await t.p.locator('.hc--cur').count()) === 1 && (await t.p.locator('.hx').count()) === 1, 'не ті картки');
+      assert(/Реєстрація відкрита/.test(await t.p.textContent('.hc-chip')), 'немає «Реєстрація відкрита»');
+      await shot(t.p, tag + '-home');
+      await t.p.click('.hx'); await t.p.waitForTimeout(1200);
+      assert((await t.p.textContent('#title')) === 'TM • Round 1', 'архів R1 не відкрився');
+      assert(/завершено/.test(await t.p.textContent('#heroPill')), 'R1 не завершений');
+      assert(await visible(t.p, '#heroBack'), 'немає «Усі раунди»');
+      await shot(t.p, tag + '-arch');
+      await t.p.click('#heroBack'); await t.p.waitForTimeout(800);
+      assert(await visible(t.p, '#home'), '«Усі раунди» не повернули на головну');
+      await t.p.click('.hc-go'); await t.p.waitForTimeout(800);
+      assert((await t.p.textContent('#title')) === 'TM • Round 2', 'поточний раунд не відкрився');
+      assert((await t.p.locator('#board [data-key]').count()) > 5, 'немає списку учасників поточного раунду');
+      await t.p.goBack(); await t.p.waitForTimeout(800);
+      assert(await visible(t.p, '#home'), 'кнопка «Назад» браузера не повернула на головну');
+      await t.ctx.close();
+      if (t.errors.length) return t.errors;
+    }
+    return [];
+  },
+
+  'головна: посилання #r1 відкриває архів, без сезону — одразу таблиця': async (b) => {
+    let t = await page(b, MOB, 'season', { hash: '#r1', wait: 2500 });
+    assert((await t.p.textContent('#title')) === 'TM • Round 1', '#r1 не відкрив архів');
+    await t.ctx.close();
+    if (t.errors.length) return t.errors;
+    t = await page(b, MOB, 'results');
+    assert(!(await visible(t.p, '#home')) && (await t.p.locator('#board [data-key]').count()) > 5, 'без сезону мала бути таблиця');
+    await t.ctx.close(); return t.errors;
+  },
+
+  'telegram: головна → архів → системна «Назад» → головна': async (b) => {
+    const t = await page(b, MOB, 'season-live', { tg: true });
+    assert(await visible(t.p, '#home'), 'у Telegram головна не відкрилась');
+    await shot(t.p, 'tg-home');
+    await t.p.click('.hx'); await t.p.waitForTimeout(1200);
+    assert((await t.p.textContent('#title')) === 'TM • Round 1', 'архів не відкрився');
+    await t.p.evaluate(() => { const h = window.__tgBack; if (h) h(); else history.back(); });
+    await t.p.waitForTimeout(800);
+    assert(await visible(t.p, '#home'), '«Назад» не повернула на головну');
     await t.ctx.close(); return t.errors;
   },
 

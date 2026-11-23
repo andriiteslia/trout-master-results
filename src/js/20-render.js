@@ -183,6 +183,7 @@
     renderReg();
     if (state.view === 'card') renderCard();
     if (state.view === 'stats') renderStats();
+    if (state.view === 'home') renderHome();
     revealFocusRow();
     celebrateFinal();
   }

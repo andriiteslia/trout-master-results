@@ -51,6 +51,12 @@
     req
       .then(function (p) {
         if (!p || p.ok === false) throw new Error((p && p.error) || 'порожня відповідь');
+        // Відкрито архів минулого раунду: свіжі дані поточного чекають, доки людина повернеться
+        if (HOME && HOME.live) {
+          if (!HOME.live.payload || HOME.live.payload.hash !== p.hash) HOME.next = p;
+          state.lastLoad = { ok: true, changed: false };
+          return;
+        }
         var changed = applyPayload(p);
         state.lastLoad = { ok: true, changed: !!changed };
         state.error = null;

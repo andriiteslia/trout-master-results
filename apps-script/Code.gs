@@ -147,6 +147,19 @@ var PULT_STATUS = 'B4';
 var PULT_TOURS = 'B5';
 var PULT_RES = 'B6';
 var PULT_RES_STATUS = 'B7';
+var PULT_TITLE = 'B8';      // назва раунду для сайту й картки на головній, напр. «TM • Round 2»
+var PULT_SUB = 'B9';        // дата і місце, напр. «12 грудня • Плугів, Krychevychi Area Fishing»
+
+/**
+ * «Раунди сезону» на аркуші «Сайт» адмінки (F1:H10): R1…R6 — посилання на таблицю раунду й банер.
+ * Скільки рядків з посиланням — стільки карток на головній сайту. Поточний раунд — останній такий рядок.
+ */
+var SEASON_TITLE = 'Раунди сезону';
+var SEASON_COL = 6;          // F
+var SEASON_NAME = 'G2';      // назва сезону, напр. «2026–2027»
+var SEASON_HEAD_ROW = 3;
+var SEASON_FIRST_ROW = 4;
+var SEASON_ROWS = 6;
 var RESULTS_SHEET = 'Results';
 
 var CACHE_KEY = 'snapshot';
@@ -157,10 +170,14 @@ var CHUNK = 4000;        // розмір шматка для збереженн�
 // Сайт: віддати останню публікацію
 // ---------------------------------------------------------------------------
 
-function doGet() {
+function doGet(e) {
   var out;
   try {
-    out = getSnapshot_();
+    var round = e && e.parameter ? parseInt(e.parameter.round, 10) : 0;
+    if (round > 0) {
+      out = archiveJson_(SpreadsheetApp.openById(getSpreadsheetId_()), round);
+      if (!out) out = { ok: false, error: 'Раунду ' + round + ' немає в «' + SEASON_TITLE + '».' };
+    } else out = getSnapshot_();
     if (!out) out = { ok: false, error: 'Результати ще не опубліковано. Виберіть «' + ACTION_PUBLISH + '» на аркуші «' + SYNC_SHEET + '».' };
   } catch (err) {
     out = { ok: false, error: String((err && err.message) || err) };
@@ -203,11 +220,10 @@ function setupSync() {
   }
   sh.getRange('A1').setValue('Публікація результатів на сайт').setFontWeight('bold').setFontSize(13);
   // Таблиця поточного раунду (B2): посилання на копію з «Учасниками», «Жеребкуванням» і «Results»
-  sh.getRange('A2').setValue('Таблиця поточного раунду').setFontWeight('bold');
-  sh.getRange(CELL_ROUND).setFontWeight('bold').setBackground('#fff4cc').setWrap(false)
-    .setNote('Посилання на таблицю раунду (аркуші «' + REG_SHEET + '», «' + DRAW_SHEET + '», «' + RESULTS_SHEET + '»). ' +
-      'Вставте нове посилання — скрипт підключиться до неї, створить там «' + PULT_SHEET + '» й опублікує дані. ' +
-      'Порожньо — усе береться з цієї таблиці.');
+  sh.getRange('A2').setValue('Поточний раунд').setFontWeight('bold');
+  sh.getRange(CELL_ROUND).setWrap(false)
+    .setNote('Поточний раунд — останній рядок з посиланням у блоці «' + SEASON_TITLE + '» (праворуч, F1). ' +
+      'Звідти беруться учасники, жеребкування й результати; там же «' + PULT_SHEET + '».');
   // Старий макет (діапазони в рядках 12–14): звільняємо два рядки під «Кількість місць» і «Реєстрація до»
   if (String(sh.getRange('A12').getDisplayValue()).trim() === RANGE_KEYS[0] &&
       String(sh.getRange('A10').getDisplayValue()).indexOf('B5') === 0) {
@@ -220,12 +236,12 @@ function setupSync() {
   // Макет до «Вартості участі» (підказка в рядку 14): звільняємо рядок 14
   if (String(sh.getRange('A14').getDisplayValue()).indexOf('B5') === 0) sh.insertRowsAfter(13, 1);
   sh.getRange('A9:B14').breakApart();
-  sh.getRange('A3:A14').setValues([['Дія'], ['Остання публікація'], ['Що показувати'], ['Заголовок'], ['Підзаголовок'],
+  sh.getRange('A3:A14').setValues([['Дія'], ['Остання публікація'], ['Що показувати'], ['Заголовок (запасний)'], ['Підзаголовок (запасний)'],
     ['Реєстрація'], ['Стрілки ▲▼ місць'], ['Кількість місць'], ['Реєстрація до'], ['Картка учасника'], ['Секторів на водоймі'], ['Вартість участі']]);
   sh.getRange('A3:A14').setFontWeight('bold');
   sh.getRange('A15:B15').merge().setWrap(true);
-  sh.getRange('A15').setValue('B2 — посилання на таблицю поточного раунду: звідти беруться учасники, жеребкування й результати, ' +
-    'а на її аркуші «' + PULT_SHEET + '» є «' + ACTION_PUBLISH + '», «Турів у раунді» й особисті результати. ' +
+  sh.getRange('A15').setValue('B2 — поточний раунд: останній рядок у «' + SEASON_TITLE + '» (F1). Звідти беруться учасники, жеребкування й результати, ' +
+    'а на його аркуші «' + PULT_SHEET + '» — «' + ACTION_PUBLISH + '», «Турів у раунді», назва й дата раунду, особисті результати. ' +
     '\nB5 — що бачать глядачі: «' + MODE_REG + '» (аркуш «Учасники») або «' + MODE_RES +
     '» (вкладки «Результат» і «Тури»). \nЗміна режиму одразу публікує дані. Щоб оновити дані на сайті, у B3 виберіть «' +
     ACTION_PUBLISH + '». Заголовок і підзаголовок теж оновлюються при публікації. \nB8 — «' + REG_OPEN +
@@ -369,14 +385,19 @@ function setupSync() {
   setupBroadcast_(sh);
   setupResults_(sh);
 
-  // Таблиця раунду з B2: тригер правок, «Пульт», колонки «Учасників» (B2 порожня — усе в цій таблиці)
-  var rs = connectRound_(ss);
+  // «Раунди сезону» (F1:H10). Перший запуск: посилання з B2 переїжджає в рядок R1, назва й дата — на «Пульт»
+  var migrate = setupSeason_(sh);
+  // Таблиця поточного раунду: тригер правок, «Пульт», колонки «Учасників» (немає жодної — усе в цій таблиці)
+  var rs = connectRound_(ss, migrate);
+  clearSeasonCache_();
+  var arch = 0;
+  try { arch = buildArchives_(ss); } catch (err) { console.error(err); }
 
   var p = publish_(ss);
   writeStatus_(sh, p);
   scheduleRegClose_(sh);
-  Logger.log('Готово. Таблиця раунду: ' + (rs.getId() === ss.getId() ? 'ця ж (B2 порожня)' : rs.getName()) +
-    '. Дані опубліковано: ' + summary_(p));
+  Logger.log('Готово. Таблиця поточного раунду: ' + (rs.getId() === ss.getId() ? 'ця ж («' + SEASON_TITLE + '» порожні)' : rs.getName()) +
+    '. Архівів минулих раундів: ' + arch + '. Дані опубліковано: ' + summary_(p));
 }
 
 /**
@@ -427,6 +448,24 @@ function handleSiteSync(e) {
     return;
   }
   if (name !== SYNC_SHEET) return;
+  // «Раунди сезону» (F2:H9): новий раунд, банер чи назва сезону — підключаємо поточний, оновлюємо картки й архіви
+  var er = e.range;
+  if (er.getLastColumn() >= SEASON_COL && er.getColumn() <= SEASON_COL + 2 &&
+      er.getLastRow() >= 2 && er.getRow() < SEASON_FIRST_ROW + SEASON_ROWS) {
+    sh.getRange(CELL_STATUS).setValue('⏳ Оновлюю раунди сезону…');
+    SpreadsheetApp.flush();
+    try {
+      var rs2 = connectRound_(ss, false);
+      clearSeasonCache_();
+      writeStatus_(sh, publish_(ss));
+      var built = buildArchives_(ss);
+      sh.getRange(CELL_STATUS).setValue(sh.getRange(CELL_STATUS).getDisplayValue() + ' • поточний раунд: «' + rs2.getName() + '»' +
+        (built ? ' • минулих раундів: ' + built : ''));
+    } catch (err) {
+      sh.getRange(CELL_STATUS).setValue('❌ ' + ((err && err.message) || err));
+    }
+    return;
+  }
   // Вставили посилання на таблицю раунду — підключаємо її й публікуємо
   if (e.range.getA1Notation() === CELL_ROUND) {
     sh.getRange(CELL_STATUS).setValue('⏳ Підключаю таблицю раунду…');
@@ -646,45 +685,69 @@ function sectorsCfg_(sh) {
 function sectors_(sh) { var c = sectorsCfg_(sh); return c ? c.n : null; }
 
 function publish_(ss) {
+  var payload = buildPayload_(ss, null);
+  saveSnapshot_(JSON.stringify(payload));
+  try { resSavePlaces_(payload); } catch (err) { console.error(err); }
+  return payload;
+}
+
+/** Назва й дата раунду: «Пульт» таблиці раунду (B8, B9); без «Пульта» — «Сайт» адмінки (B6, B7). */
+function roundEvent_(ss, n) {
+  var sh = ss.getSheetByName(SYNC_SHEET), pu = pultSheet_(ss);
+  var adminT = sh ? String(sh.getRange(CELL_TITLE).getDisplayValue()).trim() : '';
+  var adminS = sh ? String(sh.getRange(CELL_SUBTITLE).getDisplayValue()).trim() : '';
+  if (pu) {
+    var pt = String(pu.getRange(PULT_TITLE).getDisplayValue()).trim();
+    var ps = String(pu.getRange(PULT_SUB).getDisplayValue()).trim();
+    return { title: pt || (n ? 'TM • Round ' + n : adminT) || SETTINGS.EVENT_TITLE, subtitle: ps };
+  }
+  return { title: adminT || SETTINGS.EVENT_TITLE, subtitle: adminS || SETTINGS.EVENT_SUBTITLE };
+}
+
+/**
+ * Дані для сайту. arch = { n } — архів минулого раунду (RS_OVERRIDE_ уже вказує на його таблицю):
+ * лише підсумки, без реєстрації, оплат і сезону.
+ */
+function buildPayload_(ss, arch) {
   var sh = ss.getSheetByName(SYNC_SHEET);
-  var mode = currentMode_(sh);
+  var mode = arch ? MODE_RES : currentMode_(sh);
   var sheets = viewsWithRanges_(sh, MODES[mode]).map(function (view) { return readView_(ss, view); });
   // «Турів у раунді» на «Пульті»: тури понад це число не публікуються, тож сайт і бот рахують «з N»
   var tours = toursLimit_(ss);
   if (tours) sheets = sheets.map(function (v) { return trimTours_(v, tours); });
-  var event = {
-    title: (sh && String(sh.getRange(CELL_TITLE).getDisplayValue()).trim()) || SETTINGS.EVENT_TITLE,
-    subtitle: (sh && String(sh.getRange(CELL_SUBTITLE).getDisplayValue()).trim()) || SETTINGS.EVENT_SUBTITLE
-  };
+  var rows = arch ? [] : seasonRows_(sh);
+  var event = roundEvent_(ss, arch ? arch.n : (rows.length ? rows[rows.length - 1].n : 0));
   // Англійська версія сайту: назву й підзаголовок перекладає Google Translate (результат запам'ятовується)
   event.titleEn = trEn_(event.title);
   event.subtitleEn = trEn_(event.subtitle);
   var draw = null;
-  try { draw = readDraw_(ss); syncDrawNames_(ss, draw); } catch (err) { console.error(err); }
+  try { draw = readDraw_(ss); if (!arch) syncDrawNames_(ss, draw); } catch (err) { console.error(err); }
   if (draw && tours && draw.rounds > tours) {
     draw.rounds = tours;
     draw.players.forEach(function (pl) { pl.t = pl.t.slice(0, tours); });
   }
   var showCard = !sh || String(sh.getRange(CELL_CARD).getDisplayValue()).trim() !== CARD_OFF;
-  var registration = isRegOpen_(sh);
+  var registration = !arch && isRegOpen_(sh);
   var deadline = regDeadline_(sh);
   var regDeadline = registration && deadline ? deadline.toISOString() : null;
   var seats = seats_(sh);
   var fee = sh ? String(sh.getRange(CELL_FEE).getDisplayValue()).trim() || null : null;
   var payCard = sh ? String(sh.getRange(CELL_PAYCARD).getDisplayValue()).trim() || null : null;
-  var payOn = !sh || String(sh.getRange(CELL_PAY).getDisplayValue()).trim() !== PAY_OFF;
+  var payOn = !arch && (!sh || String(sh.getRange(CELL_PAY).getDisplayValue()).trim() !== PAY_OFF);
   var paid = [];
-  try { paid = paidNames_(ss); } catch (err) { console.error(err); }
+  if (!arch) try { paid = paidNames_(ss); } catch (err) { console.error(err); }
   var regAt = {};
-  try { regAt = recentRegs_(ss); } catch (err) { console.error(err); }
-  var showMoves = !sh || String(sh.getRange(CELL_MOVES).getDisplayValue()).trim() !== MOVES_OFF;
+  if (!arch) try { regAt = recentRegs_(ss); } catch (err) { console.error(err); }
+  var showMoves = !arch && (!sh || String(sh.getRange(CELL_MOVES).getDisplayValue()).trim() !== MOVES_OFF);
   var secCfg = sectorsCfg_(sh);
   var sectors = secCfg ? secCfg.n : null;
   var sectorsSplit = secCfg && secCfg.top ? [secCfg.top, secCfg.bottom] : null;   // [верхній, нижній] берег
   var now = new Date().toISOString();
   var rules = null;
-  try { rules = readRules_(ss); } catch (err) { console.error(err); }
-  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw, showCard, sectors, sectorsSplit, fee, paid, rules, payCard, regAt, payOn, tours]);
+  if (!arch) try { rules = readRules_(ss); } catch (err) { console.error(err); }
+  var season = null;
+  if (!arch) try { season = seasonPayload_(ss, rows); } catch (err) { console.error(err); }
+  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw, showCard, sectors, sectorsSplit, fee, paid, rules, payCard, regAt, payOn, tours, season]);
   var hash = Utilities.base64EncodeWebSafe(
     Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, body, Utilities.Charset.UTF_8));
 
@@ -708,14 +771,117 @@ function publish_(ss) {
     sectors: sectors,
     sectorsSplit: sectorsSplit,
     tours: tours,
+    season: season,
     hash: hash,
     changedAt: now,
     generatedAt: now,
     sheets: sheets
   };
-  saveSnapshot_(JSON.stringify(payload));
-  try { resSavePlaces_(payload); } catch (err) { console.error(err); }
+  if (arch) { payload.archived = true; payload.round = arch.n; payload.fee = null; payload.payCard = null; payload.seats = null; }
   return payload;
+}
+
+// ---------------------------------------------------------------------------
+// Сезон: картки раундів на головній і архіви минулих раундів
+// ---------------------------------------------------------------------------
+
+/** Банер з Google Drive → адреса картинки для сайту (файл має бути доступний «усім, хто має посилання»). */
+function bannerUrl_(id) { return id ? 'https://drive.google.com/thumbnail?id=' + id + '&sz=w1200' : null; }
+
+/** Назва, дата й турів — з «Пульта» таблиці раунду. */
+function roundMeta_(rs, n) {
+  var pu = rs.getSheetByName(PULT_SHEET);
+  var t = pu ? String(pu.getRange(PULT_TITLE).getDisplayValue()).trim() : '';
+  var sub = pu ? String(pu.getRange(PULT_SUB).getDisplayValue()).trim() : '';
+  var tours = pu ? parseInt(String(pu.getRange(PULT_TOURS).getDisplayValue()).replace(/\s/g, ''), 10) : 0;
+  if (!(tours > 0)) tours = toursInSheet_(rs);
+  return { title: t || 'TM • Round ' + n, subtitle: sub, tours: tours || null };
+}
+
+/** Сезон для сайту: { name, rounds: [{ n, title, subtitle, banner, tours, current }] } або null. */
+function seasonPayload_(ss, rows) {
+  var sh = ss.getSheetByName(SYNC_SHEET);
+  rows = rows || seasonRows_(sh);
+  if (!rows.length) return null;
+  var props = PropertiesService.getScriptProperties();
+  var meta = {};
+  try { meta = JSON.parse(props.getProperty('season:meta') || '{}') || {}; } catch (e) { meta = {}; }
+  var changed = false, last = rows.length - 1;
+  var out = rows.map(function (r, i) {
+    var m;
+    if (i === last) m = roundMeta_(roundSs_(ss), r.n);   // поточний — завжди свіже
+    else {
+      m = meta[r.id];
+      if (!m) {
+        try { m = roundMeta_(SpreadsheetApp.openById(r.id), r.n); meta[r.id] = m; changed = true; }
+        catch (err) { console.error(err); m = { title: 'TM • Round ' + r.n, subtitle: '', tours: null }; }
+      }
+    }
+    var ev = { title: m.title, subtitle: m.subtitle };
+    return { n: r.n, title: m.title, subtitle: m.subtitle, titleEn: trEn_(ev.title), subtitleEn: trEn_(ev.subtitle),
+      banner: bannerUrl_(r.banner), tours: m.tours, current: i === last };
+  });
+  if (changed) props.setProperty('season:meta', JSON.stringify(meta));
+  var name = sh ? String(sh.getRange(SEASON_NAME).getDisplayValue()).trim() : '';
+  return { name: name || null, rounds: out };
+}
+
+/** Зберегти / прочитати великий JSON шматками у властивостях скрипта. */
+function saveChunks_(prefix, json) {
+  var props = PropertiesService.getScriptProperties();
+  var old = Number(props.getProperty(prefix + ':count') || 0);
+  var update = {}, n = Math.ceil(json.length / CHUNK);
+  for (var i = 0; i < n; i++) update[prefix + ':' + i] = json.slice(i * CHUNK, (i + 1) * CHUNK);
+  update[prefix + ':count'] = String(n);
+  props.setProperties(update);
+  for (var j = n; j < old; j++) props.deleteProperty(prefix + ':' + j);
+}
+function readChunks_(prefix) {
+  var all = PropertiesService.getScriptProperties().getProperties();
+  var n = Number(all[prefix + ':count'] || 0);
+  if (!n) return null;
+  var parts = [];
+  for (var i = 0; i < n; i++) parts.push(all[prefix + ':' + i] || '');
+  return parts.join('');
+}
+
+/** Архів минулого раунду (JSON-рядок): з властивостей, а якщо ще немає — збирає з його таблиці й зберігає. */
+function archiveJson_(ss, n, rebuild) {
+  var rows = seasonRows_(ss.getSheetByName(SYNC_SHEET));
+  var row = rows.filter(function (r) { return r.n === n; })[0];
+  if (!row) return null;
+  if (row === rows[rows.length - 1]) return getSnapshot_();   // поточний раунд — звичайна публікація
+  var key = 'arch:' + row.id, cache = CacheService.getScriptCache();
+  if (!rebuild) {
+    var hit = cache.get(key) || readChunks_(key);
+    if (hit) return hit;
+  }
+  var json;
+  RS_OVERRIDE_ = SpreadsheetApp.openById(row.id);
+  try { json = JSON.stringify(buildPayload_(ss, { n: n })); }
+  finally { RS_OVERRIDE_ = null; }
+  saveChunks_(key, json);
+  try { cache.put(key, json, CACHE_TTL); } catch (e) { /* завеликий для кешу */ }
+  return json;
+}
+
+/** Забути збережені архіви й назви минулих раундів (зберуться знову з таблиць раундів). */
+function clearSeasonCache_() {
+  var props = PropertiesService.getScriptProperties(), cache = CacheService.getScriptCache();
+  Object.keys(props.getProperties()).forEach(function (k) {
+    if (/^arch:|^season:meta$/.test(k)) props.deleteProperty(k);
+    var m = /^(arch:[^:]+):count$/.exec(k);
+    if (m) try { cache.remove(m[1]); } catch (e) { /* */ }
+  });
+}
+
+/** Зібрати архіви всіх минулих раундів наперед (щоб сайт відкривав їх миттєво). Повертає скільки зібрано. */
+function buildArchives_(ss) {
+  var rows = seasonRows_(ss.getSheetByName(SYNC_SHEET)), done = 0;
+  rows.slice(0, -1).forEach(function (r) {
+    try { if (archiveJson_(ss, r.n)) done++; } catch (err) { console.error('Архів R' + r.n + ': ' + err); }
+  });
+  return done;
 }
 
 /**
@@ -2620,9 +2786,51 @@ function getSpreadsheetId_() {
 
 var ROUND_SS_ = {};   // відкриті таблиці раунду в межах одного запуску
 
-/** ID таблиці раунду з B2 аркуша «Сайт» (посилання, чип або сам ID), або ''. */
+/** ID файлу з посилання Google (…/d/ID/…, ?id=ID) або сам ID; '' — не схоже. */
+function fileId_(raw) {
+  raw = String(raw || '').trim();
+  var m = raw.match(/\/d\/([a-zA-Z0-9_-]{20,})/) || raw.match(/[?&]id=([a-zA-Z0-9_-]{20,})/);
+  if (m) return m[1];
+  return /^[a-zA-Z0-9_-]{30,}$/.test(raw) ? raw : '';
+}
+
+/** Рядки «Раундів сезону» з посиланням на таблицю: [{ n, id, banner }] (banner — ID файлу або ''). */
+function seasonRows_(site) {
+  if (!site) return [];
+  var rng = site.getRange(SEASON_FIRST_ROW, SEASON_COL, SEASON_ROWS, 3);
+  var vals = rng.getDisplayValues(), rich = null;
+  try { rich = rng.getRichTextValues(); } catch (e) { rich = null; }
+  var link = function (i, j) {
+    var id = fileId_(vals[i][j]);
+    if (id || !rich || !rich[i][j]) return id;
+    try {   // смарт-чип або текст із посиланням
+      var rt = rich[i][j];
+      var url = rt.getLinkUrl() || rt.getRuns().map(function (x) { return x.getLinkUrl(); }).filter(Boolean)[0];
+      return fileId_(url);
+    } catch (e) { return ''; }
+  };
+  var out = [];
+  for (var i = 0; i < vals.length; i++) {
+    var id = link(i, 1);
+    if (id) out.push({ n: i + 1, id: id, banner: link(i, 2) });
+  }
+  return out;
+}
+
+var ROUND_ID_ = null;   // { sheetId, id } — у межах одного запуску
+
+/** ID таблиці поточного раунду: останній рядок «Раундів сезону»; якщо блок порожній — посилання з B2 (як було раніше). */
 function roundId_(site) {
   if (!site) return '';
+  if (ROUND_ID_ && ROUND_ID_.sheetId === site.getSheetId()) return ROUND_ID_.id;
+  var rows = seasonRows_(site);
+  var id = rows.length ? rows[rows.length - 1].id : legacyRoundId_(site);
+  ROUND_ID_ = { sheetId: site.getSheetId(), id: id };
+  return id;
+}
+
+/** Посилання з B2 (до «Раундів сезону»). */
+function legacyRoundId_(site) {
   var cell = site.getRange(CELL_ROUND);
   var raw = String(cell.getDisplayValue()).trim();
   var m = raw.match(/\/d\/([a-zA-Z0-9_-]{20,})/);
@@ -2640,7 +2848,10 @@ function roundId_(site) {
  * Таблиця раунду (з B2 на «Сайті») або сама адмінка, якщо B2 порожня.
  * Можна передавати й саму таблицю раунду: у ній немає «Сайту», тож вона повертається як є.
  */
+var RS_OVERRIDE_ = null;   // таблиця минулого раунду, поки збирається його архів
+
 function roundSs_(ss) {
+  if (RS_OVERRIDE_) return RS_OVERRIDE_;
   var id = roundId_(ss.getSheetByName(SYNC_SHEET));
   if (!id || id === ss.getId()) return ss;
   if (!ROUND_SS_[id]) {
@@ -2677,11 +2888,49 @@ function toursInSheet_(rs) {
 }
 
 /**
+ * Блок «Раунди сезону» (F1:H10) на аркуші «Сайт». Повертає true, якщо посилання з B2 (старий спосіб)
+ * щойно перенесено в рядок R1 — тоді назва й дата з B6/B7 переїжджають на «Пульт» цього раунду.
+ */
+function setupSeason_(sh) {
+  var c = SEASON_COL;
+  sh.getRange(1, c).setValue(SEASON_TITLE).setFontWeight('bold').setFontSize(13);
+  sh.getRange(2, c).setValue('Сезон').setFontWeight('bold');
+  var name = sh.getRange(SEASON_NAME);
+  if (!String(name.getDisplayValue()).trim()) name.setValue('2026–2027');
+  name.setNumberFormat('@').setFontWeight('bold').setBackground('#fff4cc').setHorizontalAlignment('left')
+    .setNote('Назва сезону над картками на головній сайту: «Сезон 2026–2027».');
+  sh.getRange(SEASON_HEAD_ROW, c, 1, 3).setValues([['Раунд', 'Таблиця раунду (посилання)', 'Банер 1200×630 (посилання на Google Drive)']])
+    .setFontWeight('bold').setBackground('#e9edf2');
+  var labels = [];
+  for (var i = 1; i <= SEASON_ROWS; i++) labels.push(['R' + i]);
+  sh.getRange(SEASON_FIRST_ROW, c, SEASON_ROWS, 1).setValues(labels).setFontWeight('bold').setHorizontalAlignment('center');
+  sh.getRange(SEASON_FIRST_ROW, c + 1, SEASON_ROWS, 2).setBackground('#fff4cc').setWrap(false);
+  var help = sh.getRange(SEASON_FIRST_ROW + SEASON_ROWS, c, 1, 3);
+  help.merge().setWrap(true).setFontColor('#475467').setVerticalAlignment('top').setValue(
+    'Скільки рядків з посиланням на таблицю — стільки карток на головній сайту. Поточний раунд — останній такий рядок: ' +
+    'сайт і бот працюють з ним, а на «' + PULT_SHEET + '» його таблиці — публікація, назва й дата. ' +
+    'Новий раунд: копія таблиці раунду → посилання в наступний рядок. Банер — картинка 1200×630 з доступом «Усі, хто має посилання». ' +
+    'Минулі раунди сайт показує зі знімка; виправили щось у їхній таблиці — запустіть setupSync.');
+  sh.setRowHeight(SEASON_FIRST_ROW + SEASON_ROWS, 90);
+  sh.setColumnWidth(c, 70);
+  sh.setColumnWidth(c + 1, 300);
+  sh.setColumnWidth(c + 2, 300);
+  ROUND_ID_ = null;
+  if (seasonRows_(sh).length) return false;
+  var legacy = legacyRoundId_(sh);
+  if (!legacy) return false;
+  sh.getRange(SEASON_FIRST_ROW, c + 1).setValue('https://docs.google.com/spreadsheets/d/' + legacy + '/edit');
+  ROUND_ID_ = null;
+  return true;
+}
+
+/**
  * Підключає таблицю раунду з B2: тригер правок для неї, «Пульт», колонки «Учасників».
  * Якщо раунд змінився — забуває, кому й після якого туру вже надсилали особисті результати.
  */
-function connectRound_(ss) {
+function connectRound_(ss, prefill) {
   ROUND_SS_ = {};
+  ROUND_ID_ = null;
   var rs = roundSs_(ss);
   var props = PropertiesService.getScriptProperties();
   var prev = props.getProperty('round:id');
@@ -2708,7 +2957,14 @@ function connectRound_(ss) {
 
   var reg = rs.getSheetByName(REG_SHEET);
   if (reg) setupRegSheet_(reg);
-  if (rs.getId() !== ss.getId()) setupPult_(rs, ss);
+  var site = ss.getSheetByName(SYNC_SHEET);
+  var rows = seasonRows_(site), cur = rows.length ? rows[rows.length - 1] : null;
+  if (rs.getId() !== ss.getId()) setupPult_(rs, ss, cur ? cur.n : 0, prefill);
+  // B2 — лише показує, який раунд зараз поточний
+  if (site && rows.length) {
+    site.getRange(CELL_ROUND).setValue('R' + cur.n + ' · «' + rs.getName() + '» (останній рядок у «' + SEASON_TITLE + '» →)')
+      .setFontWeight('bold').setBackground('#f2f4f7');
+  }
   return rs;
 }
 
@@ -2722,7 +2978,7 @@ function setupRegSheet_(reg) {
 }
 
 /** Створює або оновлює «Пульт» у таблиці раунду. Значення, які вже вписано, не чіпає. */
-function setupPult_(rs, ss) {
+function setupPult_(rs, ss, n, prefill) {
   var pu = rs.getSheetByName(PULT_SHEET);
   if (!pu) pu = rs.insertSheet(PULT_SHEET, 0);
   pu.getRange('A1').setValue('Пульт раунду').setFontWeight('bold').setFontSize(13);
@@ -2730,8 +2986,24 @@ function setupPult_(rs, ss) {
   pu.getRange('A2:B2').merge();
   pu.getRange('A2').setRichTextValue(SpreadsheetApp.newRichTextValue().setText(text).setLinkUrl(ss.getUrl()).build())
     .setFontColor('#475467');
-  pu.getRange('A3:A7').setValues([['Дія'], ['Остання публікація'], ['Турів у раунді'], ['Особисті результати'], ['Стан розсилки']])
-    .setFontWeight('bold').setVerticalAlignment('top');
+  // Старий макет: підказка була в A8:B8 — звільняємо рядки 8–9 під назву й дату
+  var old = pu.getRange('A8');
+  if (old.isPartOfMerge() || String(old.getDisplayValue()).indexOf('B3 —') === 0) {
+    pu.getRange('A8:B8').breakApart();
+    pu.getRange('A8:B9').clearContent();
+  }
+  pu.getRange('A3:A9').setValues([['Дія'], ['Остання публікація'], ['Турів у раунді'], ['Особисті результати'], ['Стан розсилки'],
+    ['Назва раунду'], ['Дата і місце']]).setFontWeight('bold').setVerticalAlignment('top');
+  var tCell = pu.getRange(PULT_TITLE), sCell = pu.getRange(PULT_SUB);
+  var site0 = ss.getSheetByName(SYNC_SHEET);
+  if (!String(tCell.getDisplayValue()).trim()) {
+    var t0 = prefill && site0 ? String(site0.getRange(CELL_TITLE).getDisplayValue()).trim() : '';
+    tCell.setValue(t0 || (n ? 'TM • Round ' + n : ''));
+  }
+  if (prefill && site0 && !String(sCell.getDisplayValue()).trim()) sCell.setValue(String(site0.getRange(CELL_SUBTITLE).getDisplayValue()).trim());
+  [tCell, sCell].forEach(function (c) { c.setNumberFormat('@').setFontWeight('bold').setBackground('#e3f0fa').setHorizontalAlignment('left'); });
+  tCell.setNote('Назва раунду на сайті й на картці на головній, напр. «TM • Round 2».');
+  sCell.setNote('Дата і місце через «•», напр. «12 грудня • Плугів, Krychevychi Area Fishing».');
 
   var pub = pu.getRange(PULT_PUBLISH);
   pub.clearDataValidations();
@@ -2756,7 +3028,7 @@ function setupPult_(rs, ss) {
 
   pu.getRange(PULT_RES_STATUS).setWrap(true).setVerticalAlignment('top');
 
-  var help = pu.getRange('A8:B8');
+  var help = pu.getRange('A10:B10');
   help.merge().setWrap(true).setFontColor('#475467').setVerticalAlignment('top');
   help.setValue('B3 — «' + ACTION_PUBLISH + '»: глядачі побачать поточні дані з цієї таблиці (що саме показувати — «Що показувати» в адмінці). ' +
     '\nB5 — турів у раунді. Тури понад це число на сайті не показуються, а після N-го туру результати стають підсумковими ' +
@@ -2766,7 +3038,8 @@ function setupPult_(rs, ss) {
     '\n«' + RES_CHAT_MID + '» / «' + RES_CHAT_FIN + '» — одне повідомлення в чат турніру: топ-5 після туру (або подіум після останнього туру з B5), ' +
     'фото «' + BC_CARD_PICS[0] + '» / «' + BC_CARD_PICS[1] + '» з таблички картинок в адмінці й кнопка на апку. Двічі за той самий тур не надішле. ' +
     '«' + RES_CHAT_TEST + '» — те саме повідомлення лише вам (ID з «Тест — мій Telegram ID» в адмінці).');
-  pu.setRowHeight(8, 170);
+  help.setValue(help.getDisplayValue() + '\nB8, B9 — назва раунду й дата і місце: заголовок сторінки раунду й картка на головній сайту. Застосується після наступної публікації.');
+  pu.setRowHeight(10, 190);
   pu.setColumnWidth(1, 170);
   pu.setColumnWidth(2, 460);
   try { pu.getRange(PULT_RES_STATUS).setValue(resInfo_(ss)); } catch (err) { console.error(err); }
@@ -2792,6 +3065,10 @@ function handlePultEdit_(e, ss, pu) {
     } finally {
       e.range.setValue(ACTION_IDLE);
     }
+    return;
+  }
+  if (a1 === PULT_TITLE || a1 === PULT_SUB) {
+    pu.getRange(PULT_STATUS).setValue('Назву/дату змінено. Застосується після «' + ACTION_PUBLISH + '» (B3).');
     return;
   }
   if (a1 === PULT_TOURS) {

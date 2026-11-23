@@ -463,6 +463,7 @@
     renderReg();
     if (state.view === 'card') renderCard();
     if (state.view === 'stats') renderStats();
+    if (state.view === 'home') renderHome();
     revealFocusRow();
     celebrateFinal();
   }
@@ -520,6 +521,12 @@
     req
       .then(function (p) {
         if (!p || p.ok === false) throw new Error((p && p.error) || 'порожня відповідь');
+        // Відкрито архів минулого раунду: свіжі дані поточного чекають, доки людина повернеться
+        if (HOME && HOME.live) {
+          if (!HOME.live.payload || HOME.live.payload.hash !== p.hash) HOME.next = p;
+          state.lastLoad = { ok: true, changed: false };
+          return;
+        }
         var changed = applyPayload(p);
         state.lastLoad = { ok: true, changed: !!changed };
         state.error = null;
@@ -1815,6 +1822,13 @@
     html.classList.toggle('view-card', state.view === 'card');
     html.classList.remove('deep-wait');
     html.classList.toggle('view-stats', state.view === 'stats');
+    html.classList.toggle('view-home', state.view === 'home');
+    if (HOME) HOME.root.hidden = state.view !== 'home';
+    // На сторінці раунду, коли є головна з картками, «Назад» веде до всіх раундів
+    var listHome = isList && hasHome();
+    html.classList.toggle('list-home', listHome);
+    var hb = document.querySelector('#heroBack span');
+    if (hb) hb.textContent = listHome ? 'Усі раунди' : 'Назад';
     ts.root.hidden = state.view !== 'stats';
     reg.root.hidden = !isReg;
     pc.root.hidden = state.view !== 'card';
@@ -1868,8 +1882,8 @@
     if (!tg || !tg.BackButton) return;
     try {
       if (!tg.isVersionAtLeast('6.1')) return;
-      tg.BackButton.offClick(goList);
-      if (show) { tg.BackButton.onClick(goList); tg.BackButton.show(); } else tg.BackButton.hide();
+      tg.BackButton.offClick(goBack);
+      if (show) { tg.BackButton.onClick(goBack); tg.BackButton.show(); } else tg.BackButton.hide();
     } catch (e) { /* */ }
   }
 
@@ -1936,7 +1950,7 @@
     if (v !== 'stats') { grownStats = false; state.rulesOpen = false; }
     if (formLift.spacer) setFormSpacer(0);
     renderReg();
-    tgBack(v !== 'list');
+    tgBack(v !== rootView());
     window.scrollTo(0, 0);
     if (v === 'stats') {
       renderStats();
@@ -1946,6 +1960,11 @@
       renderCard();
       var h = document.getElementById('pcTitle');
       if (h) { try { h.focus({ preventScroll: true }); } catch (e) { h.focus(); } }
+    } else if (v === 'home') {
+      renderHome();
+      renderStatus(false);
+      var ht = document.getElementById('homeTitle');
+      if (ht && state.payload) { try { ht.focus({ preventScroll: true }); } catch (e) { /* */ } }
     } else if (v === 'reg') {
       renderHeader();
       try { reg.title.focus({ preventScroll: true }); } catch (e) { reg.title.focus(); }
@@ -1995,7 +2014,7 @@
     try { history.replaceState({ tmView: 'reg' }, '', location.href); } catch (e) { /* */ }
     setView('reg');
   });
-  document.addEventListener('tm-tg-ready', function () { if (state.view !== 'list') tgBack(true); });
+  document.addEventListener('tm-tg-ready', function () { if (state.view !== rootView()) tgBack(true); });
 
   // ===== src/js/80-telegram.js — Telegram: потягнути — оновити, свайп «Назад», свій рядок, візити, дозвіл писати, партнери =====
   // ----- Telegram: потягнути сторінку вниз — оновити дані (pull to refresh) -----
@@ -2402,6 +2421,13 @@
 
   window.addEventListener('popstate', function (e) {
     if (takeHashPlayer()) return;   // вставили …/#p9 у ту саму вкладку — відкрити картку, а не список
+    // Головна з картками раундів і перехід між раундами
+    if (e.state && e.state.tmView === 'home') { HOME.pushed = false; showHome(); return; }
+    if (hasHome() && (!e.state || !e.state.tmView) && !location.hash) { HOME.pushed = false; showHome(); return; }
+    if (e.state && e.state.tmView === 'list' && hasHome()) {
+      var want = e.state.round || null;
+      if (want !== HOME.n) { if (want) enterArchive(want); else leaveArchive(); renderAll(); }
+    }
     var v = e.state && /^(reg|card|stats)$/.test(e.state.tmView) ? e.state.tmView : 'list';
     if (v === 'card' && !selectedPlayerName()) v = 'list';
     if (v === 'list') state.regPushed = false;
@@ -3728,12 +3754,13 @@
     v2.search.focus();
   });
   v2.navList.addEventListener('click', function () { goList(); });
-  document.getElementById('heroBack').addEventListener('click', function () { goList(); });
+  document.getElementById('heroBack').addEventListener('click', function () { goBack(); });
   v2.navStats.addEventListener('click', function () { goStats(); });
   // Логотип — на головну (список/результати) з будь-якого екрана; на головній — угору
   document.getElementById('logoHome').addEventListener('click', function (e) {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;   // нова вкладка — як звичайне посилання
     e.preventDefault();
+    if (hasHome()) { goHome(); return; }
     if (state.view !== 'list') goList();
     else window.scrollTo({ top: 0, behavior: REDUCED ? 'auto' : 'smooth' });
   });
@@ -4519,6 +4546,208 @@
     var d = e.target.closest('#bump .bump__dot');
     if (d) { var k = d.getAttribute('data-k'); bumpHighlight(BUMP.hl === k ? null : k); }
   });
+  // ===== src/js/98-home.js — Головна: картки раундів сезону; перехід у поточний раунд і в архів минулого =====
+  // Сезон приходить у payload.season (блок «Раунди сезону» в адмінці): { name, rounds: [{ n, title, subtitle, banner, tours, current }] }.
+  // Поточний раунд — звичайні дані з опитуванням кожні 15 с. Минулий — знімок з Apps Script (?round=N), без опитування:
+  // поки він відкритий, дані поточного раунду лежать у HOME.live і оновлюються там (HOME.next).
+  var HOME = { root: document.getElementById('home'), body: document.getElementById('homeBody'), live: null, next: null, n: null, cache: {}, pushed: false };
+
+  function homeSeason() {
+    var p = HOME && HOME.live ? HOME.live.payload : state.payload;
+    var s = p && p.season;
+    return s && s.rounds && s.rounds.length ? s : null;
+  }
+  function hasHome() { return !!homeSeason(); }
+  function homeCurrent() { var s = homeSeason(); return s ? s.rounds.filter(function (r) { return r.current; })[0] || s.rounds[s.rounds.length - 1] : null; }
+  function rootView() { return hasHome() ? 'home' : 'list'; }
+
+  // Куди відкривати на старті: головна — якщо немає посилання на картку, реєстрацію, рядок чи раунд
+  var HOME_HASH = /^#r(\d+)$/.exec(location.hash);
+  var HOME_FIRST = !state.wantPlayer && !wantReg && !HOME_HASH && !/[?&]sel=/.test(location.search) &&
+    !/tgWebAppStartParam=/.test(location.hash + location.search) && !/^#(player|stats|register)$/.test(location.hash);
+
+  // ----- Архів минулого раунду -----
+  function archUrl(n) { return SOURCE + (SOURCE.indexOf('?') === -1 ? '?' : '&') + 'round=' + n; }
+  function setArchPayload(p) {
+    state.payload = p;
+    state.models = (p.sheets || []).map(parseSheet);
+    state.fromCache = false;
+    state.moves = {}; state.changed = {}; state.changeTime = 0;
+    if (p.event && I18N.setEvent) I18N.setEvent(p.event);
+  }
+  function enterArchive(n) {
+    if (HOME.n === n) return;
+    if (!HOME.live) HOME.live = { payload: state.payload, models: state.models, moves: state.moves, changed: state.changed, tab: state.tab };
+    HOME.n = n;
+    state.tab = null;
+    document.documentElement.classList.add('is-archive');
+    var hit = HOME.cache[n] || store.get('tm:arch:' + n, null);
+    if (hit && hit.sheets) setArchPayload(hit);
+    else { state.payload = null; state.models = []; state.moves = {}; state.changed = {}; }
+    fetchJson(archUrl(n))
+      .then(function (p) {
+        if (!p || p.ok === false) throw new Error((p && p.error) || 'порожня відповідь');
+        HOME.cache[n] = p;
+        store.set('tm:arch:' + n, p);
+        if (HOME.n !== n) return;
+        var same = state.payload && state.payload.hash === p.hash;
+        if (!same) { setArchPayload(p); renderAll(); }
+        state.error = null;
+        renderStatus(false);
+      })
+      .catch(function (err) {
+        if (HOME.n !== n) return;
+        state.error = (err && err.message) || 'невідома помилка';
+        renderStatus(false);
+        if (!state.payload) renderBoard();
+      });
+  }
+  function leaveArchive() {
+    if (!HOME.live) return false;
+    state.payload = HOME.live.payload; state.models = HOME.live.models;
+    state.moves = HOME.live.moves; state.changed = HOME.live.changed; state.tab = HOME.live.tab;
+    HOME.live = null; HOME.n = null;
+    document.documentElement.classList.remove('is-archive');
+    if (state.payload && state.payload.event && I18N.setEvent) I18N.setEvent(state.payload.event);
+    if (HOME.next) { applyPayload(HOME.next); HOME.next = null; }
+    state.error = null;
+    return true;
+  }
+
+  // ----- Навігація -----
+  function openRound(n, noPush) {
+    var cur = homeCurrent();
+    var past = !!cur && n !== cur.n;
+    if (!noPush) {
+      HOME.pushed = true;
+      try { history.pushState({ tmView: 'list', round: past ? n : null }, '', IN_TG ? location.href : '#r' + n); } catch (e) { HOME.pushed = false; }
+    }
+    if (past) enterArchive(n); else leaveArchive();
+    if (state.view === 'list') { renderAll(); renderReg(); tgBack(true); window.scrollTo(0, 0); }
+    else { renderAll(); setView('list'); }
+  }
+  function goHome() {
+    if (state.view === 'home') { window.scrollTo({ top: 0, behavior: REDUCED ? 'auto' : 'smooth' }); return; }
+    if (state.view === 'list' && HOME.pushed && history.state && history.state.tmView === 'list') { history.back(); return; }
+    try { history.replaceState({ tmView: 'home' }, '', IN_TG ? location.href : location.pathname + location.search); } catch (e) { /* */ }
+    HOME.pushed = false;
+    showHome();
+  }
+  function showHome() {
+    var left = leaveArchive();
+    if (left) renderAll();
+    setView('home');
+  }
+  // «Назад» (Telegram, «Усі раунди»): з картки/реєстрації/статистики — до раунду, з раунду — на головну
+  function goBack() {
+    if (state.view === 'list' && hasHome()) goHome();
+    else goList();
+  }
+
+  // ----- Картки -----
+  var HOME_MONTHS = MONTHS_FULL;
+  function subParts(r) { return String((I18N.en && r.subtitleEn) || r.subtitle || '').split(/\s*[•·]\s*/).filter(Boolean); }
+  function bannerHtml(r, cls) {
+    var ph = '<span class="hb-ph"><small>TROUT MASTER</small><b>ROUND ' + r.n + '</b></span>';
+    return '<span class="' + cls + '">' + ph + (r.banner ? '<img src="' + esc(r.banner) + '" alt="" loading="lazy" decoding="async" onerror="this.remove()">' : '') + '</span>';
+  }
+  function toursWord(n) { return n + ' ' + plural(n, 'тур', 'тури', 'турів'); }
+
+  function curCardHtml(r) {
+    var p = HOME.live ? HOME.live.payload : state.payload;
+    var chip = '', chipCls = '', extra = '';
+    var parts = subParts(r);
+    var meta = parts.map(function (s, i) { return '<span>' + (i === 0 ? ICON_CAL : i === 1 ? ICON_PIN : '') + esc(s) + '</span>'; }).join('');
+    if (p && isListMode()) {
+      var open = regOpenNow(), d = regDeadline(), si = seatsInfo();
+      chip = open ? 'Реєстрація відкрита' : 'Реєстрацію закрито';
+      chipCls = open ? 'reg' : 'off';
+      if (si) {
+        var pct = si.seats ? Math.min(100, Math.round(si.n / si.seats * 100)) : 0;
+        extra += '<div class="hc-seats"><div class="hc-seats__r"><span>Зареєстровано <b>' + si.n + (si.seats ? ' з ' + si.seats : '') + '</b></span>' +
+          (r.tours ? '<span>' + toursWord(r.tours) + '</span>' : '') + '</div>' +
+          (si.seats ? '<span class="sbar"><span style="width:' + pct + '%"></span></span>' : '') +
+          (open && d ? '<p class="hc-dl">Реєстрація до ' + esc(deadlineText(d)) + daysLeft(d) + '</p>' : '') + '</div>';
+      }
+    } else if (p) {
+      var t = toursData(), pl = playedTours(t), total = t ? t.rounds : (r.tours || 0);
+      var s = standingsRows(), top = s && pl ? s.rows.filter(function (x) { return x.place === 1; })[0] : null;
+      if (total && pl >= total) { chip = 'Завершено'; chipCls = 'fin'; }
+      else if (pl) { chip = 'Наживо · Тур ' + pl + ' з ' + total; chipCls = 'live'; }
+      else { chip = 'Скоро старт'; chipCls = 'soon'; }
+      if (total) {
+        var seg = '';
+        for (var i = 0; i < total; i++) seg += '<span' + (i < pl ? ' class="on"' : '') + '></span>';
+        extra += '<div class="hc-prog' + (chipCls === 'fin' ? ' is-fin' : '') + '" aria-hidden="true">' + seg + '</div>';
+      }
+      if (top) {
+        extra += '<div class="hc-lead">' + avatarHtml(top.name) + '<div><small>' + (chipCls === 'fin' ? 'Переможець' : 'Лідер') + '</small><b>' + esc(top.name) + '</b></div>' +
+          '<div class="hc-lead__pts"><b>' + fmtNum(top.pts) + '</b>' + plural(Math.round(top.pts), 'бал', 'бали', 'балів') +
+          (top.fish != null ? ' · ' + top.fish + ' ' + plural(top.fish, 'риба', 'риби', 'риб') : '') + '</div></div>';
+      }
+    }
+    return '<article class="hc hc--cur" data-round="' + r.n + '">' +
+      '<button type="button" class="hc-ban-btn" data-round="' + r.n + '" tabindex="-1" aria-hidden="true">' + bannerHtml(r, 'hc-ban') +
+      (chip ? '<span class="hc-chip hc-chip--' + chipCls + '"><i></i>' + esc(chip) + '</span>' : '') + '</button>' +
+      '<div class="hc-body"><h2 class="hc-t">' + esc(r.title) + '</h2>' + (meta ? '<p class="hc-meta">' + meta + '</p>' : '') + extra +
+      '<button type="button" class="hc-go" data-round="' + r.n + '">Детальніше</button></div></article>';
+  }
+  function daysLeft(d) {
+    var days = Math.ceil((d.getTime() - Date.now()) / 86400000);
+    return days > 1 ? ' · залишилось ' + days + ' ' + plural(days, 'день', 'дні', 'днів') : '';
+  }
+  function fmtNum(x) { return String(Math.round(x * 10) / 10).replace('.', ','); }
+  function pastCardHtml(r) {
+    var parts = subParts(r);
+    return '<button type="button" class="hx" data-round="' + r.n + '">' + bannerHtml(r, 'hx-th') +
+      '<span class="hx-txt"><b class="hx-t">' + esc(r.title) + '</b>' +
+      (parts.length ? '<span class="hx-m">' + esc(parts.join(' · ')) + '</span>' : '') +
+      (r.tours ? '<span class="hx-m">' + toursWord(r.tours) + '</span>' : '') + '</span>' +
+      '<svg class="hx-ch" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>';
+  }
+
+  function renderHome() {
+    var s = homeSeason();
+    var kick = document.getElementById('homeSeason');
+    if (!s) {
+      kick.hidden = true;
+      HOME.body.innerHTML = '<div class="home-skel" aria-hidden="true"><i></i><i></i></div>';
+      return;
+    }
+    kick.hidden = !s.name;
+    kick.lastElementChild.textContent = s.name ? 'Сезон ' + s.name : '';
+    var cur = homeCurrent();
+    var past = s.rounds.filter(function (r) { return r !== cur; }).slice().reverse();
+    var h = '<div class="home__col"><h2 class="home__sec">Поточний раунд</h2>' + curCardHtml(cur) + '</div>' +
+      '<div class="home__col"><h2 class="home__sec">' + (past.length ? 'Минулі раунди' : 'Раунди сезону') + '</h2><div class="hx-list">' +
+      past.map(pastCardHtml).join('') +
+      (s.rounds.length < 6 ? '<p class="hx-empty">Тут з’являться наступні раунди сезону</p>' : '') + '</div></div>';
+    HOME.body.innerHTML = h;
+    document.title = 'Trout Master — турніри з ловлі форелі';
+  }
+
+  HOME.body.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-round]');
+    if (!b) return;
+    openRound(parseInt(b.getAttribute('data-round'), 10));
+  });
+
+  // Після кожного завантаження поточних даних: сезону немає (стара версія скрипта) — головна не потрібна
+  window.addEventListener('tm:loaded', function () {
+    if (state.view === 'home' && state.payload && !hasHome()) {
+      try { history.replaceState({ tmView: 'list' }, '', location.pathname + location.search); } catch (e) { /* */ }
+      setView('list');
+    }
+    // Посилання …/#r1: відкрити раунд, щойно відомий сезон
+    if (HOME_HASH && hasHome()) {
+      var n = parseInt(HOME_HASH[1], 10);
+      HOME_HASH = null;
+      if (homeSeason().rounds.some(function (r) { return r.n === n; })) {
+        try { history.replaceState({ tmView: 'list', round: n }, '', location.href); } catch (e) { /* */ }
+        openRound(n, true);
+      }
+    }
+  });
   // ===== src/js/99-start.js — Старт: дані з кешу, перший рендер, завантаження =====
   // ---------- Start ----------
   var cached = store.get(LS.data, null);
@@ -4534,6 +4763,11 @@
   if (state.wantPlayer) {
     state.cardPending = true;
     goCard();
+  }
+  // Головна з картками раундів: одразу, якщо сезон відомий зі збережених даних, інакше — скелетон до завантаження
+  if (HOME_FIRST && (!state.payload || hasHome())) {
+    try { history.replaceState({ tmView: 'home' }, '', location.href); } catch (e) { /* */ }
+    setView('home');
   }
   renderStatus(false);
   load();

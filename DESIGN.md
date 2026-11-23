@@ -8,7 +8,9 @@
 - **Telegram Mini App:** @troutmasterua_bot (`t.me/troutmasterua_bot?startapp`). Це той самий сайт усередині Telegram.
 - **Дані:** Google Таблиця → Apps Script (`apps-script/Code.gs`) → JSON → сайт опитує його кожні 15 с.
   - Адмінка: `13wvgmiuQeCl6ap4QmScSdf1dR0_wUuljV9-1-GggLdk` — «Сайт», «Положення», «Відвідування», журнали, «Партнери».
-  - Таблиця поточного раунду — посилання в B2 «Сайту»: «Учасники», «Жеребкування», «Results», «Пульт» (B3 публікація, B5 турів у раунді, B6 особисті результати). R1 `1keT0ZrbGc-Z6y-yTL2nuDjI6z6HdfBuMmzhIOyG1G94` (архів у `rounds/round-1.json`), R2 `1ycZJiQcpi6E3G-1Pe0QoBlaKWiGj0BUSVxbBSvLh55k` (12 турів).
+  - «Раунди сезону» (F1:H10 «Сайту»): R1…R6 — таблиця й банер; поточний — останній рядок; payload.season = { name, rounds:[{n,title,subtitle,banner,tours,current}] }; минулі — `?round=N` (знімок у властивостях `arch:<id>`, збирається з таблиці раунду, скидається setupSync/правкою блоку).
+  - Сайт: `src/js/98-home.js` + `src/css/99b-home.css` — view `home` (картки), `openRound(n)`, архів підміняє state.payload (живі дані чекають у HOME.live/HOME.next), `goBack()` — «Назад» Telegram і «Усі раунди». Фікстури: season.json, season-live.json, arch-1.json.
+  - Таблиця поточного раунду — останній рядок «Раундів сезону» (раніше B2): «Учасники», «Жеребкування», «Results», «Пульт» (B3 публікація, B5 турів у раунді, B6 особисті результати). R1 `1keT0ZrbGc-Z6y-yTL2nuDjI6z6HdfBuMmzhIOyG1G94` (архів у `rounds/round-1.json`), R2 `1ycZJiQcpi6E3G-1Pe0QoBlaKWiGj0BUSVxbBSvLh55k` (12 турів).
   - Діапазони «Тури»/«Результат» — «авто» (за заголовками «#» і «Місце»). «Турів у раунді» обрізає тури в публікації (`trimTours_`), payload.tours = N.
 - **Партнер:** FISH.ME.FISH, `t.me/fishmefish_japan`, логотип у `assets/partners/fishmefish.svg`.
 - **Власник:** Андрій Тесля. Пише українською й любить преміальний, вилизаний дизайн.
