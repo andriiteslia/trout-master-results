@@ -2738,3 +2738,9 @@ body > .topbar, body > .hero, body > .foot { flex: none; }
 /* Плашка стану турніру — в одному рядку з датою й місцем (не над заголовком) */
 .hero__metarow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 .hero__metarow .pill { align-self: center; }
+
+/* Телефон: білий «аркуш» головної під навбаром із тим самим заокругленням, що й на сторінці раунду (.main — 24 px) */
+@media (max-width: 979px) {
+  .home { display: flex; flex-direction: column; background: var(--nav); }
+  .home__inner { flex: 1 0 auto; width: 100%; background: var(--page); border-radius: 24px 24px 0 0; }
+}
