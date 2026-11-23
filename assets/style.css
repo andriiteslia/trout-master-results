@@ -2662,7 +2662,7 @@ body > .topbar, body > .hero, body > .foot { flex: none; }
 /* Поточний раунд */
 .hc { background: #fff; border: 1px solid var(--border); border-radius: 20px; overflow: hidden; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05); }
 .hc-ban-btn { position: relative; display: block; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; }
-.hc-ban { aspect-ratio: 1200 / 480; }
+.hc-ban { aspect-ratio: 1200 / 560; }
 .hc-chip { position: absolute; left: 14px; top: 14px; display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 700; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .hc-chip i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
 .hc-chip--reg { background: rgba(236, 253, 243, 0.95); color: #067647; }
