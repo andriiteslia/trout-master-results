@@ -2723,10 +2723,13 @@ body > .topbar, body > .hero, body > .foot { flex: none; }
 
 /* Статистика раунду (коли є головна): зліва вгорі «← Результати», як «← Усі раунди» на сторінці раунду */
 @media (min-width: 980px) {
-  .ts-hero--home .pc-hero__bar { display: flex; margin-bottom: 6px; }
+  /* ті ж відступи, що й «← Усі раунди» на сторінці раунду: кнопка на 36 px від навбару, заголовок на 16 px нижче */
+  .ts-hero--home .pc-hero__bar { display: flex; margin-bottom: 16px; }
   .ts-hero--home .pc-back { background: transparent !important; color: #344054; }
-  .view-stats .ts-hero--home { padding-top: 24px; }
+  .view-stats .ts-hero--home { padding-top: 36px; }
+  .ts-hero--home .pc-sub { margin-top: 10px; }
 }
+@media (max-width: 979px) { .ts-hero--home { padding-top: 4px; } }
 @media (min-width: 980px) and (hover: hover) { .ts-hero--home .pc-back:hover { background: #e4e7ec !important; } }
 
 /* Плашка стану турніру — в одному рядку з датою й місцем (не над заголовком) */
