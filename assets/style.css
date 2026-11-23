@@ -2727,7 +2727,8 @@ body > .topbar, body > .hero, body > .foot { flex: none; }
   .ts-hero--home .pc-hero__bar { display: flex; margin-bottom: 6px; }
   .ts-hero--home .pc-back { background: transparent !important; color: #344054; }
   .view-stats .ts-hero--home { padding-top: 24px; }
-  .ts-hero--home .pc-sub { margin-top: 10px; }
+  .ts-hero--home .pc-sub { margin-top: 10px; font-size: 14px; line-height: 1.5; }
+  .ts-hero--home .kpis--2 { margin-top: 20px; }
   .list-home .hero__inner { padding-top: 24px; }
   .list-home .hero-back { margin-bottom: -4px !important; }   /* + gap 10 px у .hero__txt = 6 px до заголовка */
 }
