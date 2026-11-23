@@ -2727,7 +2727,7 @@ body > .topbar, body > .hero, body > .foot { flex: none; }
   .ts-hero--home .pc-hero__bar { display: flex; margin-bottom: 6px; }
   .ts-hero--home .pc-back { background: transparent !important; color: #344054; }
   .view-stats .ts-hero--home { padding-top: 24px; }
-  .ts-hero--home .pc-sub { margin-top: 10px; font-size: 14px; line-height: 1.5; }
+  .ts-hero--home .pc-sub { margin-top: 10px; font-size: 14px; line-height: 1.5; min-height: 26px; display: flex; align-items: center; }   /* як рядок дати з плашкою на сторінці раунду */
   .ts-hero--home .kpis--2 { margin-top: 20px; }
   .list-home .hero__inner { padding-top: 24px; }
   .list-home .hero-back { margin-bottom: -4px !important; }   /* + gap 10 px у .hero__txt = 6 px до заголовка */
@@ -2737,6 +2737,8 @@ body > .topbar, body > .hero, body > .foot { flex: none; }
 
 /* Плашка стану турніру — в одному рядку з датою й місцем (не над заголовком) */
 .hero__metarow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+/* рядок дати однакової висоти з плашкою й без неї — кнопки праворуч не стрибають між сторінками */
+@media (min-width: 980px) { .hero__metarow { min-height: 26px; } .hero__metarow .pill { height: 26px; padding-top: 0; padding-bottom: 0; } }
 .hero__metarow .pill { align-self: center; }
 
 /* Телефон: білий «аркуш» головної під навбаром із тим самим заокругленням, що й на сторінці раунду (.main — 24 px) */
@@ -2773,4 +2775,4 @@ body > .topbar, body > .hero, body > .foot { flex: none; }
 /* Головна на комп'ютері: праворуч від заголовка — FISH.ME.FISH і Telegram-чат, як на сторінці раунду */
 .home__head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
 .home__htxt { min-width: 0; }
-.home__acts { display: flex; gap: 10px; flex: none; }
+.home__acts { display: flex; gap: 10px; flex: none; margin-bottom: 6px; }   /* низ кнопок = низ підзаголовка, як на сторінці раунду */
