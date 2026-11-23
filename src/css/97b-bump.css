@@ -43,3 +43,6 @@
 
 /* легкі горизонталі місць під лініями */
 .bump__grid line { stroke: #eef0f3; stroke-width: 1; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; }
+
+/* Місце на поточному турі перед іменем: «10 · Логінов Ігор» */
+.bump__pl { font-weight: 800; color: #8ed12b; margin-right: 6px; padding-right: 6px; border-right: 1px solid rgba(255,255,255,.25); font-variant-numeric: normal; }

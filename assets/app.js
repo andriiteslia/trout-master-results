@@ -4387,7 +4387,7 @@
       return '<button type="button" class="bump__dot' + (f ? ' has-ph' : '') + '" data-k="' + esc(r.key) + '" aria-label="' + esc(r.name) + '">' +
         '<span class="bump__av">' + esc(initials(r.name)) +
         (f ? '<img src="assets/players/' + encodeURIComponent(f) + '?v=' + PHOTO_V + '" alt="" loading="lazy" decoding="async">' : '') + '</span>' +
-        '<span class="bump__nm">' + esc(r.name) + '</span></button>';
+        '<span class="bump__nm"><b class="bump__pl" translate="no">' + r.pos[r.pos.length - 1] + '</b>' + esc(r.name) + '</span></button>';
     }).join('');
     var axis = '', grid = '';
     for (var i = 1; i <= D.n; i++) {
@@ -4431,12 +4431,15 @@
     var e = f;   // рівномірно — по прямій, як лінії між турами
     var xPct = (v - 1) / (T - 1) * 100;
     var dots = root.querySelectorAll('.bump__dot');
+    var tr = Math.round(v) - 1;   // місце біля імені — на найближчому турі
     D.rows.forEach(function (r, j) {
       var p = r.pos[i0 - 1] + (r.pos[i1 - 1] - r.pos[i0 - 1]) * e;
       var el = dots[j];
       el.style.left = xPct + '%';
       el.style.top = (BUMP_PAD + (p - 1) * BUMP_ROW) + 'px';
       el.classList.toggle('is-right', xPct > 55);   // ім'я з того боку, де є місце
+      var pl = el.querySelector('.bump__pl'), pv = String(r.pos[tr]);
+      if (pl && pl.textContent !== pv) pl.textContent = pv;
     });
     // Під час ▶︎ графік сам прокручується за підсвіченим учасником, коли той підходить до краю вікна
     if (BUMP.raf && BUMP.hl) {
