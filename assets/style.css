@@ -2815,7 +2815,7 @@ body > .home { flex: 1 0 auto; }
   .tabbar button[aria-current="page"] { color: #0a0a0a; }
   .tabbar button { color: #667085; }
   .tabbar:not(.has-seg) button[aria-current="page"] { background: #eef0f3; }
-  .tabbar svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .tabbar svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }   /* іконки Lucide */
   .tabbar .seg-ind { position: absolute; left: 0; top: 0; z-index: 0; border-radius: 999px; background: #eef0f3; box-shadow: none;
     transition: transform 0.32s cubic-bezier(.3, 1.3, .5, 1), width 0.32s ease; }
   .tabbar button:active { transform: scale(0.96); }
