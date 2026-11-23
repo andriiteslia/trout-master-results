@@ -41,6 +41,7 @@
     t.classList.add('ld');
     var w = t.closest && t.closest('.hb-wait, .av--fade');
     if (w) w.classList.remove('hb-wait', 'av--fade');
+    if (t.parentNode && t.parentNode.classList && /\b(hc-ban|hx-th)\b/.test(t.parentNode.className)) t.parentNode.classList.add('has-img');
     var u = t.getAttribute('src');
     if (u && !IMG_OK[u]) {
       IMG_OK[u] = 1;

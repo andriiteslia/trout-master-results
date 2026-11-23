@@ -1826,6 +1826,7 @@
     html.classList.toggle('view-reg', isReg);
     html.classList.toggle('view-card', state.view === 'card');
     html.classList.remove('deep-wait');
+    html.classList.remove('home-wait');
     html.classList.toggle('view-stats', state.view === 'stats');
     html.classList.toggle('view-home', state.view === 'home');
     if (HOME) HOME.root.hidden = state.view !== 'home';
@@ -2742,6 +2743,7 @@
     t.classList.add('ld');
     var w = t.closest && t.closest('.hb-wait, .av--fade');
     if (w) w.classList.remove('hb-wait', 'av--fade');
+    if (t.parentNode && t.parentNode.classList && /\b(hc-ban|hx-th)\b/.test(t.parentNode.className)) t.parentNode.classList.add('has-img');
     var u = t.getAttribute('src');
     if (u && !IMG_OK[u]) {
       IMG_OK[u] = 1;
@@ -4690,7 +4692,7 @@
     if (!r.banner) return '<span class="' + cls + '">' + ph + '</span>';
     var src = bannerSrc(r.banner), ok = IMG_OK[src];
     // ще не завантажувався — скелетон, а не заглушка «ROUND N», щоб не блимало; не вийшло — заглушка
-    return '<span class="' + cls + (ok ? '' : ' hb-wait') + '">' + ph + '<img src="' + esc(src) + '" alt="" decoding="async"' + (ok ? ' class="ld"' : '') +
+    return '<span class="' + cls + (ok ? ' has-img' : ' hb-wait') + '">' + ph + '<img src="' + esc(src) + '" alt="" decoding="async"' + (ok ? ' class="ld"' : '') +
       ' onerror="var p=this.parentNode;this.remove();if(p)p.classList.remove(\'hb-wait\')">' + '</span>';
   }
   // Банер поточного раунду — вантажимо одразу зі збережених даних, ще до першого малювання
@@ -4756,11 +4758,11 @@
     var s = homeSeason();
     var kick = document.getElementById('homeSeason');
     if (!s) {
-      kick.hidden = true;
       HOME.body.innerHTML = '<div class="home-skel" aria-hidden="true"><i></i><i></i></div>';
       return;
     }
     kick.hidden = !s.name;
+    kick.classList.remove('is-skel');
     kick.lastElementChild.textContent = s.name ? 'Сезон ' + s.name : '';
     var cur = homeCurrent();
     var past = s.rounds.filter(function (r) { return r !== cur; }).slice().reverse();

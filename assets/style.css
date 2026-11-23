@@ -2706,7 +2706,7 @@ body > .topbar, body > .hero, body > .foot { flex: none; }
 .hx-ch { flex: none; width: 20px; height: 20px; fill: none; stroke: #98a2b3; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .hx-empty { margin: 0; padding: 18px; border: 1.5px dashed var(--border-strong); border-radius: 18px; text-align: center; color: #475467; font-size: 14px; }
 .home-skel { display: grid; gap: 16px; margin-top: 24px; }
-.home-skel i { display: block; height: 240px; border-radius: 20px; background: linear-gradient(90deg, #eef1f4, #f6f8fa, #eef1f4); background-size: 200% 100%; animation: homeSkel 1.4s ease-in-out infinite; }
+.home-skel i { display: block; height: 400px; border-radius: 20px; background: linear-gradient(90deg, #eef1f4, #f6f8fa, #eef1f4); background-size: 200% 100%; animation: homeSkel 1.4s ease-in-out infinite; }
 .home-skel i + i { height: 110px; }
 @media (min-width: 980px) { .home-skel { grid-template-columns: 1.35fr 1fr; align-items: start; } .home-skel i { height: 420px; } }
 
@@ -2754,3 +2754,11 @@ body > .topbar, body > .hero, body > .foot { flex: none; }
 .av--fade img { opacity: 0; transition: opacity 0.2s ease; }
 .av--fade img.ld { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .hb-wait, .av--fade { animation: none; } }
+/* Банер завантажився — заглушки «ROUND N» під ним не має бути видно (банер може бути з прозорістю) */
+.has-img .hb-ph { visibility: hidden; }
+/* До запуску апки (перший кадр): головна зі скелетоном замість сторінки раунду */
+.home-wait .hero, .home-wait .main { display: none !important; }
+.home-wait #home[hidden] { display: block !important; }
+@media (max-width: 979px) { .home-wait #home[hidden] { display: flex !important; } }
+.home__kicker.is-skel { width: 160px; background: linear-gradient(90deg, #e9edf2, #f4f6f8, #e9edf2); background-size: 200% 100%; animation: homeSkel 1.4s ease-in-out infinite; }
+.home__kicker.is-skel i { visibility: hidden; }

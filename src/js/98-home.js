@@ -109,7 +109,7 @@
     if (!r.banner) return '<span class="' + cls + '">' + ph + '</span>';
     var src = bannerSrc(r.banner), ok = IMG_OK[src];
     // ще не завантажувався — скелетон, а не заглушка «ROUND N», щоб не блимало; не вийшло — заглушка
-    return '<span class="' + cls + (ok ? '' : ' hb-wait') + '">' + ph + '<img src="' + esc(src) + '" alt="" decoding="async"' + (ok ? ' class="ld"' : '') +
+    return '<span class="' + cls + (ok ? ' has-img' : ' hb-wait') + '">' + ph + '<img src="' + esc(src) + '" alt="" decoding="async"' + (ok ? ' class="ld"' : '') +
       ' onerror="var p=this.parentNode;this.remove();if(p)p.classList.remove(\'hb-wait\')">' + '</span>';
   }
   // Банер поточного раунду — вантажимо одразу зі збережених даних, ще до першого малювання
@@ -175,11 +175,11 @@
     var s = homeSeason();
     var kick = document.getElementById('homeSeason');
     if (!s) {
-      kick.hidden = true;
       HOME.body.innerHTML = '<div class="home-skel" aria-hidden="true"><i></i><i></i></div>';
       return;
     }
     kick.hidden = !s.name;
+    kick.classList.remove('is-skel');
     kick.lastElementChild.textContent = s.name ? 'Сезон ' + s.name : '';
     var cur = homeCurrent();
     var past = s.rounds.filter(function (r) { return r !== cur; }).slice().reverse();

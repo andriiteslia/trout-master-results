@@ -45,6 +45,7 @@
     html.classList.toggle('view-reg', isReg);
     html.classList.toggle('view-card', state.view === 'card');
     html.classList.remove('deep-wait');
+    html.classList.remove('home-wait');
     html.classList.toggle('view-stats', state.view === 'stats');
     html.classList.toggle('view-home', state.view === 'home');
     if (HOME) HOME.root.hidden = state.view !== 'home';
