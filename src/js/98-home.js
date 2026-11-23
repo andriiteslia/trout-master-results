@@ -126,8 +126,10 @@
     var meta = parts.map(function (s, i) { return '<span>' + (i === 0 ? ICON_CAL : i === 1 ? ICON_PIN : '') + esc(s) + '</span>'; }).join('');
     if (p && isListMode()) {
       var open = regOpenNow(), d = regDeadline(), si = seatsInfo();
-      chip = open ? 'Реєстрація відкрита' : 'Реєстрацію закрито';
-      chipCls = open ? 'reg' : 'off';
+      // реєстрацію ще не відкривали (нікого немає) — «Скоро»; відкрита; закрита
+      var soon = !open && (!si || !si.n);
+      chip = open ? 'Реєстрацію відкрито' : soon ? 'Скоро' : 'Реєстрацію закрито';
+      chipCls = open ? 'reg' : soon ? 'soon' : 'off';
       if (si) {
         var pct = si.seats ? Math.min(100, Math.round(si.n / si.seats * 100)) : 0;
         extra += '<div class="hc-seats"><div class="hc-seats__r"><span>Зареєстровано <b>' + si.n + (si.seats ? ' з ' + si.seats : '') + '</b></span>' +
@@ -140,7 +142,7 @@
       var s = standingsRows(), top = s && pl ? s.rows.filter(function (x) { return x.place === 1; })[0] : null;
       if (total && pl >= total) { chip = 'Завершено'; chipCls = 'fin'; }
       else if (pl) { chip = 'Наживо · Тур ' + pl + ' з ' + total; chipCls = 'live'; }
-      else { chip = 'Скоро старт'; chipCls = 'soon'; }
+      else { chip = 'Скоро'; chipCls = 'soon'; }
       if (total) {
         var seg = '';
         for (var i = 0; i < total; i++) seg += '<span' + (i < pl ? ' class="on"' : '') + '></span>';

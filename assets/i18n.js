@@ -178,7 +178,7 @@
     'Триває реєстрація': 'Registration open', 'Реєстрацію закрито': 'Registration closed', 'Сьогодні': 'Today', 'Завтра': 'Tomorrow',
     'Реєстрація, результати онлайн та статистика': 'Registration, live results and stats',
     'Trout Master — турніри з ловлі форелі': 'Trout Master — trout fishing tournaments', 'Поточний раунд': 'Current round', 'Зіграні раунди сезону': 'Played rounds of the season', 'Раунди сезону': 'Season rounds', 'Детальніше': 'Details',
-    'Реєстрація відкрита': 'Registration open', 'Завершено': 'Finished', 'Скоро старт': 'Starting soon', 'Усі раунди': 'All rounds',
+    'Реєстрацію відкрито': 'Registration open', 'Завершено': 'Finished', 'Скоро': 'Coming soon', 'Усі раунди': 'All rounds',
     'Наступні раунди з’являться тут після завершення': 'Next rounds will appear here once finished',
     'Зареєстровано': 'Registered', 'Учасників': 'Participants', 'До старту': 'Starts in', 'Вільних місць': 'Free places', 'Вільно': 'Free',
     'усі місця зайняті': 'all places taken', 'До закриття реєстрації': 'Registration closes in', 'Закрита': 'Closed',

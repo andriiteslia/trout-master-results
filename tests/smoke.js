@@ -99,7 +99,7 @@ const TESTS = {
       assert(await visible(t.p, '#home'), 'головна не відкрилась');
       assert(!(await visible(t.p, '#board')), 'на головній видно таблицю');
       assert((await t.p.locator('.hc--cur').count()) === 1 && (await t.p.locator('.hx').count()) === 1, 'не ті картки');
-      assert(/Реєстрація відкрита/.test(await t.p.textContent('.hc-chip')), 'немає «Реєстрація відкрита»');
+      assert(/Реєстрацію відкрито/.test(await t.p.textContent('.hc-chip')), 'немає «Реєстрацію відкрито»');
       assert((await visible(t.p, '#partnerHome')) === (opts === DESK) && (await visible(t.p, '#chatHome')) === (opts === DESK), 'FISH.ME.FISH і Telegram-чат — лише на головній на комп\'ютері');
       await shot(t.p, tag + '-home');
       await t.p.click('.hx'); await t.p.waitForTimeout(1200);
