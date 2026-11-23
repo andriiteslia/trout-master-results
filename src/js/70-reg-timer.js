@@ -76,7 +76,8 @@
     reg.bar.classList.toggle('two', other && showCard);
     var showBar = other || showCard;
     // Без кнопок (реєстрацію закрито, турів ще немає) панель лишається в Telegram «порожньою» — заради кнопки партнера
-    var solo = !showBar && IN_TG && isList;
+    // з головною (картки раундів) кругла кнопка партнера — лише на головній, на сторінках раундів її немає
+    var solo = !showBar && IN_TG && (state.view === 'home' || (isList && !hasHome()));
     reg.bar.hidden = !showBar && !solo;
     reg.bar.classList.toggle('solo', solo);
     html.classList.toggle('has-partner-solo', solo);

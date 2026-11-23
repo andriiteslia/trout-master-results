@@ -100,6 +100,7 @@ const TESTS = {
       assert(!(await visible(t.p, '#board')), 'на головній видно таблицю');
       assert((await t.p.locator('.hc--cur').count()) === 1 && (await t.p.locator('.hx').count()) === 1, 'не ті картки');
       assert(/Реєстрація відкрита/.test(await t.p.textContent('.hc-chip')), 'немає «Реєстрація відкрита»');
+      assert((await visible(t.p, '#partnerHome')) === (opts === DESK) && (await visible(t.p, '#chatHome')) === (opts === DESK), 'FISH.ME.FISH і Telegram-чат — лише на головній на комп\'ютері');
       await shot(t.p, tag + '-home');
       await t.p.click('.hx'); await t.p.waitForTimeout(1200);
       assert((await t.p.textContent('#title')) === 'TM • Round 1', 'архів R1 не відкрився');
@@ -137,6 +138,7 @@ const TESTS = {
   'telegram: головна → архів → системна «Назад» і свайп від краю → головна': async (b) => {
     const t = await page(b, MOB, 'season-live', { tg: true });
     assert(await visible(t.p, '#home'), 'у Telegram головна не відкрилась');
+    assert(await visible(t.p, '#partner'), 'на головній у Telegram немає круглої кнопки партнера');
     await shot(t.p, 'tg-home');
     // «Кришка» з кутами під панеллю Telegram — лише коли аркуш доїхав до верху, а не одразу
     assert(!(await t.p.evaluate(() => document.documentElement.classList.contains('tg-stuck'))), 'на головній кути під панеллю одразу, без прокрутки');
@@ -148,6 +150,7 @@ const TESTS = {
     await t.p.evaluate(() => window.scrollTo(0, 0)); await t.p.waitForTimeout(200);
     await t.p.click('.hx'); await t.p.waitForTimeout(1200);
     assert((await t.p.textContent('#title')) === 'TM • Round 1', 'архів не відкрився');
+    assert(!(await visible(t.p, '#partner')), 'на сторінці раунду кругла кнопка партнера має зникнути');
     await t.p.evaluate(() => { const h = window.__tgBack; if (h) h(); else history.back(); });
     await t.p.waitForTimeout(800);
     assert(await visible(t.p, '#home'), '«Назад» не повернула на головну');

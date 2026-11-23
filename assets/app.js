@@ -1862,7 +1862,8 @@
     reg.bar.classList.toggle('two', other && showCard);
     var showBar = other || showCard;
     // Без кнопок (реєстрацію закрито, турів ще немає) панель лишається в Telegram «порожньою» — заради кнопки партнера
-    var solo = !showBar && IN_TG && isList;
+    // з головною (картки раундів) кругла кнопка партнера — лише на головній, на сторінках раундів її немає
+    var solo = !showBar && IN_TG && (state.view === 'home' || (isList && !hasHome()));
     reg.bar.hidden = !showBar && !solo;
     reg.bar.classList.toggle('solo', solo);
     html.classList.toggle('has-partner-solo', solo);
@@ -2317,7 +2318,7 @@
   }
   // «Telegram-чат» (шапка на комп'ютері й банер після реєстрації): у браузері — просте посилання,
   // в апці — відкриваємо чат усередині Telegram
-  ['chatWeb', 'regChat'].forEach(function (id) {
+  ['chatWeb', 'regChat', 'chatHome'].forEach(function (id) {
     var a = document.getElementById(id);
     if (!a) return;
     a.addEventListener('click', function (e) {
@@ -2329,7 +2330,7 @@
   });
   // Кнопка партнера над нижньою кнопкою (лише в ТГ на телефоні): відкриває канал усередині Telegram
   (function () {
-    ['partner', 'partnerWeb'].forEach(function (id) {
+    ['partner', 'partnerWeb', 'partnerHome'].forEach(function (id) {
       var a = document.getElementById(id);
       if (!a) return;
       a.addEventListener('click', function (e) {

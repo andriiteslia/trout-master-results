@@ -2766,3 +2766,11 @@ body > .topbar, body > .hero, body > .foot { flex: none; }
 /* Telegram: аркуш проїхав під панель, під нею чорний футер — чорна смуга лишається, «кришки» з кутами немає */
 .tg.tg-stuck.tg-past body::after, .tg.tg-stuck.tg-past::before { content: none !important; }
 .tg.tg-stuck.tg-past body::before { height: var(--tg-top) !important; }
+
+/* Партнер (кругла кнопка в Telegram на телефоні): з головною — лише на головній, на сторінках раундів її немає */
+.list-home .regbar .partner { display: none !important; }
+.view-home .regbar:not(.solo) .partner { display: none !important; }
+/* Головна на комп'ютері: праворуч від заголовка — FISH.ME.FISH і Telegram-чат, як на сторінці раунду */
+.home__head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+.home__htxt { min-width: 0; }
+.home__acts { display: flex; gap: 10px; flex: none; }

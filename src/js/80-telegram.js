@@ -286,7 +286,7 @@
   }
   // «Telegram-чат» (шапка на комп'ютері й банер після реєстрації): у браузері — просте посилання,
   // в апці — відкриваємо чат усередині Telegram
-  ['chatWeb', 'regChat'].forEach(function (id) {
+  ['chatWeb', 'regChat', 'chatHome'].forEach(function (id) {
     var a = document.getElementById(id);
     if (!a) return;
     a.addEventListener('click', function (e) {
@@ -298,7 +298,7 @@
   });
   // Кнопка партнера над нижньою кнопкою (лише в ТГ на телефоні): відкриває канал усередині Telegram
   (function () {
-    ['partner', 'partnerWeb'].forEach(function (id) {
+    ['partner', 'partnerWeb', 'partnerHome'].forEach(function (id) {
       var a = document.getElementById(id);
       if (!a) return;
       a.addEventListener('click', function (e) {
