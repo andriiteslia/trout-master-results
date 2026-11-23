@@ -176,7 +176,7 @@
     'Утримуй картинку, щоб зберегти її. Якщо не виходить — відкрий апку в браузері.': 'Press and hold the image to save it. If that doesn’t work, open the app in a browser.',
     'Зберегти': 'Save', 'Відрив': 'Lead', 'далі — резерв': 'then the reserve list', 'До закриття': 'Closes in',
     'Триває реєстрація': 'Registration open', 'Реєстрацію закрито': 'Registration closed', 'Сьогодні': 'Today', 'Завтра': 'Tomorrow',
-    'Турніри TROUT MASTER': 'TROUT MASTER tournaments', 'Реєстрація, результати онлайн і статистика кожного раунду': 'Registration, live results and stats for every round',
+    'Реєстрація, результати онлайн і статистика кожного раунду': 'Registration, live results and stats for every round',
     'Поточний раунд': 'Current round', 'Минулі раунди': 'Past rounds', 'Раунди сезону': 'Season rounds', 'Детальніше': 'Details',
     'Реєстрація відкрита': 'Registration open', 'Завершено': 'Finished', 'Скоро старт': 'Starting soon', 'Усі раунди': 'All rounds',
     'Тут з’являться наступні раунди сезону': 'Next rounds of the season will appear here',

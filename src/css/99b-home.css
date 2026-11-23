@@ -8,12 +8,20 @@
 .home__kicker i { width: 7px; height: 7px; border-radius: 50%; background: var(--brand); }
 .home__title { margin: 12px 0 4px; font-size: 32px; line-height: 1.08; font-weight: 800; font-stretch: 100%; letter-spacing: -0.02em; outline: none; }
 .home__lead { margin: 0 0 6px; color: #475467; font-size: 15px; }
+.home__col--cur { margin-top: 22px; }
 .home__sec { margin: 26px 0 12px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #475467; }
 .home__grid { display: block; }
+/* Заголовок: на телефоні лише «TROUT MASTER»; англійською на комп'ютері — «TROUT MASTER tournaments» */
+.hw-en { display: none; }
+@media (max-width: 979px) { .hw-uk { display: none; } }
+@media (min-width: 980px) { .lang-en .hw-uk { display: none; } .lang-en .hw-en { display: inline; } }
+/* Кнопки: на телефоні круглі «пігулки», на комп'ютері — супереліпс (загальне правило в 50-stats-regform.css) */
+@supports (corner-shape: squircle) { @media (max-width: 979px) { .hc-go, .hc-chip, .home__kicker, .list-home .hero-back { corner-shape: round; } } }
 @media (min-width: 980px) {
   .home__inner { padding-top: 32px; padding-bottom: 48px; }
   .home__title { font-size: 44px; }
   .home__grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 24px; align-items: start; margin-top: 8px; }
+  .home__col--cur { margin-top: 26px; }
 }
 
 /* Банер: картинка з Drive поверх темної заглушки «ROUND N» (якщо банера немає або він не завантажився) */
@@ -60,7 +68,7 @@
 .hc-lead b { font-size: 16px; }
 .hc-lead__pts { margin-left: auto; text-align: right; font-size: 13px; color: #475467; white-space: nowrap; }
 .hc-lead__pts b { display: block; font-size: 20px; color: var(--text); }
-.hc-go { display: flex; align-items: center; justify-content: center; width: 100%; height: 48px; margin-top: 16px; border: 0; border-radius: 14px; background: #0b0b0b; color: #fff; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+.hc-go { display: flex; align-items: center; justify-content: center; width: 100%; height: 48px; margin-top: 16px; border: 0; border-radius: 999px; background: #0b0b0b; color: #fff; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
 @media (hover: hover) { .hc-go:hover { background: #2b2b2b; } .hx:hover { border-color: var(--border-strong); } }
 
 /* Минулі раунди */

@@ -170,7 +170,7 @@
     kick.lastElementChild.textContent = s.name ? 'Сезон ' + s.name : '';
     var cur = homeCurrent();
     var past = s.rounds.filter(function (r) { return r !== cur; }).slice().reverse();
-    var h = '<div class="home__col"><h2 class="home__sec">Поточний раунд</h2>' + curCardHtml(cur) + '</div>' +
+    var h = '<div class="home__col home__col--cur">' + curCardHtml(cur) + '</div>' +
       '<div class="home__col"><h2 class="home__sec">' + (past.length ? 'Минулі раунди' : 'Раунди сезону') + '</h2><div class="hx-list">' +
       past.map(pastCardHtml).join('') +
       (s.rounds.length < 6 ? '<p class="hx-empty">Тут з’являться наступні раунди сезону</p>' : '') + '</div></div>';
