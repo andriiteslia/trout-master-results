@@ -157,7 +157,13 @@ var PULT_RULES = 'B14';     // «Положення» в апці: Показу�
 var PULT_SEATS = 'B15';     // кількість місць (основний склад); хто зареєструвався після — у резерві
 var PULT_SEC_TOP = 'B16';   // секторів на верхньому березі
 var PULT_SEC_BOT = 'B17';   // секторів на нижньому березі
-var PULT_HELP_ROW = 18;     // підказка під налаштуваннями
+var PULT_REG = 'B18';       // реєстрація: Відкрита / Закрита (порожньо — як на «Сайті» адмінки)
+var PULT_DEADLINE = 'B19';  // кінець реєстрації: дата
+var PULT_DEADLINE_TIME = 'C19'; // кінець реєстрації: час
+var PULT_FEE = 'B20';       // вартість участі
+var PULT_PAYCARD = 'B21';   // реквізити для оплати
+var PULT_PAY = 'B22';       // кнопка «Оплатити участь»: Показувати / Приховати
+var PULT_HELP_ROW = 23;     // підказка під налаштуваннями
 var RULES_ON = 'Показувати';
 var RULES_OFF = 'Приховати';      // що показувати: «Список учасників» / «Результати» (те саме, що B5 адмінки — синхронізуються)
 
@@ -298,6 +304,7 @@ function setupSync() {
     .build());
   if (currentReg !== REG_OPEN && currentReg !== REG_CLOSED) regCell.setValue(REG_CLOSED);
   regCell.setFontWeight('bold').setBackground('#fdf3e1');
+  regCell.setNote('Запасне значення. Якщо на «Пульті» поточного раунду заповнено «Реєстрація», «Кінець реєстрації», «Вартість», «Реквізити» чи «Кнопка «Оплатити»» (B18–B22) — береться звідти.');
 
   // Перемикач «Картка учасника»
   var cardCell = sh.getRange(CELL_CARD);
@@ -587,7 +594,7 @@ function closeRegistration() {
   var dl = regDeadline_(sh);
   // Дату перенесли на пізніше — ставимо новий будильник замість закриття
   if (dl && dl.getTime() > Date.now() + 60000) { scheduleRegClose_(sh); return; }
-  sh.getRange(CELL_REG).setValue(REG_CLOSED);
+  regCell_(sh, 'reg').setValue(REG_CLOSED);   // закриваємо там, звідки береться перемикач («Пульт» або «Сайт»)
   SpreadsheetApp.flush();
   try {
     var p = publish_(ss);
@@ -599,9 +606,31 @@ function closeRegistration() {
   }
 }
 
-/** Реєстрацію відкрито в B8 (без урахування дати завершення). */
+/**
+ * Налаштування реєстрації й оплати: з «Пульта» поточного раунду (B18–B22), а якщо там порожньо — з «Сайту» адмінки.
+ * key: reg, dl (дата завершення), dlt (час), fee, paycard, pay. Повертає клітинку (Range), з якої брати значення.
+ */
+var REG_CELLS = { reg: [CELL_REG, PULT_REG], dl: [CELL_DEADLINE, PULT_DEADLINE], dlt: [CELL_DEADLINE_TIME, PULT_DEADLINE_TIME],
+  fee: [CELL_FEE, PULT_FEE], paycard: [CELL_PAYCARD, PULT_PAYCARD], pay: [CELL_PAY, PULT_PAY] };
+function regPult_(site) {
+  if (!site) return null;
+  var pu = pultSheet_(site.getParent());
+  return pu && String(pu.getRange('A18').getDisplayValue()).trim() === 'Реєстрація' ? pu : null;
+}
+function regCell_(site, key, pu) {
+  var m = REG_CELLS[key];
+  if (pu === undefined) pu = regPult_(site);
+  if (pu) {
+    // дата й час завершення — парою: є дата на «Пульті» — і час звідти
+    var probe = key === 'dlt' ? PULT_DEADLINE : m[1];
+    if (String(pu.getRange(probe).getDisplayValue()).trim()) return pu.getRange(m[1]);
+  }
+  return site.getRange(m[0]);
+}
+
+/** Реєстрацію відкрито (B18 «Пульта» або B8 «Сайту»), без урахування дати завершення. */
 function isRegSwitchOn_(sh) {
-  return !!sh && String(sh.getRange(CELL_REG).getDisplayValue()).trim() === REG_OPEN;
+  return !!sh && String(regCell_(sh, 'reg').getDisplayValue()).trim() === REG_OPEN;
 }
 
 /** Реєстрація відкрита зараз: увімкнено в B8 і ще не минула дата з B11. */
@@ -613,20 +642,23 @@ function isRegOpen_(sh) {
 
 /** Дата завершення реєстрації: дата з B11 + час із C11 (якщо вказано) або null. */
 function regDeadline_(sh) {
-  var d = regDeadlineDate_(sh);
+  if (!sh) return null;
+  var pu = regPult_(sh);
+  var dc = regCell_(sh, 'dl', pu);
+  var d = regDeadlineDate_(dc);
   if (!d) return null;
-  var t = String(sh.getRange(CELL_DEADLINE_TIME).getDisplayValue()).trim().match(/^(\d{1,2})[:.](\d{2})$/);
+  var t = String(regCell_(sh, 'dlt', pu).getDisplayValue()).trim().match(/^(\d{1,2})[:.](\d{2})$/);
   if (!t || Number(t[1]) > 23 || Number(t[2]) > 59) return d;
-  // Час із B11 (у часовому поясі таблиці) замінюємо на час із C11
-  var tz = sh.getParent().getSpreadsheetTimeZone();
+  // Час із клітинки дати (у часовому поясі таблиці) замінюємо на час із сусідньої
+  var tz = dc.getSheet().getParent().getSpreadsheetTimeZone();
   var cur = Utilities.formatDate(d, tz, 'H:m').split(':');
   var shift = (Number(t[1]) * 60 + Number(t[2])) - (Number(cur[0]) * 60 + Number(cur[1]));
   return new Date(d.getTime() + shift * 60000);
 }
 
-function regDeadlineDate_(sh) {
-  if (!sh) return null;
-  var v = sh.getRange(CELL_DEADLINE).getValue();
+function regDeadlineDate_(cell) {
+  if (!cell) return null;
+  var v = cell.getValue();
   if (v instanceof Date && !isNaN(v.getTime())) return v;
   var m = String(v || '').trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{2}))?$/);
   if (!m) return null;
@@ -792,9 +824,10 @@ function buildPayload_(ss, arch) {
   var deadline = regDeadline_(sh);
   var regDeadline = registration && deadline ? deadline.toISOString() : null;
   var seats = seatsFor_(ss, sh);
-  var fee = sh ? String(sh.getRange(CELL_FEE).getDisplayValue()).trim() || null : null;
-  var payCard = sh ? String(sh.getRange(CELL_PAYCARD).getDisplayValue()).trim() || null : null;
-  var payOn = !arch && (!sh || String(sh.getRange(CELL_PAY).getDisplayValue()).trim() !== PAY_OFF);
+  var rpu = sh ? regPult_(sh) : null;
+  var fee = sh ? String(regCell_(sh, 'fee', rpu).getDisplayValue()).trim() || null : null;
+  var payCard = sh ? String(regCell_(sh, 'paycard', rpu).getDisplayValue()).trim() || null : null;
+  var payOn = !arch && (!sh || String(regCell_(sh, 'pay', rpu).getDisplayValue()).trim() !== PAY_OFF);
   var paid = [];
   if (!arch) try { paid = paidNames_(ss); } catch (err) { console.error(err); }
   var regAt = {};
@@ -3118,7 +3151,7 @@ function setupPult_(rs, ss, n, prefill) {
     pu.getRange('A8:B9').clearContent();
   }
   // Підказка була в A10:B10 або A11:B11 — звільняємо рядки під «Що показувати» й локацію
-  ['A10:B10', 'A11:B11', 'A14:B14', 'A15:B15'].forEach(function (a) {
+  ['A10:B10', 'A11:B11', 'A14:B14', 'A15:B15', 'A18:B18'].forEach(function (a) {
     var c = pu.getRange(a.split(':')[0]);
     if (c.isPartOfMerge() || String(c.getDisplayValue()).indexOf('B3 —') === 0) {
       pu.getRange(a).breakApart();
@@ -3203,6 +3236,46 @@ function setupPult_(rs, ss, n, prefill) {
   pu.getRange(PULT_SEC_BOT).setNote('Скільки секторів на нижньому березі, напр. 8. Порожні обидва — як «Секторів на водоймі» на «Сайті» адмінки.');
   pu.getRange('A15:B15').breakApart();
 
+  // Реєстрація й оплата цього раунду (порожньо — як на «Сайті» адмінки)
+  pu.getRange('A18:A22').setValues([['Реєстрація'], ['Кінець реєстрації'], ['Вартість участі'], ['Реквізити для оплати'], ['Кнопка «Оплатити»']])
+    .setFontWeight('bold').setVerticalAlignment('top');
+  pu.getRange(PULT_REG).setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInList([REG_OPEN, REG_CLOSED], true).setAllowInvalid(false).build());
+  pu.getRange(PULT_PAY).setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInList([PAY_ON, PAY_OFF], true).setAllowInvalid(false).build());
+  pu.getRange(PULT_DEADLINE).setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireDate().setAllowInvalid(false)
+    .setHelpText('Дата завершення (календар — подвійний клік). Час — праворуч. Порожньо — як на «Сайті» адмінки.').build())
+    .setNumberFormat('dd.MM.yyyy');
+  var times0 = [];
+  for (var h0 = 0; h0 < 24; h0++) times0.push(('0' + h0).slice(-2) + ':00', ('0' + h0).slice(-2) + ':30');
+  times0.push('23:59');
+  pu.getRange(PULT_DEADLINE_TIME).setNumberFormat('@').setDataValidation(SpreadsheetApp.newDataValidation()
+    .requireValueInList(times0, true).setAllowInvalid(true).setHelpText('Час завершення, напр. 20:00. Можна вписати свій.').build());
+  [PULT_FEE, PULT_PAYCARD].forEach(function (a) { pu.getRange(a).setNumberFormat('@'); });
+  [PULT_REG, PULT_DEADLINE, PULT_DEADLINE_TIME, PULT_FEE, PULT_PAYCARD, PULT_PAY].forEach(function (a) {
+    pu.getRange(a).setFontWeight('bold').setBackground('#fdf3e1').setHorizontalAlignment('left');
+  });
+  // Поточний раунд: один раз переносимо сюди значення з «Сайту», щоб усе про раунд було тут
+  var isCurRound = false;
+  try { var rws = seasonRows_(ss.getSheetByName(SYNC_SHEET)); isCurRound = !!rws.length && rws[rws.length - 1].id === rs.getId(); } catch (err) { /* */ }
+  if (site0 && isCurRound && !String(pu.getRange('A18').getNote()).length) {
+    var copy = [[PULT_REG, CELL_REG], [PULT_DEADLINE, CELL_DEADLINE], [PULT_DEADLINE_TIME, CELL_DEADLINE_TIME], [PULT_FEE, CELL_FEE], [PULT_PAYCARD, CELL_PAYCARD], [PULT_PAY, CELL_PAY]];
+    copy.forEach(function (c) {
+      var dst = pu.getRange(c[0]);
+      if (String(dst.getDisplayValue()).trim()) return;
+      var v0 = site0.getRange(c[1]).getValue();
+      if (v0 !== '' && v0 != null) dst.setValue(c[0] === PULT_DEADLINE_TIME || c[0] === PULT_FEE || c[0] === PULT_PAYCARD ? String(site0.getRange(c[1]).getDisplayValue()) : v0);
+    });
+  }
+  pu.getRange('A18').setNote('Налаштування реєстрації саме цього раунду. Порожня клітинка — береться з «Сайту» адмінки.');
+  pu.getRange(PULT_REG).setNote('«' + REG_OPEN + '» — на сайті форма реєстрації; «' + REG_CLOSED + '» — ні. О часі з «Кінця реєстрації» скрипт сам поставить «' + REG_CLOSED + '».');
+  pu.getRange(PULT_FEE).setNote('Вартість участі. Число (1700) — на сайті «1 700 грн». Можна текстом. Порожньо — як на «Сайті».');
+  pu.getRange(PULT_PAYCARD).setNote('Реквізити: номер картки (можна з ім\'ям). В апці «Оплатити участь» → «Скопіювати реквізити».');
+  pu.getRange(PULT_PAY).setNote('Кнопка «Оплатити участь» на сайті й у Telegram: «' + PAY_ON + '» або «' + PAY_OFF + '».');
+  if (pu.getColumnWidth(3) < 90) pu.setColumnWidth(3, 90);
+  pu.setRowHeight(18, 21);
+
   var help = pu.getRange('A' + PULT_HELP_ROW + ':B' + PULT_HELP_ROW);
   help.merge().setWrap(true).setFontColor('#475467').setVerticalAlignment('top');
   help.setValue('B3 — «' + ACTION_PUBLISH + '»: глядачі побачать поточні дані з цієї таблиці (що саме показувати — «Що показувати» в адмінці). ' +
@@ -3219,8 +3292,10 @@ function setupPult_(rs, ss, n, prefill) {
   help.setValue(help.getDisplayValue() + '\nB14 — «Положення» в апці: показувати чи приховати (напр. після турніру). У режимі «' + MODE_REG + '» зміна публікується одразу.');
   help.setValue(help.getDisplayValue() + '\nB15 — кількість місць (основний склад до резерву). B16, B17 — секторів на верхньому й нижньому березі. ' +
     'Порожньо — як на «Сайті» адмінки. У режимі «' + MODE_REG + '» зміна публікується одразу, інакше — після «' + ACTION_PUBLISH + '» (B3).');
+  help.setValue(help.getDisplayValue() + '\nB18–B22 — реєстрація цього раунду: відкрита чи закрита, кінець реєстрації (дата + час праворуч; у цей момент скрипт сам закриє реєстрацію), ' +
+    'вартість, реквізити й кнопка «Оплатити». Порожньо — як на «Сайті» адмінки. Зміна одразу публікує дані в режимі «' + MODE_REG + '».');
   pu.setRowHeight(15, 21);
-  pu.setRowHeight(PULT_HELP_ROW, 290);
+  pu.setRowHeight(PULT_HELP_ROW, 340);
   pu.setColumnWidth(1, 170);
   pu.setColumnWidth(2, 460);
   try { pu.getRange(PULT_RES_STATUS).setValue(resInfo_(ss)); } catch (err) { console.error(err); }
@@ -3261,6 +3336,15 @@ function handlePultEdit_(e, ss, pu) {
     if ((v === RULES_ON || v === RULES_OFF) && site && currentMode_(site) === MODE_REG) {
       try { writeStatus_(site, publish_(ss)); } catch (err) { pu.getRange(PULT_STATUS).setValue('❌ Помилка: ' + ((err && err.message) || err)); }
     } else pu.getRange(PULT_STATUS).setValue('Положення: ' + v + '. Застосується після «' + ACTION_PUBLISH + '» (B3).');
+    return;
+  }
+  if (a1 === PULT_REG || a1 === PULT_DEADLINE || a1 === PULT_DEADLINE_TIME || a1 === PULT_FEE || a1 === PULT_PAYCARD || a1 === PULT_PAY) {
+    if (site) { try { scheduleRegClose_(site); } catch (err) { console.error(err); } }
+    if (site && currentMode_(site) === MODE_REG) {
+      pu.getRange(PULT_STATUS).setValue('⏳ Публікуємо…');
+      SpreadsheetApp.flush();
+      try { writeStatus_(site, publish_(ss)); } catch (err) { pu.getRange(PULT_STATUS).setValue('❌ Помилка: ' + ((err && err.message) || err)); }
+    } else pu.getRange(PULT_STATUS).setValue('Змінено. Застосується після «' + ACTION_PUBLISH + '» (B3).');
     return;
   }
   if (a1 === PULT_SEATS || a1 === PULT_SEC_TOP || a1 === PULT_SEC_BOT) {
