@@ -176,8 +176,7 @@ body > .home { flex: 1 0 auto; }
   .tabbar:not([hidden]) {
     position: fixed; z-index: 30; left: max(16px, env(safe-area-inset-left)); right: max(16px, env(safe-area-inset-right));
     bottom: calc(12px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px)));
-    display: flex; gap: 4px; padding: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.92);
-    -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4);
+    display: flex; gap: 4px; padding: 5px; border-radius: 999px; background: #fff;
     box-shadow: 0 0 0 1px #e4e7ec, 0 10px 28px rgba(16, 24, 40, 0.10); transition: background-color 0.25s ease, box-shadow 0.25s ease;
   }
   .tabbar button {
