@@ -78,9 +78,11 @@
       main = main || document.querySelector('.main');
       if (!tb || !main) return;
       var top = parseFloat(getComputedStyle(tb).paddingTop) || 0;
-      // «Кришка» з кутами — поки під панеллю Telegram світлий аркуш; доїхали до чорного футера — ховаємо
-      var mr = main.getBoundingClientRect();
-      document.documentElement.classList.toggle('tg-stuck', mr.top <= top + 0.5 && mr.bottom > top + 24);
+      // Аркуш доїхав до панелі Telegram — під нею чорна смуга й «кришка» з кутами.
+      // Аркуш уже проїхав (під панеллю чорний футер) — смуга лишається, а «кришки» немає (tg-past)
+      var mr = main.getBoundingClientRect(), stuck = mr.top <= top + 0.5;
+      document.documentElement.classList.toggle('tg-stuck', stuck);
+      document.documentElement.classList.toggle('tg-past', stuck && mr.bottom <= top + 24);
     }
     function schedule() { if (!frame) frame = requestAnimationFrame(updateStuck); }
     window.addEventListener('scroll', schedule, { passive: true });

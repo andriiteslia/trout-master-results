@@ -143,7 +143,8 @@ const TESTS = {
     await t.p.evaluate(() => window.scrollTo(0, 400)); await t.p.waitForTimeout(200);
     assert(await t.p.evaluate(() => document.documentElement.classList.contains('tg-stuck')), 'після прокрутки аркуш не «прилип»');
     await t.p.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight)); await t.p.waitForTimeout(200);
-    assert(await t.p.evaluate(() => { const r = document.querySelector('.home__inner').getBoundingClientRect(); return r.bottom > 24 || !document.documentElement.classList.contains('tg-stuck'); }), 'біля чорного футера кути під панеллю Telegram лишились');
+    assert(await t.p.evaluate(() => { const r = document.querySelector('.home__inner').getBoundingClientRect(), c = document.documentElement.classList;
+      return c.contains('tg-stuck') && (r.bottom > 24 || c.contains('tg-past')); }), 'біля чорного футера: має лишитись чорна смуга, але без «кришки»');
     await t.p.evaluate(() => window.scrollTo(0, 0)); await t.p.waitForTimeout(200);
     await t.p.click('.hx'); await t.p.waitForTimeout(1200);
     assert((await t.p.textContent('#title')) === 'TM • Round 1', 'архів не відкрився');

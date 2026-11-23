@@ -137,3 +137,7 @@
 @media (max-width: 979px) { .home-wait #home[hidden] { display: flex !important; } }
 .home__kicker.is-skel { width: 160px; background: linear-gradient(90deg, #e9edf2, #f4f6f8, #e9edf2); background-size: 200% 100%; animation: homeSkel 1.4s ease-in-out infinite; }
 .home__kicker.is-skel i { visibility: hidden; }
+
+/* Telegram: аркуш проїхав під панель, під нею чорний футер — чорна смуга лишається, «кришки» з кутами немає */
+.tg.tg-stuck.tg-past body::after, .tg.tg-stuck.tg-past::before { content: none !important; }
+.tg.tg-stuck.tg-past body::before { height: var(--tg-top) !important; }
