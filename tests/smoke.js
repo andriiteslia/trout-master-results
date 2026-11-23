@@ -109,6 +109,10 @@ const TESTS = {
       await shot(t.p, tag + '-arch');
       await t.p.click('#heroBack'); await t.p.waitForTimeout(800);
       assert(await visible(t.p, '#home'), '«Усі раунди» не повернули на головну');
+      // вдруге архів уже збережений — сторінка малюється одразу, перемикач має бути з виділенням
+      await t.p.click('.hx'); await t.p.waitForTimeout(150);
+      assert((await t.p.evaluate(() => { const i = document.querySelector('#tabs .seg-ind'); return i ? getComputedStyle(i).opacity : '0'; })) === '1', 'вдруге в перемикачі нічого не виділено');
+      await t.p.click('#heroBack'); await t.p.waitForTimeout(800);
       await t.p.click('.hc-go'); await t.p.waitForTimeout(800);
       assert((await t.p.textContent('#title')) === 'TM • Round 2', 'поточний раунд не відкрився');
       assert((await t.p.locator('#board [data-key]').count()) > 5, 'немає списку учасників поточного раунду');
