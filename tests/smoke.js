@@ -138,6 +138,11 @@ const TESTS = {
     const t = await page(b, MOB, 'season-live', { tg: true });
     assert(await visible(t.p, '#home'), 'у Telegram головна не відкрилась');
     await shot(t.p, 'tg-home');
+    // «Кришка» з кутами під панеллю Telegram — лише коли аркуш доїхав до верху, а не одразу
+    assert(!(await t.p.evaluate(() => document.documentElement.classList.contains('tg-stuck'))), 'на головній кути під панеллю одразу, без прокрутки');
+    await t.p.evaluate(() => window.scrollTo(0, 400)); await t.p.waitForTimeout(200);
+    assert(await t.p.evaluate(() => document.documentElement.classList.contains('tg-stuck')), 'після прокрутки аркуш не «прилип»');
+    await t.p.evaluate(() => window.scrollTo(0, 0)); await t.p.waitForTimeout(200);
     await t.p.click('.hx'); await t.p.waitForTimeout(1200);
     assert((await t.p.textContent('#title')) === 'TM • Round 1', 'архів не відкрився');
     await t.p.evaluate(() => { const h = window.__tgBack; if (h) h(); else history.back(); });

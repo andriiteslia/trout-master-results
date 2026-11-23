@@ -75,6 +75,8 @@
       // Світлий «аркуш»: у картці й статистиці це .pc-sheet під темною шапкою, на інших екранах — .main
       var main = null;
       [].some.call(document.querySelectorAll('.pc-sheet'), function (x) { if (x.getClientRects().length) { main = x; return true; } return false; });
+      // на головній (картки раундів) «аркуш» — .home__inner, а .main прихований
+      if (!main) { var hm = document.querySelector('.home:not([hidden]) .home__inner'); if (hm && hm.getClientRects().length) main = hm; }
       main = main || document.querySelector('.main');
       if (!tb || !main) return;
       var top = parseFloat(getComputedStyle(tb).paddingTop) || 0;
