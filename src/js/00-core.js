@@ -55,7 +55,8 @@
         if (at('8.0') && /^(ios|android)$/.test(tg.platform) && !tg.isFullscreen) tg.requestFullscreen();
       } catch (e) { /* */ }
       try {
-        if (at('6.1')) { tg.setHeaderColor('#080808'); tg.setBackgroundColor('#f4f6f8'); }
+        // фон за сторінкою темний: при «відтягуванні» внизу (під чорним футером) не видно світлої смуги
+        if (at('6.1')) { tg.setHeaderColor('#080808'); tg.setBackgroundColor('#080808'); }
         if (at('7.10')) tg.setBottomBarColor('#f4f6f8');
       } catch (e) { /* */ }
       // Є системна кнопка «Назад» Telegram — свою кнопку «Назад» на телефоні ховаємо (див. .tg-back у стилях)
@@ -77,7 +78,9 @@
       main = main || document.querySelector('.main');
       if (!tb || !main) return;
       var top = parseFloat(getComputedStyle(tb).paddingTop) || 0;
-      document.documentElement.classList.toggle('tg-stuck', main.getBoundingClientRect().top <= top + 0.5);
+      // «Кришка» з кутами — поки під панеллю Telegram світлий аркуш; доїхали до чорного футера — ховаємо
+      var mr = main.getBoundingClientRect();
+      document.documentElement.classList.toggle('tg-stuck', mr.top <= top + 0.5 && mr.bottom > top + 24);
     }
     function schedule() { if (!frame) frame = requestAnimationFrame(updateStuck); }
     window.addEventListener('scroll', schedule, { passive: true });
