@@ -247,3 +247,11 @@ body > .home { flex: 1 0 auto; }
 .pt-logo { width: 72px; height: 72px; animation: partner-float 2s ease-in-out infinite alternate; }
 @media (max-width: 979px) { .pt-logo { width: 76px; height: 76px; } }
 @media (prefers-reduced-motion: reduce) { .pt-logo { animation: none; } }
+/* Чорні кнопки — м'яка тінь, як у «Telegram-чат» і FISH.ME.FISH (нижня панель має свою, сильнішу) */
+.btn-primary, .btn2-dark, .hc-go, .pt-join__go {
+  box-shadow: 0 4px 12px rgba(10, 10, 10, 0.22);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+@media (hover: hover) { .btn-primary:not(:disabled):hover, .btn2-dark:hover, .hc-go:hover, .pt-join__go:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(10, 10, 10, 0.28); } }
+.btn-primary:not(:disabled):active, .btn2-dark:active, .hc-go:active, .pt-join__go:active { transform: scale(0.97); box-shadow: 0 2px 6px rgba(10, 10, 10, 0.2); }
+.btn-primary:disabled { box-shadow: none; }
