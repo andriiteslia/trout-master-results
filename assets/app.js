@@ -3529,7 +3529,8 @@
     if (!box) return;
     var b = box.querySelector(sel);
     var ind = box.querySelector('.seg-ind');
-    if (!b || !b.offsetWidth) { if (ind) ind.style.opacity = '0'; return; }
+    // перемикач схований (напр. вузьке вікно) — без «таблетки»: вибраний пункт підсвічує сам себе, а при показі переміряємо
+    if (!b || !b.offsetWidth) { if (ind) ind.style.opacity = '0'; box.classList.remove('has-seg'); box._seg = null; return; }
     if (!ind) { ind = document.createElement('i'); ind.className = 'seg-ind'; ind.setAttribute('aria-hidden', 'true'); box.insertBefore(ind, box.firstChild); }
     box.classList.add('has-seg');   // спершу position: relative — тоді відступи міряються від самого перемикача
     var to = { x: b.offsetLeft, y: b.offsetTop, w: b.offsetWidth, h: b.offsetHeight }, from = box._seg;
@@ -4859,7 +4860,12 @@
       openSec(b.getAttribute('data-sec'));
     });
   });
-  window.addEventListener('resize', function () { if (TABBAR && !TABBAR.hidden) { TABBAR._seg = null; segSlide(TABBAR, '[aria-current="page"]'); } });
+  // Зміна ширини (телефон ↔ комп) чи шрифт довантажився — «таблетку» переміряємо в обох перемикачах
+  function remeasureNavs() {
+    [LEAGUE_NAV, TABBAR].forEach(function (nav) { if (nav && !nav.hidden) { nav._seg = null; segSlide(nav, '[aria-current="page"]'); } });
+  }
+  window.addEventListener('resize', remeasureNavs);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(remeasureNavs);
   // Партнери ліги: картка на кожного (зараз FISH.ME.FISH), нижче — «Стати партнером»
   var PARTNERS = [{
     name: 'FISH.ME.FISH', logo: 'assets/partners/fishmefish.svg?v=1', url: 'https://t.me/fishmefish_japan', handle: '@fishmefish_japan',

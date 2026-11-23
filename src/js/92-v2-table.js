@@ -5,7 +5,8 @@
     if (!box) return;
     var b = box.querySelector(sel);
     var ind = box.querySelector('.seg-ind');
-    if (!b || !b.offsetWidth) { if (ind) ind.style.opacity = '0'; return; }
+    // перемикач схований (напр. вузьке вікно) — без «таблетки»: вибраний пункт підсвічує сам себе, а при показі переміряємо
+    if (!b || !b.offsetWidth) { if (ind) ind.style.opacity = '0'; box.classList.remove('has-seg'); box._seg = null; return; }
     if (!ind) { ind = document.createElement('i'); ind.className = 'seg-ind'; ind.setAttribute('aria-hidden', 'true'); box.insertBefore(ind, box.firstChild); }
     box.classList.add('has-seg');   // спершу position: relative — тоді відступи міряються від самого перемикача
     var to = { x: b.offsetLeft, y: b.offsetTop, w: b.offsetWidth, h: b.offsetHeight }, from = box._seg;

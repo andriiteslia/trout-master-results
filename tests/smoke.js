@@ -115,6 +115,11 @@ const TESTS = {
     assert(await visible(t.p, '#home') && (await t.p.locator('#homeTitle').innerText()).includes('Лідерборд'), 'з раунду не відкрився «Лідерборд»');
     const m = await page(b, MOB, 'season');
     assert(!(await visible(m.p, '#leagueNav')), 'на телефоні не має бути перемикача');
+    // відкрили вузьким, потім розширили — «таблетка» під «Турніри» має з'явитись
+    await m.p.setViewportSize({ width: 1440, height: 900 }); await m.p.waitForTimeout(500);
+    const ind = await m.p.evaluate(() => { const i = document.querySelector('#leagueNav .seg-ind'), b2 = document.querySelector('#leagueNav [aria-current="page"]');
+      const bg = getComputedStyle(b2).backgroundColor; return (i && getComputedStyle(i).opacity === '1' && i.offsetWidth > 20) || bg === 'rgb(255, 255, 255)'; });
+    assert(ind, 'після розширення вікна немає білої таблетки під «Турніри»');
     await m.ctx.close();
     await t.ctx.close(); return t.errors;
   },

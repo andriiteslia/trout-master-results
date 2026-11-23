@@ -257,7 +257,12 @@
       openSec(b.getAttribute('data-sec'));
     });
   });
-  window.addEventListener('resize', function () { if (TABBAR && !TABBAR.hidden) { TABBAR._seg = null; segSlide(TABBAR, '[aria-current="page"]'); } });
+  // Зміна ширини (телефон ↔ комп) чи шрифт довантажився — «таблетку» переміряємо в обох перемикачах
+  function remeasureNavs() {
+    [LEAGUE_NAV, TABBAR].forEach(function (nav) { if (nav && !nav.hidden) { nav._seg = null; segSlide(nav, '[aria-current="page"]'); } });
+  }
+  window.addEventListener('resize', remeasureNavs);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(remeasureNavs);
   // Партнери ліги: картка на кожного (зараз FISH.ME.FISH), нижче — «Стати партнером»
   var PARTNERS = [{
     name: 'FISH.ME.FISH', logo: 'assets/partners/fishmefish.svg?v=1', url: 'https://t.me/fishmefish_japan', handle: '@fishmefish_japan',
