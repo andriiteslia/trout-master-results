@@ -154,6 +154,10 @@ var PULT_VENUE = 'B11';     // «Як доїхати»: назва локаці�
 var PULT_MAP = 'B12';       // посилання на Google Maps
 var PULT_COORDS = 'B13';    // координати «49.766483, 25.014995» (для Waze і точки на карті)
 var PULT_RULES = 'B14';     // «Положення» в апці: Показувати / Приховати
+var PULT_SEATS = 'B15';     // кількість місць (основний склад); хто зареєструвався після — у резерві
+var PULT_SEC_TOP = 'B16';   // секторів на верхньому березі
+var PULT_SEC_BOT = 'B17';   // секторів на нижньому березі
+var PULT_HELP_ROW = 18;     // підказка під налаштуваннями
 var RULES_ON = 'Показувати';
 var RULES_OFF = 'Приховати';      // що показувати: «Список учасників» / «Результати» (те саме, що B5 адмінки — синхронізуються)
 
@@ -398,6 +402,11 @@ function setupSync() {
   // Таблиця поточного раунду: тригер правок, «Пульт», колонки «Учасників» (немає жодної — усе в цій таблиці)
   var rs = connectRound_(ss, migrate);
   clearSeasonCache_();
+  // «Пульт» минулих раундів теж (місця й сектори для їхніх архівів)
+  var rowsAll = seasonRows_(sh);
+  rowsAll.slice(0, -1).forEach(function (r) {
+    try { setupPult_(SpreadsheetApp.openById(r.id), ss, r.n, false); } catch (err) { console.error('Пульт R' + r.n + ': ' + err); }
+  });
   var arch = 0;
   try { arch = buildArchives_(ss); } catch (err) { console.error(err); }
 
@@ -700,6 +709,27 @@ function sectorsCfg_(sh) {
   return n >= 2 ? { n: n, top: null, bottom: null } : null;
 }
 function sectors_(sh) { var c = sectorsCfg_(sh); return c ? c.n : null; }
+function pultNum_(pu, a1) {
+  var n = parseInt(String(pu.getRange(a1).getDisplayValue()).replace(/\s/g, ''), 10);
+  return n > 0 ? n : 0;
+}
+function pultHasCfg_(pu) { return !!pu && String(pu.getRange('A15').getDisplayValue()).trim() === 'Кількість місць'; }
+/** Місця: з «Пульта» раунду (B15), порожньо — з «Сайту» адмінки (B10). */
+function seatsFor_(ss, sh) {
+  var pu = pultSheet_(ss);
+  if (pultHasCfg_(pu)) { var n = pultNum_(pu, PULT_SEATS); if (n) return n; }
+  return seats_(sh);
+}
+/** Сектори: з «Пульта» раунду (B16 верхній + B17 нижній берег), порожньо — з «Сайту» адмінки (B13). */
+function sectorsFor_(ss, sh) {
+  var pu = pultSheet_(ss);
+  if (pultHasCfg_(pu)) {
+    var top = pultNum_(pu, PULT_SEC_TOP), bot = pultNum_(pu, PULT_SEC_BOT);
+    if (top && bot) return { n: top + bot, top: top, bottom: bot };
+    if (top || bot) return (top || bot) >= 2 ? { n: top || bot, top: null, bottom: null } : null;
+  }
+  return sectorsCfg_(sh);
+}
 
 function publish_(ss) {
   var payload = buildPayload_(ss, null);
@@ -761,7 +791,7 @@ function buildPayload_(ss, arch) {
   var registration = !arch && isRegOpen_(sh);
   var deadline = regDeadline_(sh);
   var regDeadline = registration && deadline ? deadline.toISOString() : null;
-  var seats = seats_(sh);
+  var seats = seatsFor_(ss, sh);
   var fee = sh ? String(sh.getRange(CELL_FEE).getDisplayValue()).trim() || null : null;
   var payCard = sh ? String(sh.getRange(CELL_PAYCARD).getDisplayValue()).trim() || null : null;
   var payOn = !arch && (!sh || String(sh.getRange(CELL_PAY).getDisplayValue()).trim() !== PAY_OFF);
@@ -770,7 +800,7 @@ function buildPayload_(ss, arch) {
   var regAt = {};
   if (!arch) try { regAt = recentRegs_(ss); } catch (err) { console.error(err); }
   var showMoves = !arch && (!sh || String(sh.getRange(CELL_MOVES).getDisplayValue()).trim() !== MOVES_OFF);
-  var secCfg = sectorsCfg_(sh);
+  var secCfg = sectorsFor_(ss, sh);
   var sectors = secCfg ? secCfg.n : null;
   var sectorsSplit = secCfg && secCfg.top ? [secCfg.top, secCfg.bottom] : null;   // [верхній, нижній] берег
   var now = new Date().toISOString();
@@ -1936,7 +1966,7 @@ function mainSquad_(ss) {
   if (!reg || reg.getLastRow() < 2) return [];
   var rows = reg.getRange(2, 1, reg.getLastRow() - 1, REG_COL_TG_ID).getDisplayValues();
   var site = ss.getSheetByName(SYNC_SHEET);
-  var seats = site ? parseInt(String(site.getRange(CELL_SEATS).getDisplayValue()).replace(/\s/g, ''), 10) : 0;
+  var seats = seatsFor_(ss, site) || 0;
   var out = [];
   rows.forEach(function (x) {
     var name = String(x[REG_COL_NAME - 1]).replace(/\s+/g, ' ').trim();
@@ -3088,7 +3118,7 @@ function setupPult_(rs, ss, n, prefill) {
     pu.getRange('A8:B9').clearContent();
   }
   // Підказка була в A10:B10 або A11:B11 — звільняємо рядки під «Що показувати» й локацію
-  ['A10:B10', 'A11:B11', 'A14:B14'].forEach(function (a) {
+  ['A10:B10', 'A11:B11', 'A14:B14', 'A15:B15'].forEach(function (a) {
     var c = pu.getRange(a.split(':')[0]);
     if (c.isPartOfMerge() || String(c.getDisplayValue()).indexOf('B3 —') === 0) {
       pu.getRange(a).breakApart();
@@ -3150,7 +3180,30 @@ function setupPult_(rs, ss, n, prefill) {
 
   pu.getRange(PULT_RES_STATUS).setWrap(true).setVerticalAlignment('top');
 
-  var help = pu.getRange('A15:B15');
+  // Місця й сектори раунду (порожньо — як на «Сайті» адмінки)
+  pu.getRange('A15:A17').setValues([['Кількість місць'], ['Сектори: верхній берег'], ['Сектори: нижній берег']])
+    .setFontWeight('bold').setVerticalAlignment('top');
+  [PULT_SEATS, PULT_SEC_TOP, PULT_SEC_BOT].forEach(function (a) {
+    pu.getRange(a).setNumberFormat('@').setFontWeight('bold').setBackground('#e3f0fa').setHorizontalAlignment('left');
+  });
+  if (site0) {
+    var seatsC = pu.getRange(PULT_SEATS);
+    if (!String(seatsC.getDisplayValue()).trim()) { var st0 = seats_(site0); if (st0) seatsC.setValue(String(st0)); }
+    var topC = pu.getRange(PULT_SEC_TOP), botC = pu.getRange(PULT_SEC_BOT);
+    if (!String(topC.getDisplayValue()).trim() && !String(botC.getDisplayValue()).trim()) {
+      var sc0 = sectorsCfg_(site0);
+      if (sc0) {
+        var t1 = sc0.top || Math.ceil(sc0.n / 2), b1 = sc0.bottom || Math.floor(sc0.n / 2);
+        topC.setValue(String(t1)); botC.setValue(String(b1));
+      }
+    }
+  }
+  pu.getRange(PULT_SEATS).setNote('Основний склад: скільки учасників до резерву. Хто зареєструвався понад це число — у резерві. Порожньо — як «Кількість місць» на «Сайті» адмінки.');
+  pu.getRange(PULT_SEC_TOP).setNote('Скільки секторів на верхньому березі, напр. 6. Разом з нижнім — карта водойми й секторів у статистиці.');
+  pu.getRange(PULT_SEC_BOT).setNote('Скільки секторів на нижньому березі, напр. 8. Порожні обидва — як «Секторів на водоймі» на «Сайті» адмінки.');
+  pu.getRange('A15:B15').breakApart();
+
+  var help = pu.getRange('A' + PULT_HELP_ROW + ':B' + PULT_HELP_ROW);
   help.merge().setWrap(true).setFontColor('#475467').setVerticalAlignment('top');
   help.setValue('B3 — «' + ACTION_PUBLISH + '»: глядачі побачать поточні дані з цієї таблиці (що саме показувати — «Що показувати» в адмінці). ' +
     '\nB5 — турів у раунді. Тури понад це число на сайті не показуються, а після N-го туру результати стають підсумковими ' +
@@ -3164,7 +3217,10 @@ function setupPult_(rs, ss, n, prefill) {
   help.setValue(help.getDisplayValue() + '\nB10 — що показувати на сайті: «' + MODE_REG + '» (реєстрація) або «' + MODE_RES + '». Зміна одразу публікує дані.');
   help.setValue(help.getDisplayValue() + '\nB11–B13 — «Як доїхати» (Telegram, режим «' + MODE_REG + '»): назва локації, посилання на Google Maps і координати для Waze. Застосується після наступної публікації.');
   help.setValue(help.getDisplayValue() + '\nB14 — «Положення» в апці: показувати чи приховати (напр. після турніру). У режимі «' + MODE_REG + '» зміна публікується одразу.');
-  pu.setRowHeight(15, 250);
+  help.setValue(help.getDisplayValue() + '\nB15 — кількість місць (основний склад до резерву). B16, B17 — секторів на верхньому й нижньому березі. ' +
+    'Порожньо — як на «Сайті» адмінки. У режимі «' + MODE_REG + '» зміна публікується одразу, інакше — після «' + ACTION_PUBLISH + '» (B3).');
+  pu.setRowHeight(15, 21);
+  pu.setRowHeight(PULT_HELP_ROW, 290);
   pu.setColumnWidth(1, 170);
   pu.setColumnWidth(2, 460);
   try { pu.getRange(PULT_RES_STATUS).setValue(resInfo_(ss)); } catch (err) { console.error(err); }
@@ -3205,6 +3261,14 @@ function handlePultEdit_(e, ss, pu) {
     if ((v === RULES_ON || v === RULES_OFF) && site && currentMode_(site) === MODE_REG) {
       try { writeStatus_(site, publish_(ss)); } catch (err) { pu.getRange(PULT_STATUS).setValue('❌ Помилка: ' + ((err && err.message) || err)); }
     } else pu.getRange(PULT_STATUS).setValue('Положення: ' + v + '. Застосується після «' + ACTION_PUBLISH + '» (B3).');
+    return;
+  }
+  if (a1 === PULT_SEATS || a1 === PULT_SEC_TOP || a1 === PULT_SEC_BOT) {
+    if (site && currentMode_(site) === MODE_REG) {
+      pu.getRange(PULT_STATUS).setValue('⏳ Публікуємо…');
+      SpreadsheetApp.flush();
+      try { writeStatus_(site, publish_(ss)); } catch (err) { pu.getRange(PULT_STATUS).setValue('❌ Помилка: ' + ((err && err.message) || err)); }
+    } else pu.getRange(PULT_STATUS).setValue('Змінено. Застосується після «' + ACTION_PUBLISH + '» (B3).');
     return;
   }
   if (a1 === PULT_TITLE || a1 === PULT_SUB || a1 === PULT_VENUE || a1 === PULT_MAP || a1 === PULT_COORDS) {
