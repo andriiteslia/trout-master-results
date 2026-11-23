@@ -817,8 +817,16 @@ function buildPayload_(ss, arch) {
 // Сезон: картки раундів на головній і архіви минулих раундів
 // ---------------------------------------------------------------------------
 
-/** Банер з Google Drive → адреса картинки для сайту (файл має бути доступний «усім, хто має посилання»). */
-function bannerUrl_(id) { return id ? 'https://drive.google.com/thumbnail?id=' + id + '&sz=w1200' : null; }
+/**
+ * Банер з Google Drive → адреса картинки для сайту (файл має бути доступний «усім, хто має посилання»).
+ * &v= — час останньої зміни файлу: замінили картинку в тому ж файлі — браузери й Telegram завантажать нову.
+ */
+function bannerUrl_(id) {
+  if (!id) return null;
+  var v = '';
+  try { v = '&v=' + DriveApp.getFileById(id).getLastUpdated().getTime(); } catch (err) { console.error('Банер ' + id + ': ' + err); }
+  return 'https://drive.google.com/thumbnail?id=' + id + '&sz=w1200' + v;
+}
 
 /** Назва, дата й турів — з «Пульта» таблиці раунду. */
 function roundMeta_(rs, n) {
