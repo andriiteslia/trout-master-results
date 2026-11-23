@@ -4748,8 +4748,7 @@
     var parts = subParts(r);
     return '<button type="button" class="hx" data-round="' + r.n + '">' + bannerHtml(r, 'hx-th') +
       '<span class="hx-txt"><b class="hx-t">' + esc(r.title) + '</b>' +
-      (parts.length ? '<span class="hx-m">' + esc(parts.join(' · ')) + '</span>' : '') +
-      (r.tours ? '<span class="hx-m">' + toursWord(r.tours) + '</span>' : '') + '</span>' +
+      (parts.length ? '<span class="hx-m">' + esc(parts.join(' · ')) + '</span>' : '') + '</span>' +
       '<svg class="hx-ch" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>';
   }
 
