@@ -2837,3 +2837,34 @@ body > .home { flex: 1 0 auto; }
   .home.is-sec .home__title { font-size: 30px; margin-top: 4px; }
 }
 @media (prefers-reduced-motion: reduce) { .tabbar .seg-ind { transition: none; } }
+
+/* ===== Розділ «Партнери» ===== */
+.pt-list { display: grid; gap: 16px; }
+.pt-card { display: flex; gap: 20px; align-items: flex-start; padding: 22px; background: #fff; border: 1px solid var(--card-line); border-radius: 20px; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05); }
+.pt-logo { flex: none; display: grid; place-items: center; width: 88px; height: 88px; border-radius: 50%;
+  background: radial-gradient(120% 120% at 25% 15%, #86aeea 0%, #5b8fe0 45%, #3a72d4 100%); box-shadow: 0 8px 20px rgba(37, 88, 184, 0.28); }
+.pt-logo img { width: 78%; height: auto; display: block; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18)); }
+.pt-body { min-width: 0; flex: 1; }
+.pt-tag { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; background: #eff4ff; color: #2b5fc2; font-size: 12px; font-weight: 650; }
+.pt-name { margin: 8px 0 6px; font-size: 22px; line-height: 1.15; font-weight: 800; letter-spacing: -0.01em; }
+.pt-text { margin: 0 0 16px; color: var(--muted); font-size: 14.5px; line-height: 1.5; max-width: 560px; }
+.pt-go { display: inline-flex; gap: 8px; }
+.pt-go svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pt-join { margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px; border: 1px dashed #cfd4dc; border-radius: 20px; }
+.pt-join strong { display: block; font-size: 15px; font-weight: 700; }
+.pt-join span { display: block; margin-top: 2px; color: var(--muted); font-size: 13.5px; }
+.pt-join__go { flex: none; background: #0a0a0a; color: #fff; border-color: transparent; }
+@supports (corner-shape: squircle) { .pt-logo { corner-shape: round; } }
+@media (max-width: 979px) {
+  .pt-card { flex-direction: column; align-items: center; text-align: center; padding: 24px 20px; }
+  .pt-logo { width: 96px; height: 96px; }
+  .pt-text { margin-left: auto; margin-right: auto; }
+  .pt-go { width: 100%; justify-content: center; min-height: 48px; }
+  .pt-join { flex-direction: column; align-items: stretch; text-align: center; }
+  .pt-join__go { justify-content: center; min-height: 46px; }
+}
+/* Чотири вкладки в таббарі — трохи щільніше */
+@media (max-width: 979px) { .tabbar button { font-size: 11px; } }
+@media (max-width: 360px) { .tabbar button { font-size: 10px; } .tabbar svg { width: 22px; height: 22px; } }
+.pt-join__go, .pt-go { text-decoration: none; }
+.view-home.sec-partners .regbar .partner { display: none !important; }   /* на сторінці «Партнери» плаваюча кнопка дублює картку */

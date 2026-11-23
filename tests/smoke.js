@@ -100,6 +100,9 @@ const TESTS = {
     await t.p.click('#leagueNav [data-sec="lb"]'); await t.p.waitForTimeout(500);
     assert((await t.p.locator('#homeTitle').innerText()).includes('Лідерборд'), 'не відкрився «Лідерборд»');
     await shot(t.p, 'desk-nav-lb');
+    await t.p.click('#leagueNav [data-sec="partners"]'); await t.p.waitForTimeout(500);
+    assert((await t.p.locator('#homeTitle').innerText()).includes('Партнери') && await visible(t.p, '.pt-card [data-partner="FISH.ME.FISH"]'), 'не відкрились «Партнери»');
+    await shot(t.p, 'desk-nav-partners');
     await t.p.click('#leagueNav [data-sec="about"]'); await t.p.waitForTimeout(500);
     assert((await t.p.locator('#homeTitle').innerText()).includes('Про лігу'), 'не відкрилось «Про лігу»');
     await shot(t.p, 'desk-nav-about');
@@ -131,6 +134,9 @@ const TESTS = {
     assert((await t.p.getAttribute('#tabbar [data-sec="lb"]', 'aria-current')) === 'page', '«Лідерборд» не активний');
     assert(await visible(t.p, '#homeTitle'), 'на телефоні в розділі не видно заголовка');
     await shot(t.p, 'tg-tabbar-lb');
+    await t.p.click('#tabbar [data-sec="partners"]'); await t.p.waitForTimeout(500);
+    assert(await visible(t.p, '.pt-card'), 'на телефоні не відкрились «Партнери»');
+    await shot(t.p, 'tg-tabbar-partners');
     await t.p.click('#tabbar [data-sec="tours"]'); await t.p.waitForTimeout(400);
     await t.p.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await t.p.waitForTimeout(400);
     await shot(t.p, 'tg-tabbar-bottom');

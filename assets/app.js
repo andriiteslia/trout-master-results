@@ -4777,7 +4777,7 @@
       '<svg class="hx-ch" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>';
   }
 
-  // ----- Розділи ліги в навбарі (комп): Турніри / Лідерборд / Про лігу -----
+  // ----- Розділи ліги: Турніри / Лідерборд / Партнери / Про лігу (навбар на компі, таббар на телефоні) -----
   HOME.sec = 'tours';
   var LEAGUE_NAV = document.getElementById('leagueNav');
   var HOME_HEAD = { title: document.getElementById('homeTitle'), lead: document.querySelector('#home .home__lead') };
@@ -4785,6 +4785,7 @@
   HOME_HEAD.leadText = HOME_HEAD.lead.textContent;
   var LEAGUE_SECS = {
     lb: { title: 'Лідерборд', lead: 'Загальний залік сезону', empty: 'Лідерборд сезону з’явиться тут найближчим часом.' },
+    partners: { title: 'Партнери', lead: 'Ті, хто підтримує лігу TROUT MASTER' },
     about: { title: 'Про лігу', lead: 'Що таке TROUT MASTER', empty: 'Розповідь про лігу, правила й формат з’являться тут найближчим часом.' }
   };
   var TABBAR = document.getElementById('tabbar');
@@ -4823,18 +4824,48 @@
     });
   });
   window.addEventListener('resize', function () { if (TABBAR && !TABBAR.hidden) { TABBAR._seg = null; segSlide(TABBAR, '[aria-current="page"]'); } });
+  // Партнери ліги: картка на кожного (зараз FISH.ME.FISH), нижче — «Стати партнером»
+  var PARTNERS = [{
+    name: 'FISH.ME.FISH', logo: 'assets/partners/fishmefish.svg?v=1', url: 'https://t.me/fishmefish_japan', handle: '@fishmefish_japan',
+    tag: 'Японські приманки',
+    text: 'Топові японські приманки — нові й б/у, зокрема дефіцитні моделі, а також витратні матеріали й аксесуари для ловлі хижої риби.'
+  }];
+  var I_TG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.5 4.5 2.8 11.7c-1 .4-1 1.8.1 2.1l4.6 1.4 1.8 5.5c.3.9 1.4 1.1 2 .4l2.6-2.7 4.6 3.4c.8.6 1.9.1 2.1-.8l3-14.6c.2-1.1-.9-2-1.9-1.6Z"/><path d="m7.5 15.2 9.6-7.4"/></svg>';
+  function partnersHtml() {
+    var cards = PARTNERS.map(function (p) {
+      return '<article class="pt-card">' +
+        '<span class="pt-logo"><img src="' + esc(p.logo) + '" alt="" width="288" height="288" decoding="async"></span>' +
+        '<div class="pt-body"><span class="pt-tag">' + esc(p.tag) + '</span><h2 class="pt-name">' + esc(p.name) + '</h2>' +
+        '<p class="pt-text">' + esc(p.text) + '</p>' +
+        '<a class="btn2 btn2-tg pt-go" data-partner="' + esc(p.name) + '" href="' + esc(p.url) + '" target="_blank" rel="noopener">' + I_TG +
+        '<span>' + esc(p.handle) + '</span></a></div></article>';
+    }).join('');
+    return '<div class="home__col home__col--wide"><div class="pt-list">' + cards + '</div>' +
+      '<div class="pt-join"><div><strong>Стати партнером ліги</strong><span>Пропозиції співпраці й партнерства — пишіть Андрію</span></div>' +
+      '<a class="btn2 pt-join__go" href="https://t.me/andriiteslia" target="_blank" rel="noopener">@andriiteslia</a></div></div>';
+  }
   function secHtml(sec) {
+    if (sec === 'partners') return partnersHtml();
     var c = LEAGUE_SECS[sec];
     return '<div class="home__col home__col--wide"><div class="card empty empty-state league-empty" role="status">' +
       '<img class="empty-state__fish" src="assets/fish.webp?v=2" alt="" width="640" height="296" decoding="async">' +
       '<strong>Скоро</strong><span>' + esc(c.empty) + '</span>' +
       '<button type="button" class="btn btn-primary empty-state__btn" data-sec-go="tours">До турнірів</button></div></div>';
   }
-  HOME.body.addEventListener('click', function (e) { if (e.target.closest('[data-sec-go]')) openSec('tours'); });
+  HOME.body.addEventListener('click', function (e) {
+    if (e.target.closest('[data-sec-go]')) { openSec('tours'); return; }
+    // посилання розділу «Партнери»: кліки по партнерах рахуємо; в апці t.me — усередині Telegram
+    var a = e.target.closest('.pt-card a[href], .pt-join a[href]');
+    if (!a) return;
+    if (a.hasAttribute('data-partner')) trackPartner(a.getAttribute('data-partner'));
+    var tg = tgApp();
+    if (IN_TG && tg && typeof tg.openTelegramLink === 'function' && /^https:\/\/t\.me\//.test(a.href)) { e.preventDefault(); tg.openTelegramLink(a.href); }
+  });
 
   function renderHome() {
     var sec = LEAGUE_SECS[HOME.sec] ? HOME.sec : 'tours';
     HOME.root.classList.toggle('is-sec', sec !== 'tours');
+    document.documentElement.classList.toggle('sec-partners', sec === 'partners');
     if (sec !== 'tours') {
       HOME_HEAD.title.textContent = LEAGUE_SECS[sec].title;
       HOME_HEAD.lead.textContent = LEAGUE_SECS[sec].lead;
