@@ -171,7 +171,7 @@ const TESTS = {
       assert(!(await visible(t.p, '#board')), 'на головній видно таблицю');
       assert((await t.p.locator('.hc--cur').count()) === 1 && (await t.p.locator('.hx').count()) === 1, 'не ті картки');
       assert(/Реєстрацію відкрито/.test(await t.p.textContent('.hc-chip')), 'немає «Реєстрацію відкрито»');
-      assert((await visible(t.p, '#partnerHome')) === (opts === DESK) && (await visible(t.p, '#chatHome')) === (opts === DESK), 'FISH.ME.FISH і Telegram-чат — лише на головній на комп\'ютері');
+      assert((await t.p.locator('.partner-web').count()) === 0 && (await visible(t.p, '#chatHome')) === (opts === DESK), 'Telegram-чат — лише на комп\'ютері, кнопок партнера в шапці вже немає');
       await shot(t.p, tag + '-home');
       await t.p.click('.hx'); await t.p.waitForTimeout(1200);
       assert((await t.p.textContent('#title')) === 'TM • Round 1', 'архів R1 не відкрився');
