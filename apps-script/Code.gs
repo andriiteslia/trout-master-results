@@ -219,6 +219,7 @@ function getSnapshot_() {
  */
 function setupSync() {
   var ss = SpreadsheetApp.openById(getSpreadsheetId_());
+  try { PropertiesService.getScriptProperties().deleteProperty('bannerTrig'); ensureBannerTrigger_(); } catch (err) { console.error(err); }
   var sh = ss.getSheetByName(SYNC_SHEET);
   if (!sh) {
     sh = ss.insertSheet(SYNC_SHEET);
@@ -413,6 +414,7 @@ function setupSync() {
  */
 function handleSiteSync(e) {
   if (!e || !e.range) return;
+  try { ensureBannerTrigger_(); } catch (err) { console.error(err); }
   var sh = e.range.getSheet();
   var src = e.source || sh.getParent();
   var adminId = getSpreadsheetId_();
@@ -826,6 +828,44 @@ function bannerUrl_(id) {
   var v = '';
   try { v = '&v=' + DriveApp.getFileById(id).getLastUpdated().getTime(); } catch (err) { console.error('Банер ' + id + ': ' + err); }
   return 'https://drive.google.com/thumbnail?id=' + id + '&sz=w1200' + v;
+}
+
+/**
+ * Раз на годину (тригер): чи не замінили картинку банера на Drive. Якщо замінили — міняємо в опублікованих даних
+ * лише адреси банерів (результати й список не чіпаємо, тож неповний тур на сайт не потрапить).
+ */
+var BANNER_HANDLER = 'checkBanners';
+function checkBanners() {
+  var json = getSnapshot_();
+  if (!json) return;
+  var p;
+  try { p = JSON.parse(json); } catch (err) { return; }
+  if (!p || !p.season || !p.season.rounds) return;
+  var ss = SpreadsheetApp.openById(getSpreadsheetId_());
+  var rows = seasonRows_(ss.getSheetByName(SYNC_SHEET));
+  var byN = {};
+  rows.forEach(function (r) { byN[r.n] = r; });
+  var changed = false;
+  p.season.rounds.forEach(function (r) {
+    var row = byN[r.n];
+    if (!row) return;
+    var url = bannerUrl_(row.banner);
+    if (url !== r.banner) { r.banner = url; changed = true; }
+  });
+  if (!changed) return;
+  // новий hash — інакше сайт вирішить, що нічого не змінилось
+  p.hash = Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5,
+    String(p.hash) + JSON.stringify(p.season), Utilities.Charset.UTF_8));
+  saveSnapshot_(JSON.stringify(p));
+  console.log('Банери оновлено');
+}
+/** Ставить погодинний тригер checkBanners, якщо його ще немає (один раз). */
+function ensureBannerTrigger_() {
+  var props = PropertiesService.getScriptProperties();
+  if (props.getProperty('bannerTrig') === '1') return;
+  var has = ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === BANNER_HANDLER; });
+  if (!has) ScriptApp.newTrigger(BANNER_HANDLER).timeBased().everyHours(1).create();
+  props.setProperty('bannerTrig', '1');
 }
 
 /** Назва, дата й турів — з «Пульта» таблиці раунду. */
