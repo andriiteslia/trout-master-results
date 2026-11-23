@@ -116,6 +116,34 @@ const TESTS = {
     await t.ctx.close(); return t.errors;
   },
 
+  'таббар розділів: телефон і Telegram, лише на головних розділах': async (b) => {
+    const t = await page(b, MOB, 'season', { tg: true });
+    assert(await visible(t.p, '#tabbar'), 'у Telegram на головній немає таббару');
+    assert(!(await visible(t.p, '#leagueNav')), 'на телефоні видно перемикач з навбару');
+    // білий аркуш — до низу екрана: футер не видно на першому екрані
+    const footTop = await t.p.evaluate(() => document.getElementById('siteFoot').getBoundingClientRect().top);
+    assert(footTop >= 844, 'футер видно на першому екрані під таббаром: ' + footTop);
+    const pr = await t.p.evaluate(() => { const a = document.getElementById('partner').getBoundingClientRect(), b = document.getElementById('tabbar').getBoundingClientRect(); return a.bottom <= b.top && a.height > 0; });
+    await shot(t.p, 'tg-tabbar-home');
+    assert(pr, 'партнер не над таббаром');
+    await shot(t.p, 'tg-tabbar-home');
+    await t.p.click('#tabbar [data-sec="lb"]'); await t.p.waitForTimeout(500);
+    assert((await t.p.getAttribute('#tabbar [data-sec="lb"]', 'aria-current')) === 'page', '«Лідерборд» не активний');
+    assert(await visible(t.p, '#homeTitle'), 'на телефоні в розділі не видно заголовка');
+    await shot(t.p, 'tg-tabbar-lb');
+    await t.p.click('#tabbar [data-sec="tours"]'); await t.p.waitForTimeout(400);
+    await t.p.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await t.p.waitForTimeout(400);
+    await shot(t.p, 'tg-tabbar-bottom');
+    await t.p.locator('[data-round="2"]').first().click(); await t.p.waitForTimeout(700);
+    assert(!(await visible(t.p, '#tabbar')), 'у раунді видно таббар');
+    await t.ctx.close();
+    const m = await page(b, MOB, 'season');
+    assert(await visible(m.p, '#tabbar'), 'у мобільному браузері немає таббару');
+    await shot(m.p, 'mob-tabbar-home');
+    await m.ctx.close();
+    return t.errors.concat(m.errors);
+  },
+
   'раунд без даних: внизу «На головну» (телефон, Telegram)': async (b) => {
     const fx = JSON.parse(FIX('season'));
     fx.registration = false; fx.hash = 'empty-round';

@@ -188,15 +188,23 @@
     lb: { title: 'Лідерборд', lead: 'Загальний залік сезону', empty: 'Лідерборд сезону з’явиться тут найближчим часом.' },
     about: { title: 'Про лігу', lead: 'Що таке TROUT MASTER', empty: 'Розповідь про лігу, правила й формат з’являться тут найближчим часом.' }
   };
+  var TABBAR = document.getElementById('tabbar');
   function renderLeagueNav() {
-    if (!LEAGUE_NAV) return;
-    LEAGUE_NAV.hidden = !hasHome();
-    if (LEAGUE_NAV.hidden) return;
-    var cur = state.view === 'home' ? HOME.sec : 'tours';
-    [].forEach.call(LEAGUE_NAV.querySelectorAll('[data-sec]'), function (b) {
-      b.setAttribute('aria-current', b.getAttribute('data-sec') === cur ? 'page' : 'false');
+    var on = hasHome(), cur = state.view === 'home' ? HOME.sec : 'tours';
+    var tab = on && state.view === 'home';   // таббар (телефон) — лише на розділах ліги, у раунді його немає
+    if (TABBAR) TABBAR.hidden = !tab;
+    document.documentElement.classList.toggle('has-tabbar', tab);
+    var tb = document.querySelector('.topbar');
+    if (tab && tb) document.documentElement.style.setProperty('--topbar-h', tb.offsetHeight + 'px');
+    [LEAGUE_NAV, TABBAR].forEach(function (nav) {
+      if (!nav) return;
+      if (nav === LEAGUE_NAV) nav.hidden = !on;
+      if (nav.hidden) return;
+      [].forEach.call(nav.querySelectorAll('[data-sec]'), function (b) {
+        b.setAttribute('aria-current', b.getAttribute('data-sec') === cur ? 'page' : 'false');
+      });
+      segSlide(nav, '[aria-current="page"]');
     });
-    segSlide(LEAGUE_NAV, '[aria-current="page"]');
   }
   function openSec(sec) {
     var was = state.view === 'home' ? HOME.sec : null;
@@ -207,10 +215,15 @@
     }
     goHome();
   }
-  if (LEAGUE_NAV) LEAGUE_NAV.addEventListener('click', function (e) {
-    var b = e.target.closest('[data-sec]');
-    if (b) openSec(b.getAttribute('data-sec'));
+  [LEAGUE_NAV, TABBAR].forEach(function (nav) {
+    if (nav) nav.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-sec]');
+      if (!b) return;
+      if (nav === TABBAR && IN_TG) try { window.Telegram.WebApp.HapticFeedback.selectionChanged(); } catch (err) { /* */ }
+      openSec(b.getAttribute('data-sec'));
+    });
   });
+  window.addEventListener('resize', function () { if (TABBAR && !TABBAR.hidden) { TABBAR._seg = null; segSlide(TABBAR, '[aria-current="page"]'); } });
   function secHtml(sec) {
     var c = LEAGUE_SECS[sec];
     return '<div class="home__col home__col--wide"><div class="card empty empty-state league-empty" role="status">' +
