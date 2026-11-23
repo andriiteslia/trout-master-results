@@ -2868,3 +2868,7 @@ body > .home { flex: 1 0 auto; }
 @media (max-width: 360px) { .tabbar button { font-size: 10px; } .tabbar svg { width: 22px; height: 22px; } }
 .pt-join__go, .pt-go { text-decoration: none; }
 .view-home.sec-partners .regbar .partner { display: none !important; }   /* на сторінці «Партнери» плаваюча кнопка дублює картку */
+/* Логотип партнера в «Партнерах»: менше коло й левітує, як колишня кнопка */
+.pt-logo { width: 72px; height: 72px; animation: partner-float 2s ease-in-out infinite alternate; }
+@media (max-width: 979px) { .pt-logo { width: 76px; height: 76px; } }
+@media (prefers-reduced-motion: reduce) { .pt-logo { animation: none; } }
