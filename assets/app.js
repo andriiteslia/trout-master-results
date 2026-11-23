@@ -2729,12 +2729,31 @@
   function initials(n) { if (I18N.en) n = I18N.translit(n); return String(n || '').split(/\s+/).filter(Boolean).slice(0, 2).map(function (s) { return s.charAt(0); }).join('').toUpperCase(); }
   // ----- Фото учасників (assets/players/players.json: «прізвище ім'я» малими літерами → файл) -----
   // Кого немає у списку або чиє фото не завантажилось — показуємо ініціали.
-  var PHOTOS = {};
   var PHOTO_V = 8;   // збільшити, коли фото замінено на нові (щоб Telegram і браузери не тримали старі)
+  // Список фото пам'ятаємо в браузері: при наступному відкритті фото малюються одразу, без проміжних ініціалів
+  var PHOTOS = store.get('tm:photos', null) || {};
+  // Картинки, які браузер уже завантажував (фото учасників, банери раундів): їх показуємо одразу, без проявлення
+  var IMG_OK = {};
+  (store.get('tm:imgok', []) || []).forEach(function (u) { IMG_OK[u] = 1; });
+  var imgOkT = 0;
+  document.addEventListener('load', function (e) {
+    var t = e.target;
+    if (!t || t.tagName !== 'IMG') return;
+    t.classList.add('ld');
+    var w = t.closest && t.closest('.hb-wait, .av--fade');
+    if (w) w.classList.remove('hb-wait', 'av--fade');
+    var u = t.getAttribute('src');
+    if (u && !IMG_OK[u]) {
+      IMG_OK[u] = 1;
+      clearTimeout(imgOkT);
+      imgOkT = setTimeout(function () { store.set('tm:imgok', Object.keys(IMG_OK).slice(-200)); }, 500);
+    }
+  }, true);
   function avatarHtml(name) {
     var f = PHOTOS[normName(name)];
-    return '<span class="av' + (f ? ' av--ph' : '') + '" aria-hidden="true">' + esc(initials(name)) +
-      (f ? '<img src="assets/players/' + encodeURIComponent(f) + '?v=' + PHOTO_V + '" alt="" loading="lazy" decoding="async">' : '') + '</span>';
+    var src = f ? 'assets/players/' + encodeURIComponent(f) + '?v=' + PHOTO_V : '';
+    return '<span class="av' + (f ? ' av--ph' + (IMG_OK[src] ? '' : ' av--fade') : '') + '" aria-hidden="true">' + esc(initials(name)) +
+      (f ? '<img src="' + src + '" alt="" decoding="async"' + (IMG_OK[src] ? '' : ' loading="lazy"') + '>' : '') + '</span>';
   }
   document.addEventListener('error', function (e) {
     var t = e.target;
@@ -2746,7 +2765,10 @@
     .then(function (r) { return r.ok ? r.json() : {}; })
     .then(function (m) {
       if (!m || typeof m !== 'object' || !Object.keys(m).length) return;
+      if (JSON.stringify(m) === JSON.stringify(PHOTOS)) return;   // нічого не змінилось — не перемальовуємо
       PHOTOS = m;
+      store.set('tm:photos', m);
+      if (state.view === 'home' && typeof renderHome === 'function') try { renderHome(); } catch (e) { /* */ }
       if (state.models && state.models.length) { renderBoard(); try { renderSide(); } catch (e) { /* */ } }
       if (state.view === 'card' && typeof renderCard === 'function') try { renderCard(); } catch (e) { /* */ }
     })
@@ -4658,10 +4680,24 @@
   // ----- Картки -----
   var HOME_MONTHS = MONTHS_FULL;
   function subParts(r) { return String((I18N.en && r.subtitleEn) || r.subtitle || '').split(/\s*[•·]\s*/).filter(Boolean); }
+  // Банер з Google Drive: пряма адреса lh3.googleusercontent.com (без переадресації, браузер її кешує)
+  function bannerSrc(u) {
+    var m = /^https:\/\/drive\.google\.com\/thumbnail\?id=([\w-]+)/.exec(String(u || ''));
+    return m ? 'https://lh3.googleusercontent.com/d/' + m[1] + '=w1200' : u;
+  }
   function bannerHtml(r, cls) {
     var ph = '<span class="hb-ph"><small>TROUT MASTER</small><b>ROUND ' + r.n + '</b></span>';
-    return '<span class="' + cls + '">' + ph + (r.banner ? '<img src="' + esc(r.banner) + '" alt="" loading="lazy" decoding="async" onerror="this.remove()">' : '') + '</span>';
+    if (!r.banner) return '<span class="' + cls + '">' + ph + '</span>';
+    var src = bannerSrc(r.banner), ok = IMG_OK[src];
+    // ще не завантажувався — скелетон, а не заглушка «ROUND N», щоб не блимало; не вийшло — заглушка
+    return '<span class="' + cls + (ok ? '' : ' hb-wait') + '">' + ph + '<img src="' + esc(src) + '" alt="" decoding="async"' + (ok ? ' class="ld"' : '') +
+      ' onerror="var p=this.parentNode;this.remove();if(p)p.classList.remove(\'hb-wait\')">' + '</span>';
   }
+  // Банер поточного раунду — вантажимо одразу зі збережених даних, ще до першого малювання
+  (function () {
+    var c = store.get(LS.data, null), s = c && c.season;
+    (s && s.rounds || []).forEach(function (r) { if (r.banner) { var im = new Image(); im.src = bannerSrc(r.banner); } });
+  })();
   function toursWord(n) { return n + ' ' + plural(n, 'тур', 'тури', 'турів'); }
 
   function curCardHtml(r) {

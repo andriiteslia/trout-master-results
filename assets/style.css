@@ -2744,3 +2744,13 @@ body > .topbar, body > .hero, body > .foot { flex: none; }
   .home { display: flex; flex-direction: column; background: var(--nav); }
   .home__inner { flex: 1 0 auto; width: 100%; background: var(--page); border-radius: 24px 24px 0 0; }
 }
+
+/* Фото й банери: поки вантажаться вперше — скелетон, потім плавно проявляються; уже бачені — одразу */
+.hc-ban img, .hx-th img { opacity: 0; transition: opacity 0.25s ease; }
+.hc-ban img.ld, .hx-th img.ld { opacity: 1; }
+.hb-wait { background: linear-gradient(90deg, #e9edf2, #f4f6f8, #e9edf2); background-size: 200% 100%; animation: homeSkel 1.4s ease-in-out infinite; }
+.hb-wait .hb-ph { visibility: hidden; }
+.av--fade { background: linear-gradient(90deg, #e9edf2, #f4f6f8, #e9edf2); background-size: 200% 100%; animation: homeSkel 1.4s ease-in-out infinite; }
+.av--fade img { opacity: 0; transition: opacity 0.2s ease; }
+.av--fade img.ld { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .hb-wait, .av--fade { animation: none; } }

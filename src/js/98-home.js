@@ -99,10 +99,24 @@
   // ----- Картки -----
   var HOME_MONTHS = MONTHS_FULL;
   function subParts(r) { return String((I18N.en && r.subtitleEn) || r.subtitle || '').split(/\s*[•·]\s*/).filter(Boolean); }
+  // Банер з Google Drive: пряма адреса lh3.googleusercontent.com (без переадресації, браузер її кешує)
+  function bannerSrc(u) {
+    var m = /^https:\/\/drive\.google\.com\/thumbnail\?id=([\w-]+)/.exec(String(u || ''));
+    return m ? 'https://lh3.googleusercontent.com/d/' + m[1] + '=w1200' : u;
+  }
   function bannerHtml(r, cls) {
     var ph = '<span class="hb-ph"><small>TROUT MASTER</small><b>ROUND ' + r.n + '</b></span>';
-    return '<span class="' + cls + '">' + ph + (r.banner ? '<img src="' + esc(r.banner) + '" alt="" loading="lazy" decoding="async" onerror="this.remove()">' : '') + '</span>';
+    if (!r.banner) return '<span class="' + cls + '">' + ph + '</span>';
+    var src = bannerSrc(r.banner), ok = IMG_OK[src];
+    // ще не завантажувався — скелетон, а не заглушка «ROUND N», щоб не блимало; не вийшло — заглушка
+    return '<span class="' + cls + (ok ? '' : ' hb-wait') + '">' + ph + '<img src="' + esc(src) + '" alt="" decoding="async"' + (ok ? ' class="ld"' : '') +
+      ' onerror="var p=this.parentNode;this.remove();if(p)p.classList.remove(\'hb-wait\')">' + '</span>';
   }
+  // Банер поточного раунду — вантажимо одразу зі збережених даних, ще до першого малювання
+  (function () {
+    var c = store.get(LS.data, null), s = c && c.season;
+    (s && s.rounds || []).forEach(function (r) { if (r.banner) { var im = new Image(); im.src = bannerSrc(r.banner); } });
+  })();
   function toursWord(n) { return n + ' ' + plural(n, 'тур', 'тури', 'турів'); }
 
   function curCardHtml(r) {
