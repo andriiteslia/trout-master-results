@@ -3929,7 +3929,8 @@
     if (!box) return;
     var rules = rulesData(), list = isListMode();
     // У режимі результатів (телефон у Telegram) лишається тільки «Положення»
-    var on = IN_TG && !!state.payload && (list ? (!!VENUE || !!rules) : !!rules);
+    // Після останнього туру (підсумкові результати) положення вже не потрібне
+    var on = IN_TG && !!state.payload && (list ? (!!VENUE || !!rules) : !!rules && !tournamentDone());
     box.hidden = !on;
     box.classList.toggle('m-only', on && !list);
     if (!on) { box.innerHTML = ''; return; }

@@ -428,6 +428,14 @@ function handleSiteSync(e) {
       try { syncDrawNames_(ss); } catch (err) { console.error(err); }
       return;
     }
+    // Змінили «Положення» раунду — публікуємо одразу, але лише в режимі «Список учасників»
+    if (name === RULES_SHEET) {
+      var st0 = ss.getSheetByName(SYNC_SHEET);
+      if (st0 && currentMode_(st0) === MODE_REG) {
+        try { writeStatus_(st0, publish_(ss)); } catch (err) { console.error(err); }
+      }
+      return;
+    }
     // Поставили/зняли галочку «Оплата» — оновлюємо значок 💵 у списку учасників на сайті
     if (name === REG_SHEET && e.range.getColumn() <= REG_COL_PAID && e.range.getLastColumn() >= REG_COL_PAID) {
       var site = ss.getSheetByName(SYNC_SHEET);
@@ -890,7 +898,7 @@ function buildArchives_(ss) {
  * Маркери «•», «-», «*» на початку й «;» у кінці пункту прибираються.
  */
 function readRules_(ss) {
-  var sh = ss.getSheetByName(RULES_SHEET);
+  var sh = roundSheet_(ss, RULES_SHEET) || ss.getSheetByName(RULES_SHEET);   // своє положення в кожного раунду; немає — з адмінки
   if (!sh || sh.getLastRow() < 2) return null;
   var vals = sh.getRange(2, 1, sh.getLastRow() - 1, 2).getDisplayValues(), out = [];
   vals.forEach(function (r) {
@@ -904,9 +912,16 @@ function readRules_(ss) {
 }
 
 /** Створює аркуш «Положення» із заголовками й підказкою, якщо його ще немає. Запускається з setupSync. */
-function setupRules_(ss) {
-  if (ss.getSheetByName(RULES_SHEET)) return;
-  var sh = ss.insertSheet(RULES_SHEET);
+/**
+ * Аркуш «Положення» в таблиці раунду (у кожного раунду своє). Якщо його ще немає — копія з адмінки
+ * (як заготовка: поправте під цей раунд), а якщо й там немає — порожній аркуш із заголовками.
+ */
+function setupRules_(ss, rs) {
+  rs = rs || roundSs_(ss);
+  if (rs.getSheetByName(RULES_SHEET)) return;
+  var tpl = ss.getSheetByName(RULES_SHEET);
+  if (tpl && rs.getId() !== ss.getId()) { tpl.copyTo(rs).setName(RULES_SHEET); return; }
+  var sh = rs.insertSheet(RULES_SHEET);
   sh.getRange(1, 1, 1, 2).setValues([['Розділ', 'Пункти — кожен з нового рядка (Ctrl+Enter / ⌘+Enter). Розділ «Розклад»: «07:00 — Збір учасників»']])
     .setFontWeight('bold').setBackground('#f3f4f6').setWrap(true);
   sh.setFrozenRows(1);
@@ -2960,6 +2975,7 @@ function connectRound_(ss, prefill) {
   var site = ss.getSheetByName(SYNC_SHEET);
   var rows = seasonRows_(site), cur = rows.length ? rows[rows.length - 1] : null;
   if (rs.getId() !== ss.getId()) setupPult_(rs, ss, cur ? cur.n : 0, prefill);
+  try { setupRules_(ss, rs); } catch (err) { console.error(err); }
   // B2 — лише показує, який раунд зараз поточний
   if (site && rows.length) {
     site.getRange(CELL_ROUND).setValue('R' + cur.n + ' · «' + rs.getName() + '» (останній рядок у «' + SEASON_TITLE + '» →)')

@@ -417,8 +417,16 @@ const TESTS = {
     await ctx.close(); return errors;
   },
 
-  'rules in results: у Telegram на телефоні плашка «Положення» є й у режимі результатів': async (b) => {
-    const d = JSON.parse(FIX('results')); d.rules = JSON.parse(FIX('rules')).rules; d.hash = 'rr';
+  'rules in results: у Telegram на телефоні плашка «Положення» є під час турніру, після фіналу — немає': async (b) => {
+    const fin = JSON.parse(FIX('results')); fin.rules = JSON.parse(FIX('rules')).rules; fin.hash = 'rr-fin';
+    const f = await page(b, MOB, 'results', { tg: true, body: JSON.stringify(fin) });
+    assert((await f.p.locator('#heroLinks .hlink').filter({ visible: true }).count()) === 0, 'після фіналу плашка «Положення» є');
+    await f.ctx.close();
+    // турнір триває: тури 8+ ще не зіграно
+    const d = JSON.parse(JSON.stringify(fin)); d.hash = 'rr';
+    const tury = d.sheets.find((x) => /^тур/i.test(x.name)), cols = [];
+    tury.values[0].forEach((h, c) => { const m = /^Тур (\d+)$/.exec(String(h).trim()); if (m && +m[1] > 7) cols.push(c); });
+    tury.values.slice(2).forEach((row) => cols.forEach((c) => { row[c] = '-'; row[c + 1] = '0'; }));
     const t = await page(b, MOB, 'results', { tg: true, body: JSON.stringify(d) });
     assert((await t.p.locator('#heroLinks .hlink').filter({ visible: true }).count()) === 1, 'у результатах немає плашки «Положення»');
     await t.p.locator('#heroLinks .hlink').first().click(); await t.p.waitForTimeout(1000);
@@ -427,7 +435,7 @@ const TESTS = {
     await t.ctx.close();
     const w = await page(b, MOB, 'results', { body: JSON.stringify(d) });   // браузер — без плашки
     assert((await w.p.locator('#heroLinks .hlink').filter({ visible: true }).count()) === 0, 'плашка «Положення» видна в браузері');
-    await w.ctx.close(); return t.errors.concat(w.errors);
+    await w.ctx.close(); return f.errors.concat(t.errors, w.errors);
   },
 
   'list mobile: реєстрація відкривається': async (b) => {
