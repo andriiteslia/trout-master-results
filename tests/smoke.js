@@ -126,9 +126,7 @@ const TESTS = {
     // білий аркуш — до низу екрана: футер не видно на першому екрані
     const footTop = await t.p.evaluate(() => document.getElementById('siteFoot').getBoundingClientRect().top);
     assert(footTop >= 844, 'футер видно на першому екрані під таббаром: ' + footTop);
-    const pr = await t.p.evaluate(() => { const a = document.getElementById('partner').getBoundingClientRect(), b = document.getElementById('tabbar').getBoundingClientRect(); return a.bottom <= b.top && a.height > 0; });
-    await shot(t.p, 'tg-tabbar-home');
-    assert(pr, 'партнер не над таббаром');
+    assert((await t.p.locator('#partner').count()) === 0, 'плаваюча кнопка партнера ще є');
     await shot(t.p, 'tg-tabbar-home');
     await t.p.click('#tabbar [data-sec="lb"]'); await t.p.waitForTimeout(500);
     assert((await t.p.getAttribute('#tabbar [data-sec="lb"]', 'aria-current')) === 'page', '«Лідерборд» не активний');
@@ -211,7 +209,7 @@ const TESTS = {
   'telegram: головна → архів → системна «Назад» і свайп від краю → головна': async (b) => {
     const t = await page(b, MOB, 'season-live', { tg: true });
     assert(await visible(t.p, '#home'), 'у Telegram головна не відкрилась');
-    assert(await visible(t.p, '#partner'), 'на головній у Telegram немає круглої кнопки партнера');
+    assert((await t.p.locator('#partner').count()) === 0, 'плаваючої кнопки партнера вже не має бути');
     await shot(t.p, 'tg-home');
     // «Кришка» з кутами під панеллю Telegram — лише коли аркуш доїхав до верху, а не одразу
     assert(!(await t.p.evaluate(() => document.documentElement.classList.contains('tg-stuck'))), 'на головній кути під панеллю одразу, без прокрутки');
@@ -223,7 +221,6 @@ const TESTS = {
     await t.p.evaluate(() => window.scrollTo(0, 0)); await t.p.waitForTimeout(200);
     await t.p.click('.hx'); await t.p.waitForTimeout(1200);
     assert((await t.p.textContent('#title')) === 'TM • Round 1', 'архів не відкрився');
-    assert(!(await visible(t.p, '#partner')), 'на сторінці раунду кругла кнопка партнера має зникнути');
     await t.p.evaluate(() => { const h = window.__tgBack; if (h) h(); else history.back(); });
     await t.p.waitForTimeout(800);
     assert(await visible(t.p, '#home'), '«Назад» не повернула на головну');
@@ -582,14 +579,15 @@ const TESTS = {
     await u.ctx.close(); return t.errors.concat(u.errors);
   },
 
-  'telegram: апка в TG, партнер рахує клік': async (b) => {
-    const t = await page(b, MOB, 'results', { tg: true });
-    if (await visible(t.p, '#partner')) {
-      await t.p.locator('#partner').dispatchEvent('click'); await t.p.waitForTimeout(500);   // кнопка «левітує» — клікаємо без очікування стабільності
-      assert(t.posts.some((x) => /"pclick"/.test(x)), 'клік партнера не надіслано');
-    }
-    await shot(t.p, 'tg-results');
-    await t.ctx.close(); return t.errors;
+  'telegram: апка в TG, партнер рахує клік («Партнери»)': async (b) => {
+    const t = await page(b, MOB, 'season', { tg: true });
+    await t.p.click('#tabbar [data-sec="partners"]'); await t.p.waitForTimeout(400);
+    await t.p.click('.pt-card [data-partner]'); await t.p.waitForTimeout(500);
+    assert(t.posts.some((x) => /"pclick"/.test(x)), 'клік партнера не надіслано');
+    await t.ctx.close();
+    const r = await page(b, MOB, 'results', { tg: true });
+    await shot(r.p, 'tg-results');
+    await r.ctx.close(); return t.errors.concat(r.errors);
   }
 };
 

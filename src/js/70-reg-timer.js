@@ -79,12 +79,10 @@
     var hbtn = document.getElementById('homeOpen');
     if (hbtn) hbtn.hidden = !showHomeBtn;
     var showBar = other || showCard || showHomeBtn;
-    // Без кнопок (реєстрацію закрито, турів ще немає) панель лишається в Telegram «порожньою» — заради кнопки партнера
-    // з головною (картки раундів) кругла кнопка партнера — лише на головній, на сторінках раундів її немає
-    var solo = !showBar && IN_TG && (state.view === 'home' || (isList && !hasHome()));
-    reg.bar.hidden = !showBar && !solo;
-    reg.bar.classList.toggle('solo', solo);
-    html.classList.toggle('has-partner-solo', solo);
+    // Плаваючої кнопки партнера більше немає (партнери — у розділі «Партнери» й на банерах раундів): без кнопок панелі немає
+    reg.bar.hidden = !showBar;
+    reg.bar.classList.remove('solo');
+    html.classList.remove('has-partner-solo');
     reg.live.hidden = !showReg;   // плашка «Триває реєстрація» над таблицею
     renderTimer();
     html.classList.toggle('has-regbar', showBar);
