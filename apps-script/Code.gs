@@ -2899,7 +2899,7 @@ function setupSeason_(sh) {
   if (!String(name.getDisplayValue()).trim()) name.setValue('2026–2027');
   name.setNumberFormat('@').setFontWeight('bold').setBackground('#fff4cc').setHorizontalAlignment('left')
     .setNote('Назва сезону над картками на головній сайту: «Сезон 2026–2027».');
-  sh.getRange(SEASON_HEAD_ROW, c, 1, 3).setValues([['Раунд', 'Таблиця раунду (посилання)', 'Банер 1200×630 (посилання на Google Drive)']])
+  sh.getRange(SEASON_HEAD_ROW, c, 1, 3).setValues([['Раунд', 'Таблиця раунду (посилання)', 'Банер 1200×500 (посилання на Google Drive)']])
     .setFontWeight('bold').setBackground('#e9edf2');
   var labels = [];
   for (var i = 1; i <= SEASON_ROWS; i++) labels.push(['R' + i]);
@@ -2909,7 +2909,7 @@ function setupSeason_(sh) {
   help.merge().setWrap(true).setFontColor('#475467').setVerticalAlignment('top').setValue(
     'Скільки рядків з посиланням на таблицю — стільки карток на головній сайту. Поточний раунд — останній такий рядок: ' +
     'сайт і бот працюють з ним, а на «' + PULT_SHEET + '» його таблиці — публікація, назва й дата. ' +
-    'Новий раунд: копія таблиці раунду → посилання в наступний рядок. Банер — картинка 1200×630 з доступом «Усі, хто має посилання». ' +
+    'Новий раунд: копія таблиці раунду → посилання в наступний рядок. Банер — картинка 1200×500 з доступом «Усі, хто має посилання». ' +
     'Минулі раунди сайт показує зі знімка; виправили щось у їхній таблиці — запустіть setupSync.');
   sh.setRowHeight(SEASON_FIRST_ROW + SEASON_ROWS, 90);
   sh.setColumnWidth(c, 70);

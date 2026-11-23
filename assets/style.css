@@ -2652,9 +2652,9 @@ body > .topbar, body > .hero, body > .foot { flex: none; }
 /* Банер: картинка з Drive поверх темної заглушки «ROUND N» (якщо банера немає або він не завантажився) */
 .hc-ban, .hx-th { position: relative; display: block; overflow: hidden; background: radial-gradient(60% 90% at 85% 30%, rgba(70, 160, 255, 0.4), transparent 60%), radial-gradient(50% 70% at 10% 100%, rgba(118, 177, 29, 0.25), transparent 60%), #07090c; }
 .hc-ban img, .hx-th img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.hb-ph { position: absolute; left: 7%; bottom: 14%; color: #fff; font-stretch: 100%; line-height: 0.9; }
+.hb-ph { position: absolute; left: 7%; bottom: 12%; color: #fff; font-stretch: 100%; line-height: 0.9; }
 .hb-ph small { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.3em; color: #9fd3ff; }
-.hb-ph b { font-size: clamp(44px, 14vw, 84px); font-weight: 800; letter-spacing: -0.03em; }
+.hb-ph b { font-size: clamp(40px, 12vw, 72px); font-weight: 800; letter-spacing: -0.03em; }
 .hx-th .hb-ph { left: 10px; bottom: 9px; }
 .hx-th .hb-ph small { font-size: 6px; margin-bottom: 3px; letter-spacing: 0.2em; }
 .hx-th .hb-ph b { font-size: 17px; }
@@ -2662,7 +2662,7 @@ body > .topbar, body > .hero, body > .foot { flex: none; }
 /* Поточний раунд */
 .hc { background: #fff; border: 1px solid var(--border); border-radius: 20px; overflow: hidden; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05); }
 .hc-ban-btn { position: relative; display: block; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; }
-.hc-ban { aspect-ratio: 1200 / 630; }
+.hc-ban { aspect-ratio: 1200 / 500; }
 .hc-chip { position: absolute; left: 14px; top: 14px; display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 700; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .hc-chip i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
 .hc-chip--reg { background: rgba(236, 253, 243, 0.95); color: #067647; }
