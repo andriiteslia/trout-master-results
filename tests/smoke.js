@@ -105,6 +105,7 @@ const TESTS = {
       assert((await t.p.textContent('#title')) === 'TM • Round 1', 'архів R1 не відкрився');
       assert(await t.p.locator('#heroPill').isHidden(), 'після фіналу плашки «завершено» не має бути');
       assert(await visible(t.p, '#heroBack'), 'немає «Усі раунди»');
+      assert((await t.p.evaluate(() => { const i = document.querySelector('#tabs .seg-ind'); return i ? getComputedStyle(i).opacity : '0'; })) === '1', 'у перемикачі «Підсумок / По турах» нічого не виділено');
       await shot(t.p, tag + '-arch');
       await t.p.click('#heroBack'); await t.p.waitForTimeout(800);
       assert(await visible(t.p, '#home'), '«Усі раунди» не повернули на головну');

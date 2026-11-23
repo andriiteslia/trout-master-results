@@ -1975,6 +1975,8 @@
     } else {
       renderHeader();
       renderBoard();
+      // Перемикач «Підсумок / По турах» міг малюватись, поки сторінка була прихована (головна) — ставимо «таблетку» заново
+      el.tabs._seg = null; slideTabs();
       revealFocusRow();
     }
   }
