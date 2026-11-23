@@ -149,7 +149,10 @@ var PULT_RES = 'B6';
 var PULT_RES_STATUS = 'B7';
 var PULT_TITLE = 'B8';      // назва раунду для сайту й картки на головній, напр. «TM • Round 2»
 var PULT_SUB = 'B9';        // дата і місце, напр. «12 грудня • Плугів, Krychevychi Area Fishing»
-var PULT_MODE = 'B10';      // що показувати: «Список учасників» / «Результати» (те саме, що B5 адмінки — синхронізуються)
+var PULT_MODE = 'B10';
+var PULT_VENUE = 'B11';     // «Як доїхати»: назва локації, напр. «Krychevychi Area Fishing»
+var PULT_MAP = 'B12';       // посилання на Google Maps
+var PULT_COORDS = 'B13';    // координати «49.766483, 25.014995» (для Waze і точки на карті)      // що показувати: «Список учасників» / «Результати» (те саме, що B5 адмінки — синхронізуються)
 
 /**
  * «Раунди сезону» на аркуші «Сайт» адмінки (F1:H10): R1…R6 — посилання на таблицю раунду й банер.
@@ -700,6 +703,20 @@ function publish_(ss) {
   return payload;
 }
 
+/** Локація для «Як доїхати» з «Пульта» (B11–B13): { name, google, lat, lng } або null (тоді — з налаштувань сайту). */
+function venue_(ss) {
+  var pu = pultSheet_(ss);
+  if (!pu || String(pu.getRange('A11').getDisplayValue()).trim() !== 'Локація') return null;
+  var name = String(pu.getRange(PULT_VENUE).getDisplayValue()).trim();
+  var google = String(pu.getRange(PULT_MAP).getDisplayValue()).trim();
+  var m = String(pu.getRange(PULT_COORDS).getDisplayValue()).match(/(-?\d{1,2}(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d{1,3}(?:[.,]\d+)?)/);
+  if (!m && google) m = google.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || google.match(/[?&](?:q|query)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
+  var lat = m ? Number(String(m[1]).replace(',', '.')) : null, lng = m ? Number(String(m[2]).replace(',', '.')) : null;
+  if (!/^https?:\/\//.test(google)) google = '';
+  if (!name && !google && lat == null) return null;
+  return { name: name, google: google || null, lat: lat, lng: lng };
+}
+
 /** Назва й дата раунду: «Пульт» таблиці раунду (B8, B9); без «Пульта» — «Сайт» адмінки (B6, B7). */
 function roundEvent_(ss, n) {
   var sh = ss.getSheetByName(SYNC_SHEET), pu = pultSheet_(ss);
@@ -756,7 +773,9 @@ function buildPayload_(ss, arch) {
   if (!arch) try { rules = readRules_(ss); } catch (err) { console.error(err); }
   var season = null;
   if (!arch) try { season = seasonPayload_(ss, rows); } catch (err) { console.error(err); }
-  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw, showCard, sectors, sectorsSplit, fee, paid, rules, payCard, regAt, payOn, tours, season]);
+  var venue = null;
+  try { venue = venue_(ss); } catch (err) { console.error(err); }
+  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw, showCard, sectors, sectorsSplit, fee, paid, rules, payCard, regAt, payOn, tours, season, venue]);
   var hash = Utilities.base64EncodeWebSafe(
     Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, body, Utilities.Charset.UTF_8));
 
@@ -781,6 +800,7 @@ function buildPayload_(ss, arch) {
     sectorsSplit: sectorsSplit,
     tours: tours,
     season: season,
+    venue: venue,
     hash: hash,
     changedAt: now,
     generatedAt: now,
@@ -3013,12 +3033,21 @@ function setupPult_(rs, ss, n, prefill) {
     pu.getRange('A8:B8').breakApart();
     pu.getRange('A8:B9').clearContent();
   }
-  // Підказка була в A10:B10 — звільняємо рядок 10 під «Що показувати»
-  var oldHelp = pu.getRange('A10');
-  if (oldHelp.isPartOfMerge() || String(oldHelp.getDisplayValue()).indexOf('B3 —') === 0) {
-    pu.getRange('A10:B10').breakApart();
-    pu.getRange('A10:B10').clearContent();
-  }
+  // Підказка була в A10:B10 або A11:B11 — звільняємо рядки під «Що показувати» й локацію
+  ['A10:B10', 'A11:B11'].forEach(function (a) {
+    var c = pu.getRange(a.split(':')[0]);
+    if (c.isPartOfMerge() || String(c.getDisplayValue()).indexOf('B3 —') === 0) {
+      pu.getRange(a).breakApart();
+      pu.getRange(a).clearContent();
+    }
+  });
+  pu.getRange('A11:A13').setValues([['Локація'], ['Google Maps'], ['Координати']]).setFontWeight('bold').setVerticalAlignment('top');
+  [PULT_VENUE, PULT_MAP, PULT_COORDS].forEach(function (a) {
+    pu.getRange(a).setNumberFormat('@').setFontWeight('bold').setBackground('#fdf3e1').setHorizontalAlignment('left');
+  });
+  pu.getRange(PULT_VENUE).setNote('Назва місця для кнопки «Як доїхати», напр. «Krychevychi Area Fishing». Порожньо — як у налаштуваннях сайту.');
+  pu.getRange(PULT_MAP).setNote('Посилання на місце в Google Maps (Поділитися → Копіювати посилання).');
+  pu.getRange(PULT_COORDS).setNote('Широта, довгота, напр. «49.766483, 25.014995» (у Google Maps: правий клік по точці → перший рядок). Потрібні для Waze.');
   pu.getRange('A3:A10').setValues([['Дія'], ['Остання публікація'], ['Турів у раунді'], ['Особисті результати'], ['Стан розсилки'],
     ['Назва раунду'], ['Дата і місце'], ['Що показувати']]).setFontWeight('bold').setVerticalAlignment('top');
   var modeC = pu.getRange(PULT_MODE);
@@ -3060,7 +3089,7 @@ function setupPult_(rs, ss, n, prefill) {
 
   pu.getRange(PULT_RES_STATUS).setWrap(true).setVerticalAlignment('top');
 
-  var help = pu.getRange('A11:B11');
+  var help = pu.getRange('A14:B14');
   help.merge().setWrap(true).setFontColor('#475467').setVerticalAlignment('top');
   help.setValue('B3 — «' + ACTION_PUBLISH + '»: глядачі побачать поточні дані з цієї таблиці (що саме показувати — «Що показувати» в адмінці). ' +
     '\nB5 — турів у раунді. Тури понад це число на сайті не показуються, а після N-го туру результати стають підсумковими ' +
@@ -3072,7 +3101,8 @@ function setupPult_(rs, ss, n, prefill) {
     '«' + RES_CHAT_TEST + '» — те саме повідомлення лише вам (ID з «Тест — мій Telegram ID» в адмінці).');
   help.setValue(help.getDisplayValue() + '\nB8, B9 — назва раунду й дата і місце: заголовок сторінки раунду й картка на головній сайту. Застосується після наступної публікації.');
   help.setValue(help.getDisplayValue() + '\nB10 — що показувати на сайті: «' + MODE_REG + '» (реєстрація) або «' + MODE_RES + '». Зміна одразу публікує дані.');
-  pu.setRowHeight(11, 210);
+  help.setValue(help.getDisplayValue() + '\nB11–B13 — «Як доїхати» (Telegram, режим «' + MODE_REG + '»): назва локації, посилання на Google Maps і координати для Waze. Застосується після наступної публікації.');
+  pu.setRowHeight(14, 230);
   pu.setColumnWidth(1, 170);
   pu.setColumnWidth(2, 460);
   try { pu.getRange(PULT_RES_STATUS).setValue(resInfo_(ss)); } catch (err) { console.error(err); }
@@ -3109,8 +3139,8 @@ function handlePultEdit_(e, ss, pu) {
     catch (err) { pu.getRange(PULT_STATUS).setValue('❌ Помилка: ' + ((err && err.message) || err)); }
     return;
   }
-  if (a1 === PULT_TITLE || a1 === PULT_SUB) {
-    pu.getRange(PULT_STATUS).setValue('Назву/дату змінено. Застосується після «' + ACTION_PUBLISH + '» (B3).');
+  if (a1 === PULT_TITLE || a1 === PULT_SUB || a1 === PULT_VENUE || a1 === PULT_MAP || a1 === PULT_COORDS) {
+    pu.getRange(PULT_STATUS).setValue('Змінено. Застосується після «' + ACTION_PUBLISH + '» (B3).');
     return;
   }
   if (a1 === PULT_TOURS) {

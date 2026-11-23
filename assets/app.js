@@ -3949,7 +3949,11 @@
   });
   // ================= /Новий дизайн =================
   // ===== src/js/94-v2-info.js — «Як доїхати» і «Положення»: плитки під KPI (Telegram; у режимі результатів — лише «Положення», телефон) =====
-  var VENUE = CFG.VENUE && CFG.VENUE.lat && CFG.VENUE.lng ? CFG.VENUE : null;
+  // Локація для «Як доїхати»: з «Пульта» раунду (payload.venue), інакше — з config.js
+  function venueCur() {
+    var v = (state.payload && state.payload.venue) || CFG.VENUE || null;
+    return v && (v.google || (v.lat != null && v.lng != null)) ? v : null;
+  }
   var I_PIN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.1-7-11.5a7 7 0 0 1 14 0C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
   var I_DOC = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>';
   var I_GO = '<svg class="hlink__go" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
@@ -3964,7 +3968,7 @@
     var rules = rulesData(), list = isListMode();
     // У режимі результатів (телефон у Telegram) лишається тільки «Положення»
     // Після останнього туру (підсумкові результати) положення вже не потрібне
-    var on = IN_TG && !!state.payload && (list ? (!!VENUE || !!rules) : !!rules && !tournamentDone());
+    var on = IN_TG && !!state.payload && (list ? (!!venueCur() || !!rules) : !!rules && !tournamentDone());
     box.hidden = !on;
     box.classList.toggle('m-only', on && !list);
     if (!on) { box.innerHTML = ''; return; }
@@ -3979,12 +3983,12 @@
     // Широке вікно Telegram: перша плитка — «Оплатити участь» (на телефоні замість неї біла кнопка під плитками)
     if (canPay()) h += '<button type="button" class="kpi hlink hlink--pay d-only" data-info="pay"><img src="assets/icons/paid.webp?v=2" alt="" aria-hidden="true">' +
       '<span class="hlink__txt"><b>Оплатити участь</b><small>' + esc(feeText() ? 'Вартість: ' + feeText() : 'Monobank') + '</small></span>' + I_GO + '</button>';
-    if (VENUE) h += '<button type="button" class="kpi hlink" data-info="map">' + I_PIN +
+    if (venueCur()) h += '<button type="button" class="kpi hlink" data-info="map">' + I_PIN +
       '<span class="hlink__txt"><b>Як доїхати</b><small>Навігатор</small></span>' + I_GO + '</button>';
     if (rules) h += '<button type="button" class="kpi hlink" data-info="rules">' + I_DOC +
       '<span class="hlink__txt"><b>Положення</b><small>Прочитати</small></span>' + I_GO + '</button>';
     if (box.innerHTML !== h) box.innerHTML = h;
-    box.classList.toggle('hlinks--1', !(VENUE && rules));
+    box.classList.toggle('hlinks--1', !(venueCur() && rules));
   }
 
   // ---------- Вибір навігатора ----------
@@ -3995,11 +3999,12 @@
     return false;
   }
   function openMapSheet() {
-    if (!VENUE || !mapSheet) return;
-    var ll = VENUE.lat + ',' + VENUE.lng, name = VENUE.name || '';
+    var V = venueCur();
+    if (!V || !mapSheet) return;
+    var hasLL = V.lat != null && V.lng != null, ll = hasLL ? V.lat + ',' + V.lng : '', name = V.name || '';
     var urls = {
-      google: VENUE.google || 'https://www.google.com/maps/search/?api=1&query=' + ll,
-      waze: 'https://waze.com/ul?ll=' + ll + '&navigate=yes'
+      google: V.google || 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(ll || name),
+      waze: hasLL ? 'https://waze.com/ul?ll=' + ll + '&navigate=yes' : 'https://waze.com/ul?q=' + encodeURIComponent(name) + '&navigate=yes'
     };
     [].forEach.call(mapSheet.querySelectorAll('a[data-map]'), function (a) { a.href = urls[a.getAttribute('data-map')]; });
     document.getElementById('mapName').textContent = name;
@@ -4079,7 +4084,7 @@
       }
       h += '</section>';
     });
-    if (VENUE) h += '<button type="button" class="rules__map" data-info="map">' + I_PIN + '<span>Як доїхати · ' + esc(VENUE.name || '') + '</span>' + I_GO + '</button>';
+    if (venueCur()) h += '<button type="button" class="rules__map" data-info="map">' + I_PIN + '<span>Як доїхати · ' + esc(venueCur().name || '') + '</span>' + I_GO + '</button>';
     ts.body.innerHTML = h + '</div>';
   }
   ts.body.addEventListener('click', function (e) {
