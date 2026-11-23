@@ -2103,8 +2103,8 @@
   })();
 
   // ----- Telegram: свайп від лівого краю екрана — «Назад» (iOS і Android) -----
-  // Працює на реєстрації, картці й статистиці. Тягнемо палець від краю: з'являється стрілка,
-  // після ~72 px вона заповнюється — відпускаєш, і повертаємось на головну.
+  // Працює на всіх екранах, крім головного: реєстрація, картка, статистика → до раунду; раунд → до всіх раундів.
+  // Тягнемо палець від краю: з'являється стрілка, після ~72 px вона заповнюється — відпускаєш, і крок назад.
   (function edgeSwipeBack() {
     if (!IN_TG) return;
     var EDGE = 28, GO = 72, MAX = 96;
@@ -2136,7 +2136,7 @@
       if (ind) { ind.classList.remove('is-armed', 'is-dragging'); ind.style.opacity = '0'; ind.style.transform = 'translate(-44px, -50%) scale(0.6)'; }
     }
     document.addEventListener('touchstart', function (e) {
-      if (state.view === 'list' || e.touches.length !== 1) return;
+      if (state.view === rootView() || e.touches.length !== 1) return;
       var t = e.touches[0];
       if (t.clientX > EDGE) return;
       on = true; decided = false; sx = t.clientX; sy = t.clientY; dx = 0;
@@ -2157,7 +2157,7 @@
       if (!on) return;
       var go = decided && dx >= GO;
       reset();
-      if (go) goList();
+      if (go) goBack();
     }
     document.addEventListener('touchend', end, { passive: true });
     document.addEventListener('touchcancel', function () { reset(); }, { passive: true });

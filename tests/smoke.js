@@ -134,7 +134,7 @@ const TESTS = {
     await t.ctx.close(); return t.errors;
   },
 
-  'telegram: головна → архів → системна «Назад» → головна': async (b) => {
+  'telegram: головна → архів → системна «Назад» і свайп від краю → головна': async (b) => {
     const t = await page(b, MOB, 'season-live', { tg: true });
     assert(await visible(t.p, '#home'), 'у Telegram головна не відкрилась');
     await shot(t.p, 'tg-home');
@@ -143,6 +143,18 @@ const TESTS = {
     await t.p.evaluate(() => { const h = window.__tgBack; if (h) h(); else history.back(); });
     await t.p.waitForTimeout(800);
     assert(await visible(t.p, '#home'), '«Назад» не повернула на головну');
+    // Свайп від лівого краю: з раунду — на головну
+    await t.p.click('.hc-go'); await t.p.waitForTimeout(800);
+    assert(!(await visible(t.p, '#home')), 'раунд не відкрився');
+    await t.p.evaluate(async () => {
+      const ev = (type, x) => { const tt = new Touch({ identifier: 1, target: document.body, clientX: x, clientY: 400 });
+        document.dispatchEvent(new TouchEvent(type, { touches: type === 'touchend' ? [] : [tt], changedTouches: [tt], bubbles: true, cancelable: true })); };
+      ev('touchstart', 10);
+      for (let x = 20; x <= 140; x += 20) { ev('touchmove', x); await new Promise((r) => setTimeout(r, 16)); }
+      ev('touchend', 140);
+    });
+    await t.p.waitForTimeout(900);
+    assert(await visible(t.p, '#home'), 'свайп назад не повернув з раунду на головну');
     await t.ctx.close(); return t.errors;
   },
 
