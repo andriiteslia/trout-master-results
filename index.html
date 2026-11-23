@@ -27,8 +27,8 @@
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
   <link rel="preload" href="assets/fonts/fixel-cyrillic-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fish.webp?v=2" as="image" type="image/webp">
-  <link rel="stylesheet" href="assets/style.css?v=20261124p">
-  <script src="config.js?v=20261124p"></script>
+  <link rel="stylesheet" href="assets/style.css?v=20261124q">
+  <script src="config.js?v=20261124q"></script>
   <script>
     // Запитуємо результати одразу, паралельно з завантаженням решти сторінки
     (function () {
@@ -46,8 +46,8 @@
     // Звичайне відкриття — з першого кадру головна (скелетон карток), щоб до запуску апки не блимала сторінка раунду
     else if (!/tgWebAppStartParam=|[?&]sel=|#(?:r\d+|player|stats|register|rules)(?:&|$)/.test(location.hash + '&' + location.search)) document.documentElement.className += ' home-wait';
   </script>
-  <script src="assets/i18n.js?v=20261124p"></script>
-  <script src="assets/app.js?v=20261124p" defer></script>
+  <script src="assets/i18n.js?v=20261124q"></script>
+  <script src="assets/app.js?v=20261124q" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -366,7 +366,7 @@
 
   <!-- Розділи ліги на телефоні й у Telegram: таббар унизу (лише на головних розділах, не в раунді) -->
   <nav class="tabbar" id="tabbar" aria-label="Розділи ліги" hidden>
-    <button type="button" data-sec="tours"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14.66V17a1 1 0 0 1-1 1 2 2 0 0 0-2 2v2"/><path d="M14 14.66V17a1 1 0 0 0 1 1 2 2 0 0 1 2 2v2"/><path d="M17.916 10H19.5A2.5 2.5 0 0 0 22 7.5V5a1 1 0 0 0-1-1h-3"/><path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z"/><path d="M6.084 10H4.5A2.5 2.5 0 0 1 2 7.5V5a1 1 0 0 1 1-1h3"/></svg><span>Турніри</span></button>
+    <button type="button" data-sec="tours"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14.66V17a1 1 0 0 1-1 1 2 2 0 0 0-2 2v2"/><path d="M14 14.66V17a1 1 0 0 0 1 1 2 2 0 0 1 2 2v2"/><path d="M17.916 10H19.5A2.5 2.5 0 0 0 22 7.5V5a1 1 0 0 0-1-1h-3"/><path d="M4 22h16"/><path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z"/><path d="M6.084 10H4.5A2.5 2.5 0 0 1 2 7.5V5a1 1 0 0 1 1-1h3"/></svg><span>Турніри</span></button>
     <button type="button" data-sec="lb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6V2h-1"/><path d="M9 15a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1"/><path d="M9 21V11a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v10"/></svg><span>Лідерборд</span></button>
     <button type="button" data-sec="about"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><span>Про лігу</span></button>
   </nav>
