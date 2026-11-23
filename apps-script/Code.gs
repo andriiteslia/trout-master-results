@@ -8,9 +8,17 @@
  * 3. Сайт кожні кілька секунд питає скрипт, чи є нова публікація.
  *    Саму таблицю він не читає, тож глядачі бачать лише опубліковане.
  *
- * Перший запуск і кожен новий раунд:
- *   впишіть посилання на таблицю в SETTINGS і запустіть функцію setupSync.
- *   Вона створить аркуш «Сайт», підключить список і опублікує дані.
+ * Дві таблиці:
+ *   — АДМІНКА (SETTINGS.SPREADSHEET_ID): аркуші «Сайт», «Положення», «Відвідування», журнали, «Партнери».
+ *     Тут налаштування сайту, реєстрації й розсилки — вони не змінюються від раунду до раунду.
+ *   — ТАБЛИЦЯ РАУНДУ (посилання в B2 на аркуші «Сайт»): «Учасники», «Жеребкування», «Results» і «Пульт».
+ *     На «Пульті» — «Опублікувати на сайт», «Турів у раунді» й «Надіслати особисті результати»,
+ *     тож під час змагань достатньо тримати відкритою лише таблицю раунду.
+ *   Новий раунд: зробіть копію таблиці раунду, очистіть її і вставте посилання в B2 адмінки —
+ *   скрипт сам створить «Пульт» і підключиться до нової таблиці. B2 порожня — усе береться з адмінки.
+ *
+ * Перший запуск (і після оновлення коду): запустіть функцію setupSync.
+ *   Вона створить/оновить аркуш «Сайт», підключить таблицю раунду й опублікує дані.
  *
  * Реєстрація: у B8 на аркуші «Сайт» виберіть «Відкрита», і на сайті з'явиться кнопка
  *   «Зареєструватися». Заявки дописуються в аркуш «Учасники»: A — номер, B — прізвище та ім'я,
@@ -41,10 +49,17 @@ var SETTINGS = {
   BOT_GREETING: 'Привіт! Тут онлайн-результати та реєстрація на турніри TROUT MASTER 🎣\nНатисни кнопку нижче, щоб відкрити застосунок.'
 };
 
+/**
+ * Діапазон «авто»: скрипт сам знаходить блоки на аркуші «Results»:
+ * «Тури» — від першого «#» до колонки «Місце»; «Результат» — від другого «#» до останньої колонки із заголовком.
+ * Так однаково працюють таблиці на 10, 12 чи 14 турів.
+ */
+var RANGE_AUTO = 'авто';
 var VIEWS = [
-  { name: 'Результат', sheet: 'Results', range: 'AM1:AQ' },
-  { name: 'Тури',      sheet: 'Results', range: 'A1:AK' }
+  { name: 'Результат', sheet: 'Results', range: RANGE_AUTO },
+  { name: 'Тури',      sheet: 'Results', range: RANGE_AUTO }
 ];
+var OLD_DEFAULT_RANGES = { 'Результат': 'AM1:AQ', 'Тури': 'A1:AK' };   // старі значення з коду → «авто»
 
 /** Режими показу: що саме бачать глядачі. headerRows — скільки рядків заголовків. */
 var MODE_REG = 'Список учасників';
@@ -58,6 +73,7 @@ MODES[MODE_RES] = VIEWS;
 var SYNC_SHEET = 'Сайт';
 var ACTION_IDLE = '—';
 var ACTION_PUBLISH = 'Опублікувати на сайт';
+var CELL_ROUND = 'B2';         // посилання на таблицю поточного раунду (порожньо — дані з адмінки)
 var CELL_PUBLISH = 'B3';
 var CELL_STATUS = 'B4';
 var CELL_MODE = 'B5';
@@ -120,6 +136,19 @@ var DRAW_SHEET = 'Жеребкування';
 // Розділ «Розклад» показується як таблиця «час — подія». Зміни публікуються одразу, якщо режим «Список учасників».
 var RULES_SHEET = 'Положення';
 
+/**
+ * «Пульт» у таблиці раунду: те, що потрібно під час змагань, без переходу в адмінку.
+ * B3 — «Опублікувати на сайт», B4 — остання публікація, B5 — турів у раунді (10, 12…),
+ * B6 — надіслати особисті результати, B7 — стан розсилки.
+ */
+var PULT_SHEET = 'Пульт';
+var PULT_PUBLISH = 'B3';
+var PULT_STATUS = 'B4';
+var PULT_TOURS = 'B5';
+var PULT_RES = 'B6';
+var PULT_RES_STATUS = 'B7';
+var RESULTS_SHEET = 'Results';
+
 var CACHE_KEY = 'snapshot';
 var CACHE_TTL = 21600;   // 6 годин, максимум для CacheService
 var CHUNK = 4000;        // розмір шматка для збереження у властивостях
@@ -173,6 +202,12 @@ function setupSync() {
     sh.getRange(CELL_SUBTITLE).setValue(SETTINGS.EVENT_SUBTITLE);
   }
   sh.getRange('A1').setValue('Публікація результатів на сайт').setFontWeight('bold').setFontSize(13);
+  // Таблиця поточного раунду (B2): посилання на копію з «Учасниками», «Жеребкуванням» і «Results»
+  sh.getRange('A2').setValue('Таблиця поточного раунду').setFontWeight('bold');
+  sh.getRange(CELL_ROUND).setFontWeight('bold').setBackground('#fff4cc').setWrap(false)
+    .setNote('Посилання на таблицю раунду (аркуші «' + REG_SHEET + '», «' + DRAW_SHEET + '», «' + RESULTS_SHEET + '»). ' +
+      'Вставте нове посилання — скрипт підключиться до неї, створить там «' + PULT_SHEET + '» й опублікує дані. ' +
+      'Порожньо — усе береться з цієї таблиці.');
   // Старий макет (діапазони в рядках 12–14): звільняємо два рядки під «Кількість місць» і «Реєстрація до»
   if (String(sh.getRange('A12').getDisplayValue()).trim() === RANGE_KEYS[0] &&
       String(sh.getRange('A10').getDisplayValue()).indexOf('B5') === 0) {
@@ -189,7 +224,9 @@ function setupSync() {
     ['Реєстрація'], ['Стрілки ▲▼ місць'], ['Кількість місць'], ['Реєстрація до'], ['Картка учасника'], ['Секторів на водоймі'], ['Вартість участі']]);
   sh.getRange('A3:A14').setFontWeight('bold');
   sh.getRange('A15:B15').merge().setWrap(true);
-  sh.getRange('A15').setValue('B5 — що бачать глядачі: «' + MODE_REG + '» (аркуш «Учасники») або «' + MODE_RES +
+  sh.getRange('A15').setValue('B2 — посилання на таблицю поточного раунду: звідти беруться учасники, жеребкування й результати, ' +
+    'а на її аркуші «' + PULT_SHEET + '» є «' + ACTION_PUBLISH + '», «Турів у раунді» й особисті результати. ' +
+    '\nB5 — що бачать глядачі: «' + MODE_REG + '» (аркуш «Учасники») або «' + MODE_RES +
     '» (вкладки «Результат» і «Тури»). \nЗміна режиму одразу публікує дані. Щоб оновити дані на сайті, у B3 виберіть «' +
     ACTION_PUBLISH + '». Заголовок і підзаголовок теж оновлюються при публікації. \nB8 — «' + REG_OPEN +
     '» показує на сайті кнопку «Зареєструватися» (заявки йдуть в аркуш «' + REG_SHEET + '», телефон у колонку E). \nB9 — показувати чи ні стрілки ▲▼, на скільки місць змістився учасник після оновлення. ' +
@@ -311,16 +348,6 @@ function setupSync() {
     .setHelpText('Час завершення реєстрації, напр. 20:00. Можна вписати свій, напр. 20:15.').build());
   tCell.setFontWeight('bold').setBackground('#fdf3e1').setHorizontalAlignment('left');
 
-  // Заголовки колонок для заявок на аркуші «Учасники» (лише якщо порожні)
-  var reg = ss.getSheetByName(REG_SHEET);
-  if (reg) {
-    [[REG_COL_PHONE, 'Телефон'], [REG_COL_TIME, 'Зареєстровано'], [REG_COL_TG_ID, 'Telegram ID'], [REG_COL_TG_USER, 'Telegram']].forEach(function (x) {
-      var c = reg.getRange(1, x[0]);
-      if (!String(c.getDisplayValue()).trim()) c.setValue(x[1]).setFontWeight('bold');
-    });
-    setupPaidColumn_(reg);
-  }
-
   // Блок діапазонів: заповнюємо лише порожні клітинки, щоб не затерти ваші значення
   var rr = rangeRowFirst_(sh);
   sh.getRange(rr - 1, 1).setValue(RANGES_TITLE).setFontWeight('bold');
@@ -328,57 +355,92 @@ function setupSync() {
   var rangeCells = sh.getRange(rr, 1, RANGE_KEYS.length, 2);
   var current = rangeCells.getDisplayValues();
   rangeCells.setValues(RANGE_KEYS.map(function (k, i) {
-    return [k, String(current[i][1]).trim() || defaults[k]];
+    var cur = String(current[i][1]).trim();
+    if (cur && OLD_DEFAULT_RANGES[k] && cur.toUpperCase() === OLD_DEFAULT_RANGES[k]) cur = '';   // старе значення з коду → «авто»
+    return [k, cur || defaults[k]];
   }));
   sh.getRange(rr, 1, RANGE_KEYS.length, 1).setFontWeight('bold');
   sh.getRange(rr, 2, RANGE_KEYS.length, 1).setBackground('#f2f4f7');
   sh.getRange(rr + RANGE_KEYS.length, 1).setValue(
-    'Можна вказати з назвою аркуша, напр. Results!A1:AK. Без номера останнього рядка (A1:AK) береться все заповнене. Зміна діапазону одразу публікує дані.')
+    '«' + RANGE_AUTO + '» — скрипт сам знаходить блоки на аркуші «Results» таблиці раунду (за заголовками «#» і «Місце»). ' +
+    'Можна вказати й вручну, напр. A1:AG або Results!A1:AG. Без номера останнього рядка береться все заповнене. Зміна діапазону одразу публікує дані.')
     .setFontColor('#475467');
 
   setupBroadcast_(sh);
   setupResults_(sh);
 
-  // Одна активна таблиця: старі тригери прибираємо
-  ScriptApp.getProjectTriggers().forEach(function (t) {
-    if (t.getHandlerFunction() === 'handleSiteSync') ScriptApp.deleteTrigger(t);
-  });
-  ScriptApp.newTrigger('handleSiteSync').forSpreadsheet(ss).onEdit().create();
+  // Таблиця раунду з B2: тригер правок, «Пульт», колонки «Учасників» (B2 порожня — усе в цій таблиці)
+  var rs = connectRound_(ss);
 
   var p = publish_(ss);
   writeStatus_(sh, p);
   scheduleRegClose_(sh);
-  Logger.log('Готово. Список у B3 підключено, дані опубліковано: ' + summary_(p));
+  Logger.log('Готово. Таблиця раунду: ' + (rs.getId() === ss.getId() ? 'ця ж (B2 порожня)' : rs.getName()) +
+    '. Дані опубліковано: ' + summary_(p));
 }
 
-/** Тригер: реагує на вибір «Опублікувати на сайт» у B3. */
+/**
+ * Тригер правок — і в адмінці, і в таблиці раунду (setupSync ставить обидва).
+ * Адмінка: аркуш «Сайт» (публікація, перемикачі, B2), «Положення». Раунд: «Пульт», «Учасники», «Жеребкування».
+ */
 function handleSiteSync(e) {
   if (!e || !e.range) return;
   var sh = e.range.getSheet();
-  // Вставили жеребкування або змінили номери/імена в «Учасниках» — підставляємо імена в «Жеребкування»
-  if (sh.getName() === DRAW_SHEET ||
-      (sh.getName() === REG_SHEET && e.range.getColumn() <= REG_COL_NAME && e.range.getLastColumn() >= REG_COL_NUM)) {
-    try { syncDrawNames_(e.source); } catch (err) { console.error(err); }
-    return;
+  var src = e.source || sh.getParent();
+  var adminId = getSpreadsheetId_();
+  var isAdmin = src.getId() === adminId;
+  var ss = isAdmin ? src : SpreadsheetApp.openById(adminId);
+  if (!isAdmin) {
+    ROUND_SS_[src.getId()] = src;
+    var cur = '';
+    try { cur = roundSs_(ss).getId(); } catch (err) { console.error(err); }
+    if (cur !== src.getId()) return;   // таблиця старого раунду — її правки сайт не чіпають
   }
+  var name = sh.getName();
+  var isRoundSheet = !isAdmin;
+  if (isAdmin) { try { isRoundSheet = roundSs_(ss).getId() === ss.getId(); } catch (err) { isRoundSheet = false; } }
+  if (isRoundSheet) {
+    if (name === PULT_SHEET) { handlePultEdit_(e, ss, sh); return; }
+    // Вставили жеребкування або змінили номери/імена в «Учасниках» — підставляємо імена в «Жеребкування»
+    if (name === DRAW_SHEET ||
+        (name === REG_SHEET && e.range.getColumn() <= REG_COL_NAME && e.range.getLastColumn() >= REG_COL_NUM)) {
+      try { syncDrawNames_(ss); } catch (err) { console.error(err); }
+      return;
+    }
+    // Поставили/зняли галочку «Оплата» — оновлюємо значок 💵 у списку учасників на сайті
+    if (name === REG_SHEET && e.range.getColumn() <= REG_COL_PAID && e.range.getLastColumn() >= REG_COL_PAID) {
+      var site = ss.getSheetByName(SYNC_SHEET);
+      if (site && currentMode_(site) === MODE_REG) {
+        try { writeStatus_(site, publish_(ss)); } catch (err) { console.error(err); }
+      }
+      return;
+    }
+  }
+  if (!isAdmin) return;
   // Змінили «Положення» — публікуємо одразу, але лише в режимі «Список учасників» (у результатах його не показуємо,
   // а публікація посеред туру віддала б глядачам неповні результати)
-  if (sh.getName() === RULES_SHEET) {
-    var st = e.source.getSheetByName(SYNC_SHEET);
+  if (name === RULES_SHEET) {
+    var st = ss.getSheetByName(SYNC_SHEET);
     if (st && currentMode_(st) === MODE_REG) {
-      try { writeStatus_(st, publish_(e.source)); } catch (err) { console.error(err); }
+      try { writeStatus_(st, publish_(ss)); } catch (err) { console.error(err); }
     }
     return;
   }
-  // Поставили/зняли галочку «Оплата» — оновлюємо значок 💵 у списку учасників на сайті
-  if (sh.getName() === REG_SHEET && e.range.getColumn() <= REG_COL_PAID && e.range.getLastColumn() >= REG_COL_PAID) {
-    var site = e.source.getSheetByName(SYNC_SHEET);
-    if (site && currentMode_(site) === MODE_REG) {
-      try { writeStatus_(site, publish_(e.source)); } catch (err) { console.error(err); }
+  if (name !== SYNC_SHEET) return;
+  // Вставили посилання на таблицю раунду — підключаємо її й публікуємо
+  if (e.range.getA1Notation() === CELL_ROUND) {
+    sh.getRange(CELL_STATUS).setValue('⏳ Підключаю таблицю раунду…');
+    SpreadsheetApp.flush();
+    try {
+      var rs = connectRound_(ss);
+      writeStatus_(sh, publish_(ss));
+      sh.getRange(CELL_STATUS).setValue(sh.getRange(CELL_STATUS).getDisplayValue() + ' • таблиця раунду: ' +
+        (rs.getId() === ss.getId() ? 'ця ж (B2 порожня)' : '«' + rs.getName() + '»'));
+    } catch (err) {
+      sh.getRange(CELL_STATUS).setValue('❌ ' + ((err && err.message) || err));
     }
     return;
   }
-  if (sh.getName() !== SYNC_SHEET) return;
   // Блоки «Особисті результати в Telegram» і «Розсилка в Telegram»
   if (handleResultsEdit_(e, sh)) return;
   if (handleBroadcastEdit_(e, sh)) return;
@@ -399,7 +461,7 @@ function handleSiteSync(e) {
   sh.getRange(CELL_STATUS).setValue('⏳ Публікуємо…');
   SpreadsheetApp.flush();
   try {
-    writeStatus_(sh, publish_(e.source));
+    writeStatus_(sh, publish_(ss));
     if (isReg || isRegSetting) scheduleRegClose_(sh);
   } catch (err) {
     sh.getRange(CELL_STATUS).setValue('❌ Помилка: ' + ((err && err.message) || err));
@@ -587,6 +649,9 @@ function publish_(ss) {
   var sh = ss.getSheetByName(SYNC_SHEET);
   var mode = currentMode_(sh);
   var sheets = viewsWithRanges_(sh, MODES[mode]).map(function (view) { return readView_(ss, view); });
+  // «Турів у раунді» на «Пульті»: тури понад це число не публікуються, тож сайт і бот рахують «з N»
+  var tours = toursLimit_(ss);
+  if (tours) sheets = sheets.map(function (v) { return trimTours_(v, tours); });
   var event = {
     title: (sh && String(sh.getRange(CELL_TITLE).getDisplayValue()).trim()) || SETTINGS.EVENT_TITLE,
     subtitle: (sh && String(sh.getRange(CELL_SUBTITLE).getDisplayValue()).trim()) || SETTINGS.EVENT_SUBTITLE
@@ -596,6 +661,10 @@ function publish_(ss) {
   event.subtitleEn = trEn_(event.subtitle);
   var draw = null;
   try { draw = readDraw_(ss); syncDrawNames_(ss, draw); } catch (err) { console.error(err); }
+  if (draw && tours && draw.rounds > tours) {
+    draw.rounds = tours;
+    draw.players.forEach(function (pl) { pl.t = pl.t.slice(0, tours); });
+  }
   var showCard = !sh || String(sh.getRange(CELL_CARD).getDisplayValue()).trim() !== CARD_OFF;
   var registration = isRegOpen_(sh);
   var deadline = regDeadline_(sh);
@@ -615,7 +684,7 @@ function publish_(ss) {
   var now = new Date().toISOString();
   var rules = null;
   try { rules = readRules_(ss); } catch (err) { console.error(err); }
-  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw, showCard, sectors, sectorsSplit, fee, paid, rules, payCard, regAt, payOn]);
+  var body = JSON.stringify([event, sheets, registration, regDeadline, seats, showMoves, draw, showCard, sectors, sectorsSplit, fee, paid, rules, payCard, regAt, payOn, tours]);
   var hash = Utilities.base64EncodeWebSafe(
     Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, body, Utilities.Charset.UTF_8));
 
@@ -638,6 +707,7 @@ function publish_(ss) {
     showCard: showCard,
     sectors: sectors,
     sectorsSplit: sectorsSplit,
+    tours: tours,
     hash: hash,
     changedAt: now,
     generatedAt: now,
@@ -685,7 +755,7 @@ function setupRules_(ss) {
  * або null, якщо аркуша немає чи він порожній.
  */
 function readDraw_(ss) {
-  var sh = ss.getSheetByName(DRAW_SHEET);
+  var sh = roundSheet_(ss, DRAW_SHEET);
   if (!sh || sh.getLastRow() < 2 || sh.getLastColumn() < 5) return null;
   var vals = sh.getRange(1, 1, sh.getLastRow(), sh.getLastColumn()).getDisplayValues();
   var rounds = Math.floor((vals[0].length - 3) / 2);
@@ -714,7 +784,7 @@ function readDraw_(ss) {
  * До жеребкування в колонці A порядкові номери, після — номери, які учасники витягнули на водоймі.
  */
 function drawNames_(ss) {
-  var reg = ss.getSheetByName(REG_SHEET);
+  var reg = roundSheet_(ss, REG_SHEET);
   var names = {};
   if (!reg || reg.getLastRow() < 2) return names;
   reg.getRange(2, 1, reg.getLastRow() - 1, Math.max(REG_COL_NUM, REG_COL_NAME)).getDisplayValues().forEach(function (r) {
@@ -764,7 +834,7 @@ function setupPaidColumn_(reg) {
 
 /** Імена тих, у кого стоїть галочка «Оплата» (для значка у списку учасників на сайті). */
 function paidNames_(ss) {
-  var reg = ss.getSheetByName(REG_SHEET);
+  var reg = roundSheet_(ss, REG_SHEET);
   if (!reg || reg.getLastRow() < 2) return [];
   var n = reg.getLastRow() - 1;
   var names = reg.getRange(2, REG_COL_NAME, n, 1).getDisplayValues();
@@ -782,7 +852,7 @@ function paidNames_(ss) {
  * Сайт показує біля них мітку «new», доки минуло менше доби. Телефони й ID сюди не потрапляють.
  */
 function recentRegs_(ss) {
-  var reg = ss.getSheetByName(REG_SHEET);
+  var reg = roundSheet_(ss, REG_SHEET);
   if (!reg || reg.getLastRow() < 2) return {};
   var n = reg.getLastRow() - 1, since = Date.now() - 48 * 3600 * 1000;
   var names = reg.getRange(2, REG_COL_NAME, n, 1).getDisplayValues();
@@ -808,7 +878,7 @@ function paidCheckbox_(sh, row) {
 
 /** Вписує імена учасників у колонку B «Жеребкування» (лише там, де вони змінилися). */
 function syncDrawNames_(ss, draw) {
-  var sh = ss.getSheetByName(DRAW_SHEET);
+  var sh = roundSheet_(ss, DRAW_SHEET);
   if (!sh || sh.getLastRow() < 2) return;
   var names = drawNames_(ss);
   var rng = sh.getRange(2, 1, sh.getLastRow() - 1, 2);
@@ -845,7 +915,12 @@ function writeStatus_(sh, p) {
     }
     resRefresh_(sh.getParent(), sh);
   } catch (err) { console.error(err); }
-  sh.getRange(CELL_STATUS).setValue('✅ ' + t + ' • ' + p.mode + ' • ' + summary_(p) + extra);
+  var text = '✅ ' + t + ' • ' + p.mode + ' • ' + summary_(p) + (p.tours ? ' • турів у раунді: ' + p.tours : '') + extra;
+  sh.getRange(CELL_STATUS).setValue(text);
+  try {   // те саме — на «Пульті» таблиці раунду
+    var pu = pultSheet_(sh.getParent());
+    if (pu) pu.getRange(PULT_STATUS).setValue(text.replace(' (блок «' + RES_TITLE + '» нижче)', ' (B6 нижче)'));
+  } catch (err) { console.error(err); }
 }
 
 /**
@@ -940,8 +1015,8 @@ function register_(data) {
     var ss = SpreadsheetApp.openById(getSpreadsheetId_());
     var site = ss.getSheetByName(SYNC_SHEET);
     if (!isRegOpen_(site)) return fail_('closed', 'Ой, не встигли: на жаль, реєстрацію вже закрито.');
-    var sh = ss.getSheetByName(REG_SHEET);
-    if (!sh) return fail_('server', 'У таблиці немає аркуша «' + REG_SHEET + '».');
+    var sh = roundSheet_(ss, REG_SHEET);
+    if (!sh) return fail_('server', 'У таблиці раунду немає аркуша «' + REG_SHEET + '».');
 
     var last = Math.max(sh.getLastRow(), 1);
     var width = Math.max(REG_COL_NUM, REG_COL_NAME, REG_COL_PHONE);
@@ -1009,7 +1084,7 @@ function whoami_(data) {
 
 /** Імена з «Учасників», зареєстровані з цього Telegram ID (колонка G). */
 function regNamesFor_(ss, id) {
-  var sh = ss.getSheetByName(REG_SHEET);
+  var sh = roundSheet_(ss, REG_SHEET);
   var names = [];
   if (!sh || sh.getLastRow() < 2) return names;
   var width = Math.max(REG_COL_NAME, REG_COL_TG_ID);
@@ -1597,7 +1672,7 @@ function tgPhoto_(chatId, photo, caption, markup) {
 
 /** Основний склад з «Учасників»: [{num, name, id}] (перші «Кількість місць» рядків з іменем). */
 function mainSquad_(ss) {
-  var reg = ss.getSheetByName(REG_SHEET);
+  var reg = roundSheet_(ss, REG_SHEET);
   if (!reg || reg.getLastRow() < 2) return [];
   var rows = reg.getRange(2, 1, reg.getLastRow() - 1, REG_COL_TG_ID).getDisplayValues();
   var site = ss.getSheetByName(SYNC_SHEET);
@@ -2148,7 +2223,10 @@ function resRefresh_(ss, sh) {
   sh = sh || ss.getSheetByName(SYNC_SHEET);
   var r = sh ? titleRow_(sh, RES_TITLE) : 0;
   if (!r) return;
-  sh.getRange(r + RES_STATUS, 2).setValue(resInfo_(ss));
+  var info = resInfo_(ss);
+  sh.getRange(r + RES_STATUS, 2).setValue(info);
+  var pu = pultSheet_(ss);
+  if (pu) pu.getRange(PULT_RES_STATUS).setValue(info);
 }
 
 function resInfo_(ss) {
@@ -2180,9 +2258,10 @@ function handleResultsEdit_(e, sh) {
   return true;
 }
 
-function resSend_(ss, sh, r, how) {
+function resSend_(ss, sh, r, how, also) {
   var act = sh.getRange(r + RES_ACTION, 2);
-  var status = function (t) { sh.getRange(r + RES_STATUS, 2).setValue(t); };
+  if (!also) { var pu0 = pultSheet_(ss); if (pu0) also = pu0.getRange(PULT_RES_STATUS); }   // стан видно й на «Пульті»
+  var status = function (t) { sh.getRange(r + RES_STATUS, 2).setValue(t); if (also) also.setValue(t); };
   var now = function () { return Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone() || 'Europe/Kyiv', 'dd.MM.yyyy HH:mm'); };
   act.setValue(RES_IDLE);   // одразу повертаємо «—», щоб випадково не надіслати двічі
   if (!PropertiesService.getScriptProperties().getProperty('BOT_TOKEN')) { status('⚠️ Немає BOT_TOKEN у властивостях скрипта'); return; }
@@ -2435,11 +2514,271 @@ function getSpreadsheetId_() {
   return m ? m[1] : raw;
 }
 
-function readView_(ss, view) {
-  var sheet = ss.getSheetByName(view.sheet);
-  if (!sheet) throw new Error('У таблиці немає аркуша «' + view.sheet + '».');
+// ----- Таблиця поточного раунду -----
 
-  var m = String(view.range).toUpperCase().replace(/\$/g, '').match(/^([A-Z]+)(\d*):([A-Z]+)(\d*)$/);
+var ROUND_SS_ = {};   // відкриті таблиці раунду в межах одного запуску
+
+/** ID таблиці раунду з B2 аркуша «Сайт» (посилання, чип або сам ID), або ''. */
+function roundId_(site) {
+  if (!site) return '';
+  var cell = site.getRange(CELL_ROUND);
+  var raw = String(cell.getDisplayValue()).trim();
+  var m = raw.match(/\/d\/([a-zA-Z0-9_-]{20,})/);
+  if (m) return m[1];
+  try {   // смарт-чип або текст із посиланням: показує назву файлу, а посилання — всередині
+    var rt = cell.getRichTextValue();
+    var url = rt && (rt.getLinkUrl() || rt.getRuns().map(function (x) { return x.getLinkUrl(); }).filter(Boolean)[0]);
+    m = String(url || '').match(/\/d\/([a-zA-Z0-9_-]{20,})/);
+    if (m) return m[1];
+  } catch (e) { /* без форматування */ }
+  return /^[a-zA-Z0-9_-]{30,}$/.test(raw) ? raw : '';
+}
+
+/**
+ * Таблиця раунду (з B2 на «Сайті») або сама адмінка, якщо B2 порожня.
+ * Можна передавати й саму таблицю раунду: у ній немає «Сайту», тож вона повертається як є.
+ */
+function roundSs_(ss) {
+  var id = roundId_(ss.getSheetByName(SYNC_SHEET));
+  if (!id || id === ss.getId()) return ss;
+  if (!ROUND_SS_[id]) {
+    try { ROUND_SS_[id] = SpreadsheetApp.openById(id); }
+    catch (err) { throw new Error('Не вдалося відкрити таблицю раунду з ' + CELL_ROUND + ' на аркуші «' + SYNC_SHEET + '»: перевірте посилання й доступ (' + ((err && err.message) || err) + ')'); }
+  }
+  return ROUND_SS_[id];
+}
+
+/** Аркуш таблиці раунду: «Учасники», «Жеребкування», «Results», «Пульт». */
+function roundSheet_(ss, name) { return roundSs_(ss).getSheetByName(name); }
+
+/** «Пульт» у таблиці раунду (або null). */
+function pultSheet_(ss) { try { return roundSheet_(ss, PULT_SHEET); } catch (e) { return null; } }
+
+/** Турів у раунді з «Пульта» (B5) або null — тоді показуються всі тури з таблиці. */
+function toursLimit_(ss) {
+  var pu = pultSheet_(ss);
+  if (!pu) return null;
+  var n = parseInt(String(pu.getRange(PULT_TOURS).getDisplayValue()).replace(/\s/g, ''), 10);
+  return n > 0 && n <= 50 ? n : null;
+}
+
+/** Скільки турів закладено в таблиці «Results» (найбільше «Тур N» у першому рядку). */
+function toursInSheet_(rs) {
+  var sh = rs.getSheetByName(RESULTS_SHEET);
+  if (!sh || sh.getLastColumn() < 1) return 0;
+  var max = 0;
+  sh.getRange(1, 1, 1, sh.getLastColumn()).getDisplayValues()[0].forEach(function (h) {
+    var m = /^тур\s*(\d+)$/i.exec(String(h).trim());
+    if (m) max = Math.max(max, Number(m[1]));
+  });
+  return max;
+}
+
+/**
+ * Підключає таблицю раунду з B2: тригер правок для неї, «Пульт», колонки «Учасників».
+ * Якщо раунд змінився — забуває, кому й після якого туру вже надсилали особисті результати.
+ */
+function connectRound_(ss) {
+  ROUND_SS_ = {};
+  var rs = roundSs_(ss);
+  var props = PropertiesService.getScriptProperties();
+  var prev = props.getProperty('round:id');
+  if (prev && prev !== rs.getId()) {
+    Object.keys(props.getProperties()).forEach(function (k) { if (/^res:/.test(k)) props.deleteProperty(k); });
+  }
+  props.setProperty('round:id', rs.getId());
+
+  // Тригер правок: один на адмінку й один на таблицю раунду; тригери старих раундів прибираємо
+  var keep = {};
+  keep[ss.getId()] = 0;
+  keep[rs.getId()] = 0;
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() !== 'handleSiteSync') return;
+    var id = t.getTriggerSourceId();
+    if (keep.hasOwnProperty(id) && !keep[id]) { keep[id] = 1; return; }
+    ScriptApp.deleteTrigger(t);
+  });
+  [ss, rs].forEach(function (x) {
+    if (keep[x.getId()]) return;
+    ScriptApp.newTrigger('handleSiteSync').forSpreadsheet(x).onEdit().create();
+    keep[x.getId()] = 1;
+  });
+
+  var reg = rs.getSheetByName(REG_SHEET);
+  if (reg) setupRegSheet_(reg);
+  if (rs.getId() !== ss.getId()) setupPult_(rs, ss);
+  return rs;
+}
+
+/** Заголовки колонок для заявок на аркуші «Учасники» (лише якщо порожні) і колонки оплати. */
+function setupRegSheet_(reg) {
+  [[REG_COL_PHONE, 'Телефон'], [REG_COL_TIME, 'Зареєстровано'], [REG_COL_TG_ID, 'Telegram ID'], [REG_COL_TG_USER, 'Telegram']].forEach(function (x) {
+    var c = reg.getRange(1, x[0]);
+    if (!String(c.getDisplayValue()).trim()) c.setValue(x[1]).setFontWeight('bold');
+  });
+  setupPaidColumn_(reg);
+}
+
+/** Створює або оновлює «Пульт» у таблиці раунду. Значення, які вже вписано, не чіпає. */
+function setupPult_(rs, ss) {
+  var pu = rs.getSheetByName(PULT_SHEET);
+  if (!pu) pu = rs.insertSheet(PULT_SHEET, 0);
+  pu.getRange('A1').setValue('Пульт раунду').setFontWeight('bold').setFontSize(13);
+  var text = '↗ Адмінка: налаштування сайту, реєстрації й розсилки';
+  pu.getRange('A2:B2').merge();
+  pu.getRange('A2').setRichTextValue(SpreadsheetApp.newRichTextValue().setText(text).setLinkUrl(ss.getUrl()).build())
+    .setFontColor('#475467');
+  pu.getRange('A3:A7').setValues([['Дія'], ['Остання публікація'], ['Турів у раунді'], ['Особисті результати'], ['Стан розсилки']])
+    .setFontWeight('bold').setVerticalAlignment('top');
+
+  var pub = pu.getRange(PULT_PUBLISH);
+  pub.clearDataValidations();
+  pub.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList([ACTION_IDLE, ACTION_PUBLISH], true).setAllowInvalid(false).build());
+  pub.setValue(ACTION_IDLE).setFontWeight('bold').setBackground('#e8f3d6');
+
+  pu.getRange(PULT_STATUS).setWrap(true).setVerticalAlignment('top');
+
+  var tours = pu.getRange(PULT_TOURS);
+  var curTours = String(tours.getDisplayValue()).trim();
+  tours.clearDataValidations();
+  tours.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['10', '12'], true).setAllowInvalid(true)
+    .setHelpText('Скільки турів у цьому раунді (можна вписати своє число). Сайт показує «Тур X з N», а після N-го туру — підсумкові результати.').build());
+  tours.setNumberFormat('@').setFontWeight('bold').setBackground('#e3f0fa').setHorizontalAlignment('left');
+  if (!curTours) { var n = toursInSheet_(rs); if (n) tours.setValue(String(n)); }
+
+  var res = pu.getRange(PULT_RES);
+  res.clearDataValidations();
+  res.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList([RES_IDLE, RES_SEND, RES_RESEND], true).setAllowInvalid(false).build());
+  res.setValue(RES_IDLE).setFontWeight('bold').setBackground('#fde7e7');
+
+  pu.getRange(PULT_RES_STATUS).setWrap(true).setVerticalAlignment('top');
+
+  var help = pu.getRange('A8:B8');
+  help.merge().setWrap(true).setFontColor('#475467').setVerticalAlignment('top');
+  help.setValue('B3 — «' + ACTION_PUBLISH + '»: глядачі побачать поточні дані з цієї таблиці (що саме показувати — «Що показувати» в адмінці). ' +
+    '\nB5 — турів у раунді. Тури понад це число на сайті не показуються, а після N-го туру результати стають підсумковими ' +
+    '(переможець, «Дякуємо за участь»). Зміна застосується після наступної публікації. ' +
+    '\nB6 — особисті результати в Telegram кожному учаснику після публікації. «' + RES_SEND + '» — двічі за той самий тур не надішле; ' +
+    '«' + RES_RESEND + '» — якщо після надсилання виправили помилку в таблиці. Фото й тест собі — у блоці «' + RES_TITLE + '» в адмінці.');
+  pu.setRowHeight(8, 110);
+  pu.setColumnWidth(1, 170);
+  pu.setColumnWidth(2, 460);
+  try { pu.getRange(PULT_RES_STATUS).setValue(resInfo_(ss)); } catch (err) { console.error(err); }
+  return pu;
+}
+
+/** Правка на «Пульті». */
+function handlePultEdit_(e, ss, pu) {
+  if (e.range.getNumRows() !== 1 || e.range.getNumColumns() !== 1) return;
+  var a1 = e.range.getA1Notation();
+  var v = String(e.value == null ? '' : e.value).trim();
+  var site = ss.getSheetByName(SYNC_SHEET);
+  if (a1 === PULT_PUBLISH) {
+    if (v !== ACTION_PUBLISH) return;
+    pu.getRange(PULT_STATUS).setValue('⏳ Публікуємо…');
+    SpreadsheetApp.flush();
+    try {
+      writeStatus_(site, publish_(ss));
+    } catch (err) {
+      var msg = '❌ Помилка: ' + ((err && err.message) || err);
+      pu.getRange(PULT_STATUS).setValue(msg);
+      if (site) site.getRange(CELL_STATUS).setValue(msg);
+    } finally {
+      e.range.setValue(ACTION_IDLE);
+    }
+    return;
+  }
+  if (a1 === PULT_TOURS) {
+    var n = toursLimit_(ss);
+    pu.getRange(PULT_STATUS).setValue(n ? 'Турів у раунді: ' + n + '. Застосується після «' + ACTION_PUBLISH + '» (B3).'
+      : '⚠️ Впишіть у B5 кількість турів, напр. 10 або 12 (порожньо — показуються всі тури з таблиці)');
+    return;
+  }
+  if (a1 === PULT_RES) {
+    if (v !== RES_SEND && v !== RES_RESEND) return;
+    e.range.setValue(RES_IDLE);
+    var r = site ? titleRow_(site, RES_TITLE) : 0;
+    if (!r) { pu.getRange(PULT_RES_STATUS).setValue('⚠️ В адмінці немає блоку «' + RES_TITLE + '» — запустіть setupSync'); return; }
+    resSend_(ss, site, r, v, pu.getRange(PULT_RES_STATUS));
+  }
+}
+
+/** Номер колонки → літери (1 → A, 27 → AA). */
+function colLetters_(n) {
+  var s = '';
+  while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); }
+  return s;
+}
+
+/**
+ * Діапазон «авто» за заголовками (рядки 1–2): «Тури» — від першого «#» до «Місце»,
+ * «Результат» — від другого «#» до останньої колонки із заголовком. Повертає 'A1:AG' або ''.
+ */
+function autoRange_(sheet, name) {
+  var w = sheet.getLastColumn();
+  if (w < 1 || sheet.getLastRow() < 1) return '';
+  var h = sheet.getRange(1, 1, Math.min(2, sheet.getMaxRows()), w).getDisplayValues();
+  var r0 = h[0], r1 = h[1] || [];
+  var lab = function (c) { return String(r0[c] || '').trim() || String(r1[c] || '').trim(); };
+  var hashes = [];
+  for (var c = 0; c < w; c++) if (/^[#№]$/.test(String(r0[c] || '').trim())) hashes.push(c);
+  var start, end = -1;
+  if (/^тур/i.test(name)) {
+    start = hashes.length ? hashes[0] : 0;
+    for (c = start; c < w; c++) {
+      if (/^місце$/i.test(String(r0[c] || '').trim()) || /^місце$/i.test(String(r1[c] || '').trim())) { end = c; break; }
+    }
+  } else {
+    if (hashes.length < 2) return '';
+    start = hashes[1];
+    for (c = start; c < w && lab(c); c++) end = c;
+  }
+  if (end < start) return '';
+  return colLetters_(start + 1) + '1:' + colLetters_(end + 1);
+}
+
+/** Прибирає з вкладки «Тури» колонки турів, номер яких більший за n (разом з об'єднаними клітинками). */
+function trimTours_(view, n) {
+  var vals = view.values || [];
+  var top = vals[0] || [];
+  var starts = [];
+  top.forEach(function (h, c) { var m = /^тур\s*(\d+)$/i.exec(String(h).trim()); if (m) starts.push({ n: Number(m[1]), c: c }); });
+  if (!starts.length) return view;
+  var w = 0;
+  vals.forEach(function (r) { w = Math.max(w, r.length); });
+  var drop = {}, any = false;
+  starts.forEach(function (t, i) {
+    if (t.n <= n) return;
+    var end = t.c + 1;
+    if (i + 1 < starts.length) end = starts[i + 1].c;
+    else while (end < w && !String(top[end] == null ? '' : top[end]).trim()) end++;
+    for (var c = t.c; c < end; c++) { drop[c] = true; any = true; }
+  });
+  if (!any) return view;
+  var before = [], k = 0;   // before[c] — скільки колонок лишається лівіше c
+  for (var c = 0; c <= w; c++) { before[c] = k; if (!drop[c]) k++; }
+  var out = {};
+  Object.keys(view).forEach(function (key) { out[key] = view[key]; });
+  out.values = vals.map(function (r) { return r.filter(function (x, c) { return !drop[c]; }); });
+  out.merges = (view.merges || []).map(function (m) {
+    var c2 = Math.min(m.c + m.cs, w);
+    var cs = before[c2] - before[m.c];
+    return { r: m.r, c: before[m.c], rs: m.rs, cs: cs };
+  }).filter(function (m) { return m.cs > 0; });
+  return out;
+}
+
+function readView_(ss, view) {
+  var sheet = roundSheet_(ss, view.sheet);
+  if (!sheet) throw new Error('У таблиці раунду немає аркуша «' + view.sheet + '».');
+
+  var rangeA1 = String(view.range || '').trim();
+  if (!rangeA1 || rangeA1.toLowerCase() === RANGE_AUTO) {
+    rangeA1 = autoRange_(sheet, view.name);
+    if (!rangeA1) throw new Error('Не вдалося знайти блок «' + view.name + '» на аркуші «' + view.sheet +
+      '» (потрібні заголовки «#» і «Місце»). Вкажіть діапазон вручну в блоці «' + RANGES_TITLE + '».');
+  }
+  var m = rangeA1.toUpperCase().replace(/\$/g, '').match(/^([A-Z]+)(\d*):([A-Z]+)(\d*)$/);
   if (!m) throw new Error('Неправильний діапазон «' + view.range + '» для вкладки «' + view.name + '».');
   var c1 = colIndex_(m[1]);
   var c2 = colIndex_(m[3]);

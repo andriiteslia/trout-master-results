@@ -7,7 +7,9 @@
 - **Сайт:** https://troutmaster.app/ (домен у Cloudflare, DNS only → GitHub Pages; стара адреса github.io перенаправляє сюди). Це vanilla JS без фреймворків; збирання — лише склеювання модулів `src/` скриптом `tools/build.js`. Хоститься на GitHub Pages з гілки `main`.
 - **Telegram Mini App:** @troutmasterua_bot (`t.me/troutmasterua_bot?startapp`). Це той самий сайт усередині Telegram.
 - **Дані:** Google Таблиця → Apps Script (`apps-script/Code.gs`) → JSON → сайт опитує його кожні 15 с.
-  - Таблиця раунду: `13wvgmiuQeCl6ap4QmScSdf1dR0_wUuljV9-1-GggLdk`, аркуш «Сайт».
+  - Адмінка: `13wvgmiuQeCl6ap4QmScSdf1dR0_wUuljV9-1-GggLdk` — «Сайт», «Положення», «Відвідування», журнали, «Партнери».
+  - Таблиця поточного раунду — посилання в B2 «Сайту»: «Учасники», «Жеребкування», «Results», «Пульт» (B3 публікація, B5 турів у раунді, B6 особисті результати). R1 `1keT0ZrbGc-Z6y-yTL2nuDjI6z6HdfBuMmzhIOyG1G94` (архів у `rounds/round-1.json`), R2 `1ycZJiQcpi6E3G-1Pe0QoBlaKWiGj0BUSVxbBSvLh55k` (12 турів).
+  - Діапазони «Тури»/«Результат» — «авто» (за заголовками «#» і «Місце»). «Турів у раунді» обрізає тури в публікації (`trimTours_`), payload.tours = N.
 - **Партнер:** FISH.ME.FISH, `t.me/fishmefish_japan`, логотип у `assets/partners/fishmefish.svg`.
 - **Власник:** Андрій Тесля. Пише українською й любить преміальний, вилизаний дизайн.
 

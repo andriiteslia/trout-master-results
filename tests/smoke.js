@@ -90,6 +90,23 @@ const TESTS = {
     await t.ctx.close(); return t.errors;
   },
 
+  'раунд на 10 турів (Пульт): «Тур 10 з 10», переможець, без 11-го туру': async (b) => {
+    for (const opts of [DESK, MOB]) {
+      const t = await page(b, opts, 'tours10');
+      const txt = await t.p.evaluate(() => document.body.innerText);
+      assert(/Тур 10 з 10/.test(txt) || opts === MOB, 'немає «Тур 10 з 10»');
+      assert(/Переможець/.test(txt) || opts === MOB, 'немає «Переможець»');
+      await shot(t.p, opts === DESK ? 'desk-tours10' : 'mob-tours10');
+      await t.p.click('#tab-1'); await t.p.waitForTimeout(600);
+      const cols = await t.p.locator('#board .tgrid .tr-head .t-c').count();
+      assert(cols === 10, 'у «По турах» не 10 турів: ' + cols);
+      await shot(t.p, opts === DESK ? 'desk-tours10-tab' : 'mob-tours10-tab');
+      await t.ctx.close();
+      if (t.errors.length) return t.errors;
+    }
+    return [];
+  },
+
   'desktop card: вибір рядка → таблетка → картка → назад': async (b) => {
     const t = await page(b, DESK, 'results');
     const row = t.p.locator('#board [data-key]').nth(4);
