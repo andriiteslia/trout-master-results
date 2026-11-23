@@ -151,3 +151,12 @@
 .home__head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
 .home__htxt { min-width: 0; }
 .home__acts { display: flex; gap: 10px; flex: none; margin-bottom: 6px; }   /* низ кнопок = низ підзаголовка, як на сторінці раунду */
+
+/* Телефон і Telegram: без «Сезон…», заголовка й підзаголовка — одразу картка поточного раунду
+   (логотип уже в навбарі, назва — на банері). Заголовок лишається для читачів екрана */
+@media (max-width: 979px) {
+  .home__kicker, .home__lead { display: none !important; }
+  .home__head { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .home__col--cur { margin-top: 0; }
+  .home__inner { padding-top: 16px; }
+}
