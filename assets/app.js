@@ -4700,10 +4700,12 @@
   var HOME_MONTHS = MONTHS_FULL;
   function subParts(r) { return String((I18N.en && r.subtitleEn) || r.subtitle || '').split(/\s*[•·]\s*/).filter(Boolean); }
   // Банер з Google Drive: пряма адреса lh3.googleusercontent.com (без переадресації, браузер її кешує)
+  var BANNER_V = 2;
   function bannerSrc(u) {
     var m = /^https:\/\/drive\.google\.com\/thumbnail\?id=([\w-]+)/.exec(String(u || ''));
     var v = /[?&]v=(\d+)/.exec(String(u || ''));   // час зміни файлу: нова картинка в тому ж файлі — нова адреса
-    return m ? 'https://lh3.googleusercontent.com/d/' + m[1] + '=w1200' + (v ? '?v=' + v[1] : '') : u;
+    // BANNER_V — підняти, коли iPhone/Telegram тримає старе фото, а Drive не змінив час файлу
+    return m ? 'https://lh3.googleusercontent.com/d/' + m[1] + '=w1200?v=' + (v ? v[1] : '0') + '&b=' + BANNER_V : u;
   }
   function bannerHtml(r, cls) {
     var ph = '<span class="hb-ph"><small>TROUT MASTER</small><b>ROUND ' + r.n + '</b></span>';
