@@ -163,7 +163,8 @@ var PULT_DEADLINE_TIME = 'C19'; // кінець реєстрації: час
 var PULT_FEE = 'B20';       // вартість участі
 var PULT_PAYCARD = 'B21';   // реквізити для оплати
 var PULT_PAY = 'B22';       // кнопка «Оплатити участь»: Показувати / Приховати
-var PULT_HELP_ROW = 23;     // підказка під налаштуваннями
+var PULT_PAYURL = 'B23';    // посилання на банку Monobank цього раунду (порожньо — з config.js сайту)
+var PULT_HELP_ROW = 24;     // підказка під налаштуваннями
 var RULES_ON = 'Показувати';
 var RULES_OFF = 'Приховати';      // що показувати: «Список учасників» / «Результати» (те саме, що B5 адмінки — синхронізуються)
 
@@ -828,6 +829,8 @@ function buildPayload_(ss, arch) {
   var fee = sh ? String(regCell_(sh, 'fee', rpu).getDisplayValue()).trim() || null : null;
   var payCard = sh ? String(regCell_(sh, 'paycard', rpu).getDisplayValue()).trim() || null : null;
   var payOn = !arch && (!sh || String(regCell_(sh, 'pay', rpu).getDisplayValue()).trim() !== PAY_OFF);
+  var payUrl = null;
+  if (rpu) { var pu0 = String(rpu.getRange(PULT_PAYURL).getDisplayValue()).trim(); if (/^https:\/\/\S+$/.test(pu0)) payUrl = pu0; }
   var paid = [];
   if (!arch) try { paid = paidNames_(ss); } catch (err) { console.error(err); }
   var regAt = {};
@@ -857,6 +860,7 @@ function buildPayload_(ss, arch) {
     seats: seats,
     fee: fee,
     payCard: payCard,
+    payUrl: payUrl,
     payOn: payOn,
     paid: paid,
     regAt: regAt,
@@ -3151,7 +3155,7 @@ function setupPult_(rs, ss, n, prefill) {
     pu.getRange('A8:B9').clearContent();
   }
   // Підказка була в A10:B10 або A11:B11 — звільняємо рядки під «Що показувати» й локацію
-  ['A10:B10', 'A11:B11', 'A14:B14', 'A15:B15', 'A18:B18'].forEach(function (a) {
+  ['A10:B10', 'A11:B11', 'A14:B14', 'A15:B15', 'A18:B18', 'A23:B23'].forEach(function (a) {
     var c = pu.getRange(a.split(':')[0]);
     if (c.isPartOfMerge() || String(c.getDisplayValue()).indexOf('B3 —') === 0) {
       pu.getRange(a).breakApart();
@@ -3237,7 +3241,7 @@ function setupPult_(rs, ss, n, prefill) {
   pu.getRange('A15:B15').breakApart();
 
   // Реєстрація й оплата цього раунду (порожньо — як на «Сайті» адмінки)
-  pu.getRange('A18:A22').setValues([['Реєстрація'], ['Кінець реєстрації'], ['Вартість участі'], ['Реквізити для оплати'], ['Кнопка «Оплатити»']])
+  pu.getRange('A18:A23').setValues([['Реєстрація'], ['Кінець реєстрації'], ['Вартість участі'], ['Реквізити для оплати'], ['Кнопка «Оплатити»'], ['Банка Monobank']])
     .setFontWeight('bold').setVerticalAlignment('top');
   pu.getRange(PULT_REG).setDataValidation(SpreadsheetApp.newDataValidation()
     .requireValueInList([REG_OPEN, REG_CLOSED], true).setAllowInvalid(false).build());
@@ -3252,8 +3256,8 @@ function setupPult_(rs, ss, n, prefill) {
   times0.push('23:59');
   pu.getRange(PULT_DEADLINE_TIME).setNumberFormat('@').setDataValidation(SpreadsheetApp.newDataValidation()
     .requireValueInList(times0, true).setAllowInvalid(true).setHelpText('Час завершення, напр. 20:00. Можна вписати свій.').build());
-  [PULT_FEE, PULT_PAYCARD].forEach(function (a) { pu.getRange(a).setNumberFormat('@'); });
-  [PULT_REG, PULT_DEADLINE, PULT_DEADLINE_TIME, PULT_FEE, PULT_PAYCARD, PULT_PAY].forEach(function (a) {
+  [PULT_FEE, PULT_PAYCARD, PULT_PAYURL].forEach(function (a) { pu.getRange(a).setNumberFormat('@'); });
+  [PULT_REG, PULT_DEADLINE, PULT_DEADLINE_TIME, PULT_FEE, PULT_PAYCARD, PULT_PAY, PULT_PAYURL].forEach(function (a) {
     pu.getRange(a).setFontWeight('bold').setBackground('#fdf3e1').setHorizontalAlignment('left');
   });
   // Поточний раунд: один раз переносимо сюди значення з «Сайту», щоб усе про раунд було тут
@@ -3273,6 +3277,8 @@ function setupPult_(rs, ss, n, prefill) {
   pu.getRange(PULT_FEE).setNote('Вартість участі. Число (1700) — на сайті «1 700 грн». Можна текстом. Порожньо — як на «Сайті».');
   pu.getRange(PULT_PAYCARD).setNote('Реквізити: номер картки (можна з ім\'ям). В апці «Оплатити участь» → «Скопіювати реквізити».');
   pu.getRange(PULT_PAY).setNote('Кнопка «Оплатити участь» на сайті й у Telegram: «' + PAY_ON + '» або «' + PAY_OFF + '».');
+  pu.getRange(PULT_PAYURL).setNote('Посилання на банку Monobank саме цього раунду, напр. https://send.monobank.ua/jar/AbC123. Кнопка «Оплатити в Monobank». Порожньо — банка з налаштувань сайту (config.js).');
+  pu.setRowHeight(23, 21);
   if (pu.getColumnWidth(3) < 90) pu.setColumnWidth(3, 90);
   pu.setRowHeight(18, 21);
 
@@ -3293,7 +3299,8 @@ function setupPult_(rs, ss, n, prefill) {
   help.setValue(help.getDisplayValue() + '\nB15 — кількість місць (основний склад до резерву). B16, B17 — секторів на верхньому й нижньому березі. ' +
     'Порожньо — як на «Сайті» адмінки. У режимі «' + MODE_REG + '» зміна публікується одразу, інакше — після «' + ACTION_PUBLISH + '» (B3).');
   help.setValue(help.getDisplayValue() + '\nB18–B22 — реєстрація цього раунду: відкрита чи закрита, кінець реєстрації (дата + час праворуч; у цей момент скрипт сам закриє реєстрацію), ' +
-    'вартість, реквізити й кнопка «Оплатити». Порожньо — як на «Сайті» адмінки. Зміна одразу публікує дані в режимі «' + MODE_REG + '».');
+    'вартість, реквізити й кнопка «Оплатити». Порожньо — як на «Сайті» адмінки. B23 — банка Monobank цього раунду (порожньо — банка з налаштувань сайту). ' +
+    'Зміна одразу публікує дані в режимі «' + MODE_REG + '».');
   pu.setRowHeight(15, 21);
   pu.setRowHeight(PULT_HELP_ROW, 340);
   pu.setColumnWidth(1, 170);
@@ -3338,7 +3345,7 @@ function handlePultEdit_(e, ss, pu) {
     } else pu.getRange(PULT_STATUS).setValue('Положення: ' + v + '. Застосується після «' + ACTION_PUBLISH + '» (B3).');
     return;
   }
-  if (a1 === PULT_REG || a1 === PULT_DEADLINE || a1 === PULT_DEADLINE_TIME || a1 === PULT_FEE || a1 === PULT_PAYCARD || a1 === PULT_PAY) {
+  if (a1 === PULT_REG || a1 === PULT_DEADLINE || a1 === PULT_DEADLINE_TIME || a1 === PULT_FEE || a1 === PULT_PAYCARD || a1 === PULT_PAY || a1 === PULT_PAYURL) {
     if (site) { try { scheduleRegClose_(site); } catch (err) { console.error(err); } }
     if (site && currentMode_(site) === MODE_REG) {
       pu.getRange(PULT_STATUS).setValue('⏳ Публікуємо…');

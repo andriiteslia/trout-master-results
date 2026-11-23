@@ -437,6 +437,7 @@ const TESTS = {
     assert(await visible(t.p, '#paySheet'), 'не відкрився попап оплати');
     assert(/^4441 \*{4} \*{4} 5566/.test((await t.p.textContent('#payCard')).trim()), 'у попапі номер картки не замаскований «4441 **** **** 5566»');
     await shot(t.p, 'mob-paysheet');
+    assert(/send\.monobank\.ua\/jar\/R2test/.test(await t.p.getAttribute('#paySheet [data-pay="mono"]', 'href')), 'у попапі не банка раунду (payUrl з «Пульта»)');
     await t.p.click('#paySheet .mapsheet__btn--x'); await t.p.waitForTimeout(400);
     await t.p.click('#heroLinks [data-info="rules"]'); await t.p.waitForTimeout(800);
     assert((await t.p.textContent('#tsTitle')) === 'Положення', 'не відкрився екран «Положення»');

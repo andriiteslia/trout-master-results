@@ -157,8 +157,8 @@
     document.getElementById('payFeeS').hidden = !fee;
     document.getElementById('payCopyTxt').textContent = 'Скопіювати реквізити';
     paySheet.querySelector('[data-pay="copy"]').classList.remove('is-done');
-    paySheet.querySelector('[data-pay="mono"]').href = PAY_URL;
-    paySheet.querySelector('[data-pay="mono"]').hidden = !PAY_URL;
+    paySheet.querySelector('[data-pay="mono"]').href = payUrl();
+    paySheet.querySelector('[data-pay="mono"]').hidden = !payUrl();
     paySheet.hidden = false;
     requestAnimationFrame(function () { paySheet.classList.add('is-on'); });
   }

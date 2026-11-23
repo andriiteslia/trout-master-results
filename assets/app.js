@@ -3326,7 +3326,12 @@
     return fee;
   }
   // Біла кнопка «Оплатити участь» під плитками (телефон, лише в режимі «Список учасників»)
-  var PAY_URL = String(CFG.PAY_URL || '').trim();
+  // Банка Monobank: своя для кожного раунду («Пульт» B23 → payload.payUrl); порожньо — з config.js
+  var CFG_PAY_URL = String(CFG.PAY_URL || '').trim();
+  function payUrl() {
+    var u = String((state.payload && state.payload.payUrl) || '').trim();
+    return /^https:\/\//.test(u) ? u : CFG_PAY_URL;
+  }
   // Учасник, якого апка впізнала (Telegram), уже з галочкою «Оплата» — оплату не показуємо (досить значка в його рядку)
   function isPaidMe() {
     var paid = {}, mine = state.myNames || [];
@@ -3334,13 +3339,13 @@
     return mine.length > 0 && mine.every(function (n) { return paid[normName(n)]; });
   }
   // payload.payOn === false — організатор сховав кнопку (D14 на аркуші «Сайт»)
-  function canPay() { return !!(PAY_URL && state.payload && state.payload.payOn !== false && isListMode() && !isPaidMe()); }
+  function canPay() { return !!((payUrl() || (state.payload && state.payload.payCard)) && state.payload && state.payload.payOn !== false && isListMode() && !isPaidMe()); }
   // Натиснули «Оплатити участь» (кнопка або плитка): є реквізити — попап, інакше одразу Monobank
   function startPay(e) {
     if (state.payload && state.payload.payCard) { if (e) e.preventDefault(); openPaySheet(); return; }
     var tg = IN_TG ? tgApp() : null;
-    if (tg && typeof tg.openLink === 'function') { if (e) e.preventDefault(); tg.openLink(PAY_URL); }
-    else if (!e) window.open(PAY_URL, '_blank', 'noopener');
+    if (tg && typeof tg.openLink === 'function') { if (e) e.preventDefault(); tg.openLink(payUrl()); }
+    else if (!e) window.open(payUrl(), '_blank', 'noopener');
   }
   function renderPay() {
     var box = document.getElementById('payBox');
@@ -3349,7 +3354,7 @@
     box.hidden = !on;
     if (!on) return;
     var btn = document.getElementById('payBtn');
-    if (btn.getAttribute('href') !== PAY_URL) btn.setAttribute('href', PAY_URL);
+    if (btn.getAttribute('href') !== payUrl()) btn.setAttribute('href', payUrl());
     var fee = feeText(), f = document.getElementById('payFee');
     f.hidden = !fee;
     if (fee) f.innerHTML = '<span>Вартість: ' + esc(fee) + '</span>';
@@ -4116,8 +4121,8 @@
     document.getElementById('payFeeS').hidden = !fee;
     document.getElementById('payCopyTxt').textContent = 'Скопіювати реквізити';
     paySheet.querySelector('[data-pay="copy"]').classList.remove('is-done');
-    paySheet.querySelector('[data-pay="mono"]').href = PAY_URL;
-    paySheet.querySelector('[data-pay="mono"]').hidden = !PAY_URL;
+    paySheet.querySelector('[data-pay="mono"]').href = payUrl();
+    paySheet.querySelector('[data-pay="mono"]').hidden = !payUrl();
     paySheet.hidden = false;
     requestAnimationFrame(function () { paySheet.classList.add('is-on'); });
   }
