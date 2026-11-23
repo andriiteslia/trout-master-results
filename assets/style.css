@@ -2728,3 +2728,7 @@ body > .topbar, body > .hero, body > .foot { flex: none; }
   .view-stats .ts-hero--home { padding-top: 24px; }
 }
 @media (min-width: 980px) and (hover: hover) { .ts-hero--home .pc-back:hover { background: #e4e7ec !important; } }
+
+/* Плашка стану турніру — в одному рядку з датою й місцем (не над заголовком) */
+.hero__metarow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.hero__metarow .pill { align-self: center; }

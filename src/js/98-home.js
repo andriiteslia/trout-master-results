@@ -200,3 +200,15 @@
       }
     }
   });
+
+  // Вставили …/#r1 у ту саму вкладку — відкрити цей раунд
+  window.addEventListener('hashchange', function () {
+    var m = /^#r(\d+)$/.exec(location.hash);
+    if (!m || !hasHome()) return;
+    var n = parseInt(m[1], 10);
+    if (!homeSeason().rounds.some(function (r) { return r.n === n; })) return;
+    var cur = homeCurrent();
+    if (state.view === 'list' && (HOME.n === n || (!HOME.n && cur && cur.n === n))) return;
+    HOME.pushed = false;
+    openRound(n, true);
+  });

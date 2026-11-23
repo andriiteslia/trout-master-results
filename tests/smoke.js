@@ -103,7 +103,7 @@ const TESTS = {
       await shot(t.p, tag + '-home');
       await t.p.click('.hx'); await t.p.waitForTimeout(1200);
       assert((await t.p.textContent('#title')) === 'TM • Round 1', 'архів R1 не відкрився');
-      assert(/завершено/.test(await t.p.textContent('#heroPill')), 'R1 не завершений');
+      assert(await t.p.locator('#heroPill').isHidden(), 'після фіналу плашки «завершено» не має бути');
       assert(await visible(t.p, '#heroBack'), 'немає «Усі раунди»');
       await shot(t.p, tag + '-arch');
       await t.p.click('#heroBack'); await t.p.waitForTimeout(800);
@@ -141,11 +141,11 @@ const TESTS = {
     await t.ctx.close(); return t.errors;
   },
 
-  'раунд на 10 турів (Пульт): «Тур 10 з 10», переможець, без 11-го туру': async (b) => {
+  'раунд на 10 турів (Пульт): «10 / 10», переможець, без 11-го туру': async (b) => {
     for (const opts of [DESK, MOB]) {
       const t = await page(b, opts, 'tours10');
       const txt = await t.p.evaluate(() => document.body.innerText);
-      assert(/Тур 10 з 10/.test(txt) || opts === MOB, 'немає «Тур 10 з 10»');
+      assert(/10\s*\/\s*10/.test(txt), 'немає «10 / 10» турів');
       assert(/Переможець/.test(txt) || opts === MOB, 'немає «Переможець»');
       await shot(t.p, opts === DESK ? 'desk-tours10' : 'mob-tours10');
       await t.p.click('#tab-1'); await t.p.waitForTimeout(600);

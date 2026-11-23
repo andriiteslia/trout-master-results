@@ -3229,7 +3229,8 @@
       pillOn = open;
     } else if (t) {
       var pl = playedTours(t);
-      pill = pl >= t.rounds ? 'Тур ' + t.rounds + ' з ' + t.rounds + ' · завершено' : pl ? 'Зіграно ' + pl + ' з ' + t.rounds + ' турів' : '';
+      // Після останнього туру плашки немає: «завершено» видно з плиток (переможець, «Турів зіграно 14 / 14»)
+      pill = pl >= t.rounds ? '' : pl ? 'Зіграно ' + pl + ' з ' + t.rounds + ' турів' : '';
       pillOn = pl > 0 && pl < t.rounds;
     }
     v2.pill.innerHTML = pill ? '<i aria-hidden="true"></i>' + esc(pill) : '';
@@ -4752,6 +4753,18 @@
         openRound(n, true);
       }
     }
+  });
+
+  // Вставили …/#r1 у ту саму вкладку — відкрити цей раунд
+  window.addEventListener('hashchange', function () {
+    var m = /^#r(\d+)$/.exec(location.hash);
+    if (!m || !hasHome()) return;
+    var n = parseInt(m[1], 10);
+    if (!homeSeason().rounds.some(function (r) { return r.n === n; })) return;
+    var cur = homeCurrent();
+    if (state.view === 'list' && (HOME.n === n || (!HOME.n && cur && cur.n === n))) return;
+    HOME.pushed = false;
+    openRound(n, true);
   });
   // ===== src/js/99-start.js — Старт: дані з кешу, перший рендер, завантаження =====
   // ---------- Start ----------
