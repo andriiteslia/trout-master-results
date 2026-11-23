@@ -160,3 +160,6 @@
   .home__col--cur { margin-top: 0; }
   .home__inner { padding-top: 16px; }
 }
+
+/* Футер завжди внизу й на головній (на сторінці раунду розтягується .main, тут — сама головна) */
+body > .home { flex: 1 0 auto; }
