@@ -95,3 +95,11 @@
 }
 @media (min-width: 980px) and (hover: hover) { .list-home .hero-back:hover { background: #e4e7ec; } }
 @keyframes homeSkel { to { background-position: -200% 0; } }
+
+/* Статистика раунду (коли є головна): зліва вгорі «← Результати», як «← Усі раунди» на сторінці раунду */
+@media (min-width: 980px) {
+  .ts-hero--home .pc-hero__bar { display: flex; margin-bottom: 6px; }
+  .ts-hero--home .pc-back { background: transparent !important; color: #344054; }
+  .view-stats .ts-hero--home { padding-top: 24px; }
+}
+@media (min-width: 980px) and (hover: hover) { .ts-hero--home .pc-back:hover { background: #e4e7ec !important; } }

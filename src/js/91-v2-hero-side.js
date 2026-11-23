@@ -93,7 +93,9 @@
     v2.heroStats.hidden = !stats || list;
     v2.heroReg.hidden = !(list && regOpenNow());
     // Меню
-    v2.topnav.hidden = !p || !stats;   // одна вкладка «Учасники» нічого не перемикає — не показуємо
+    // одна вкладка «Учасники» нічого не перемикає — не показуємо; з головною (картки раундів) перемикача немає:
+    // у статистику — кнопкою «Статистика», назад — «← Результати» зліва вгорі
+    v2.topnav.hidden = !p || !stats || hasHome();
     v2.navList.textContent = list ? 'Учасники' : 'Результати';
     v2.navStats.hidden = !stats;
     v2.navList.setAttribute('aria-current', state.view === 'list' ? 'page' : 'false');

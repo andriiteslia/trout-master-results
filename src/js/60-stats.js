@@ -145,8 +145,11 @@
     (S.totals || []).forEach(function (x, i) { if (x && (!best || x.fish > best.fish)) best = { n: i + 1, fish: x.fish }; });
     var I_BACK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
     var I_TABLE = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M3 14.5h18M9 9.5V20"/></svg>';
-    var h = '<header class="pc-hero ts-hero"><div class="pc-hero__bar m-only">' +
-      '<button type="button" class="hero-back pc-back" data-act="back">' + I_BACK + '<span>' + (isListMode() ? 'Учасники' : 'Підсумок') + '</span></button></div>' +
+    var home = hasHome();   // є головна з картками раундів — «Назад» і на комп'ютері
+    var backTxt = isListMode() ? 'Учасники' : 'Підсумок';
+    var h = '<header class="pc-hero ts-hero' + (home ? ' ts-hero--home' : '') + '"><div class="pc-hero__bar' + (home ? '' : ' m-only') + '">' +
+      '<button type="button" class="hero-back pc-back" data-act="back">' + I_BACK +
+      (home ? '<span class="l-m">' + backTxt + '</span><span class="l-d">Результати</span>' : '<span>' + backTxt + '</span>') + '</button></div>' +
       '<div class="ts-hero__main"><div class="pc-head__txt"><h1 class="title" id="tsTitle" tabindex="-1">Статистика</h1>' +
       '<p class="pc-sub">' + esc([ev.title].concat(sub).filter(Boolean).join(' · ')) + '</p></div>' +
       '<button type="button" class="btn2 btn2-dark d-only" data-act="back">' + I_TABLE + '<span>Результати</span></button></div>' +
