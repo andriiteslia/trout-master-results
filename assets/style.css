@@ -2538,6 +2538,11 @@ html:has(.mapsheet:not([hidden])) .toast { z-index: 260; }
 
 /* Місце на поточному турі перед іменем: «10 · Логінов Ігор» */
 .bump__pl { font-weight: 800; color: #8ed12b; margin-right: 6px; padding-right: 6px; border-right: 1px solid rgba(255,255,255,.25); font-variant-numeric: normal; }
+
+/* Швидкість ▶︎: 1× → 1.5× → 2× (біля кнопки програвання) */
+.bump__spd { flex: none; height: 32px; min-width: 46px; padding: 0 10px; border: 1px solid #e4e7ec; border-radius: 999px; background: #fff; color: #0a0a0a; font: inherit; font-size: 13px; font-weight: 750; cursor: pointer; -webkit-tap-highlight-color: transparent; box-shadow: 0 1px 2px rgba(16, 24, 40, .05); transition: background .15s, border-color .15s, color .15s; }
+.bump__spd.is-fast { background: #eef6e3; border-color: #cfe5b0; color: #3f7d0f; }
+.bump__spd:active { transform: scale(.96); }
 /* ===== src/css/98-empty-logo.css ===== */
 /* Логотип у навбарі — посилання на головну */
 .logo-link { display: block; flex: none; border-radius: 8px; -webkit-tap-highlight-color: transparent; }

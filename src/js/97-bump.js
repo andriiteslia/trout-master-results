@@ -30,7 +30,8 @@
     };
   }
 
-  var BUMP = { v: 1, raf: 0, hl: null, D: null };
+  var BUMP = { v: 1, raf: 0, hl: null, D: null, spd: 1 };   // spd — швидкість ▶︎ (1×, 1.5×, 2×)
+  var BUMP_TOUR_MS = 1000;            // тривалість одного туру при 1×
   var BUMP_ROW = 34, BUMP_PAD = 18;   // висота рядка й відступ зверху/знизу (px)
   var BUMP_SX = 0.35;                 // приблизно px екрана на одиницю X (viewBox 1000 по ширині ~350 px) — для заокруглення зламів
 
@@ -94,6 +95,7 @@
       '</div>' +
       '<div class="bump__ctl">' +
         '<button type="button" class="bump__play" id="bumpPlay" aria-label="Програти тури"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5.5v13l11-6.5z"/><path class="i-pause" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>' +
+        '<button type="button" class="bump__spd' + (BUMP.spd > 1 ? ' is-fast' : '') + '" id="bumpSpd" aria-label="Швидкість" translate="no">' + BUMP.spd + '×</button>' +
         '<input type="range" class="bump__range" id="bumpRange" min="1" max="' + T + '" step="0.01" value="' + T + '" aria-label="Тур">' +
         '<span class="bump__cur" id="bumpCur">Тур ' + T + '</span>' +
       '</div>' +
@@ -158,14 +160,14 @@
     var D = BUMP.D;
     if (!D) return;
     if (BUMP.raf) { bumpStop(); return; }
-    var T = D.played, from = BUMP.v >= T - 0.01 ? 1 : BUMP.v;
-    var dur = (T - from) * 650, t0 = null;
+    var T = D.played, v = BUMP.v >= T - 0.01 ? 1 : BUMP.v, last = null;
     var b = document.getElementById('bumpPlay');
     if (b) { b.classList.add('is-on'); b.setAttribute('aria-label', 'Пауза'); }
-    bumpSet(from);
+    bumpSet(v);
+    // 1 с на тур при 1×; швидкість (BUMP.spd) можна міняти просто під час програвання
     (function step(ts) {
-      if (t0 === null) t0 = ts;
-      var v = from + (T - from) * Math.min(1, (ts - t0) / dur);
+      if (last !== null) v = Math.min(T, v + (ts - last) / (BUMP_TOUR_MS / BUMP.spd));
+      last = ts;
       bumpSet(v);
       if (v < T) BUMP.raf = requestAnimationFrame(step); else bumpStop();
     })(performance.now());
@@ -188,6 +190,13 @@
   });
   ts.body.addEventListener('click', function (e) {
     if (e.target.closest('#bumpPlay')) { bumpPlay(); return; }
+    var sb = e.target.closest('#bumpSpd');
+    if (sb) {   // 1× → 1.5× → 2× → 1×
+      BUMP.spd = BUMP.spd === 1 ? 1.5 : BUMP.spd === 1.5 ? 2 : 1;
+      sb.textContent = BUMP.spd + '×';
+      sb.classList.toggle('is-fast', BUMP.spd > 1);
+      return;
+    }
     var d = e.target.closest('#bump .bump__dot');
     if (d) { var k = d.getAttribute('data-k'); bumpHighlight(BUMP.hl === k ? null : k); }
   });
