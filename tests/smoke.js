@@ -148,6 +148,31 @@ const TESTS = {
     return t.errors.concat(m.errors);
   },
 
+  'посилання з номером раунду: #r1-stats, #r1-p3, адреси екранів': async (b) => {
+    // Архів R1: статистика за посиланням — саме R1
+    let t = await page(b, DESK, 'season', { hash: '#r1-stats', wait: 2500 });
+    assert(await visible(t.p, '#tstats'), '#r1-stats не відкрив статистику');
+    assert(await t.p.evaluate(() => document.documentElement.classList.contains('is-archive')), '#r1-stats відкрив не архів R1');
+    assert(/#r1-stats$/.test(t.p.url()), 'адреса статистики без раунду: ' + t.p.url());
+    await t.p.evaluate(() => history.back()); await t.p.waitForTimeout(600);
+    assert(/#r1$/.test(t.p.url()) && await visible(t.p, '#board'), '«Назад» зі статистики не на список R1: ' + t.p.url());
+    // картка з архіву: адреса #r1-pN, а «Поділитися» — теж із r1
+    await t.p.locator('#board [data-key]').first().click(); await t.p.waitForTimeout(300);
+    await t.p.evaluate(() => { const b2 = document.getElementById('selCard') || document.getElementById('cardOpen'); b2 && b2.click(); });
+    await t.p.waitForTimeout(800);
+    assert(/#r1-p\d+$/.test(t.p.url()), 'адреса картки без раунду: ' + t.p.url());
+    assert(await t.p.evaluate(() => /#r1-p\d+$/.test(window.__tmShareUrl())), 'посилання «Поділитися» без раунду');
+    await t.ctx.close();
+    // Поточний раунд R2: #r2-stats — статистика поточного
+    t = await page(b, DESK, 'season-live', { hash: '#r2-stats', wait: 2500 });
+    assert(await visible(t.p, '#tstats') && !(await t.p.evaluate(() => document.documentElement.classList.contains('is-archive'))), '#r2-stats не відкрив статистику поточного раунду');
+    await t.ctx.close();
+    // Telegram: startapp=r1-stats
+    t = await page(b, MOB, 'season', { tg: true, hash: '#tgWebAppStartParam=r1-stats&tgWebAppVersion=8.0&tgWebAppPlatform=ios', wait: 2500 });
+    assert(await visible(t.p, '#tstats') && await t.p.evaluate(() => document.documentElement.classList.contains('is-archive')), 'startapp=r1-stats не відкрив статистику R1');
+    await t.ctx.close(); return t.errors;
+  },
+
   'раунд без даних: внизу «На головну» (телефон, Telegram)': async (b) => {
     const fx = JSON.parse(FIX('season'));
     fx.registration = false; fx.hash = 'empty-round';

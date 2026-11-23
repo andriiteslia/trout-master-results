@@ -91,7 +91,7 @@
     state.rulesOpen = true;
     if (state.view === 'stats') { renderStats(); window.scrollTo(0, 0); return; }
     state.regPushed = true;
-    try { history.pushState({ tmView: 'stats' }, '', IN_TG ? location.href : '#rules'); } catch (e) { state.regPushed = false; }
+    try { history.pushState({ tmView: 'stats' }, '', IN_TG ? location.href : viewHash('rules')); } catch (e) { state.regPushed = false; }
     setView('stats');
   }
   // «07:00 — Збір» / «40 хв - Зважування» → [час, подія]; інакше null

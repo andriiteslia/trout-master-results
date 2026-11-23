@@ -2004,7 +2004,8 @@
   function goCard() {
     if (state.view === 'card') return;
     state.regPushed = true;
-    try { history.pushState({ tmView: 'card' }, '', IN_TG ? location.href : '#player'); } catch (e) { state.regPushed = false; }
+    var nm = selectedPlayerName(), dpc = nm && drawData() ? drawData().players.find(function (x) { return normName(x.name) === normName(nm); }) : null;
+    try { history.pushState({ tmView: 'card' }, '', IN_TG ? location.href : viewHash(dpc ? 'p' + dpc.n : null)); } catch (e) { state.regPushed = false; }
     setView('card');
   }
 
@@ -2012,14 +2013,14 @@
     if (state.view === 'stats' && state.rulesOpen) { state.rulesOpen = false; renderStats(); renderChrome(); window.scrollTo(0, 0); return; }
     if (state.view === 'stats') return;
     state.regPushed = true;
-    try { history.pushState({ tmView: 'stats' }, '', IN_TG ? location.href : '#stats'); } catch (e) { state.regPushed = false; }
+    try { history.pushState({ tmView: 'stats' }, '', IN_TG ? location.href : viewHash('stats')); } catch (e) { state.regPushed = false; }
     setView('stats');
   }
 
   function goList() {
     if (state.view === 'list') return;
     if (state.regPushed && history.state && history.state.tmView === state.view) { history.back(); return; }
-    try { history.replaceState({ tmView: 'list' }, '', IN_TG ? location.href : location.pathname + location.search); } catch (e) { /* */ }
+    try { history.replaceState({ tmView: 'list', round: HOME.n || null }, '', IN_TG ? location.href : viewHash(null)); } catch (e) { /* */ }
     setView('list');
   }
 
@@ -2721,11 +2722,15 @@
   var SHARE_URL = 'https://t.me/troutmasterua_bot?startapp';
   var WEB_URL = 'https://troutmaster.app/';
   // У Telegram ділимось посиланням на Mini App, у браузері — на сайт (картка: …?startapp=p9 / …/#p9)
+  // Посилання для «Поділитися»: з номером раунду (r1, r1-p9), щоб архівна картка не відкривала поточний раунд
   function shareUrl(n) {
     var tg = window.Telegram && window.Telegram.WebApp;
-    if (tg && tg.initData) return n ? SHARE_URL + '=p' + n : SHARE_URL;
-    return n ? WEB_URL + '#p' + n : WEB_URL;
+    var t = typeof roundTag === 'function' ? roundTag() : null;
+    var code = t ? 'r' + t + (n ? '-p' + n : '') : (n ? 'p' + n : '');
+    if (tg && tg.initData) return code ? SHARE_URL + '=' + code : SHARE_URL;
+    return code ? WEB_URL + '#' + code : WEB_URL;
   }
+  window.__tmShareUrl = function () { return shareUrl(state.selected && drawData() ? (drawData().players.find(function (x) { return normName(x.name) === normName(selectedPlayerName()); }) || {}).n : null); };   // для автотестів
   var ZEBRA = true;
   var RC = { w: ['В', 'Перемога'], d: ['РН', 'Рибна нічия'], z: ['БН', 'Безрибна нічия'], l: ['П', 'Поразка'] };
   state.query = '';
@@ -4044,7 +4049,7 @@
     state.rulesOpen = true;
     if (state.view === 'stats') { renderStats(); window.scrollTo(0, 0); return; }
     state.regPushed = true;
-    try { history.pushState({ tmView: 'stats' }, '', IN_TG ? location.href : '#rules'); } catch (e) { state.regPushed = false; }
+    try { history.pushState({ tmView: 'stats' }, '', IN_TG ? location.href : viewHash('rules')); } catch (e) { state.regPushed = false; }
     setView('stats');
   }
   // «07:00 — Збір» / «40 хв - Зважування» → [час, подія]; інакше null
@@ -4611,9 +4616,41 @@
   function rootView() { return hasHome() ? 'home' : 'list'; }
 
   // Куди відкривати на старті: головна — якщо немає посилання на картку, реєстрацію, рядок чи раунд
-  var HOME_HASH = /^#r(\d+)$/.exec(location.hash);
+  // Посилання на раунд і на екран у ньому: браузер #r1, #r1-stats, #r1-rules, #r1-p9; Telegram startapp=r1, r1-stats, r1-p9
+  var DEEP_RE = /^r(\d+)(?:-(stats|rules|p\d+))?$/;
+  function deepOf(s) { var m = DEEP_RE.exec(s || ''); return m ? { n: +m[1], sub: m[2] || null } : null; }
+  var HOME_HASH = deepOf(location.hash.replace(/^#/, '')) ||
+    deepOf((/tgWebAppStartParam=([\w-]+)/.exec(location.hash + '&' + location.search) || [])[1]);
   var HOME_FIRST = !state.wantPlayer && !wantReg && !HOME_HASH && !/[?&]sel=/.test(location.search) &&
-    !/tgWebAppStartParam=/.test(location.hash + location.search) && !/^#(player|stats|register)$/.test(location.hash);
+    !/tgWebAppStartParam=/.test(location.hash + location.search) && !/^#(player|stats|rules|register)$/.test(location.hash);
+
+  // Номер раунду, який зараз відкрито (архів або поточний); без сезону — null
+  function roundTag() {
+    if (!hasHome()) return null;
+    if (HOME.n) return HOME.n;
+    var c = homeCurrent();
+    return c ? c.n : null;
+  }
+  // Адреса екрана в браузері: #r2, #r2-stats, #r2-rules, #r2-p9 (без сезону — як раніше)
+  function viewHash(sub) {
+    var t = roundTag();
+    if (t) return '#r' + t + (sub ? '-' + sub : '');
+    if (sub === 'stats') return '#stats';
+    if (sub === 'rules') return '#rules';
+    if (sub) return '#player';
+    return location.pathname + location.search;
+  }
+  // Екран раунду з посилання — коли дані раунду готові (архів може ще вантажитись)
+  function runDeep(sub) {
+    if (!sub) return;
+    var go = function () {
+      if (sub === 'stats') { if (statsReady()) goStats(); }
+      else if (sub === 'rules') goRules();
+      else { state.wantPlayer = +sub.slice(1); openWantedPlayer(); }
+    };
+    var ready = !HOME.n || (state.payload && state.payload.archived && +state.payload.round === HOME.n);
+    if (ready) go(); else HOME.after = go;
+  }
 
   // ----- Архів минулого раунду -----
   function archUrl(n) { return SOURCE + (SOURCE.indexOf('?') === -1 ? '?' : '&') + 'round=' + n; }
@@ -4641,6 +4678,7 @@
         if (HOME.n !== n) return;
         var same = state.payload && state.payload.hash === p.hash;
         if (!same) { setArchPayload(p); renderAll(); }
+        if (HOME.after) { var f = HOME.after; HOME.after = null; f(); }
         state.error = null;
         renderStatus(false);
       })
@@ -4905,25 +4943,31 @@
     }
     // Посилання …/#r1: відкрити раунд, щойно відомий сезон
     if (HOME_HASH && hasHome()) {
-      var n = parseInt(HOME_HASH[1], 10);
+      var dl = HOME_HASH;
       HOME_HASH = null;
-      if (homeSeason().rounds.some(function (r) { return r.n === n; })) {
-        try { history.replaceState({ tmView: 'list', round: n }, '', location.href); } catch (e) { /* */ }
-        openRound(n, true);
+      if (homeSeason().rounds.some(function (r) { return r.n === dl.n; })) {
+        var cur0 = homeCurrent();
+        try { history.replaceState({ tmView: 'list', round: cur0 && dl.n !== cur0.n ? dl.n : null }, '', IN_TG ? location.href : '#r' + dl.n); } catch (e) { /* */ }
+        openRound(dl.n, true);
+        runDeep(dl.sub);
       }
     }
   });
 
   // Вставили …/#r1 у ту саму вкладку — відкрити цей раунд
   window.addEventListener('hashchange', function () {
-    var m = /^#r(\d+)$/.exec(location.hash);
-    if (!m || !hasHome()) return;
-    var n = parseInt(m[1], 10);
+    var d = deepOf(location.hash.replace(/^#/, ''));
+    if (!d || !hasHome()) return;
+    var n = d.n;
     if (!homeSeason().rounds.some(function (r) { return r.n === n; })) return;
     var cur = homeCurrent();
-    if (state.view === 'list' && (HOME.n === n || (!HOME.n && cur && cur.n === n))) return;
+    var here = HOME.n === n || (!HOME.n && cur && cur.n === n);
+    if (!d.sub && state.view === 'list' && here) return;
+    if (d.sub && here && ((d.sub === 'stats' && state.view === 'stats' && !state.rulesOpen) || (d.sub === 'rules' && state.rulesOpen) ||
+      (d.sub[0] === 'p' && state.view === 'card'))) return;   // «Назад»/«Вперед» по історії — екран уже відкрила обробка popstate
     HOME.pushed = false;
-    openRound(n, true);
+    if (!here || state.view !== 'list') openRound(n, true);
+    runDeep(d.sub);
   });
   // ===== src/js/99-start.js — Старт: дані з кешу, перший рендер, завантаження =====
   // ---------- Start ----------

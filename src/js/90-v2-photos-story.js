@@ -10,11 +10,15 @@
   var SHARE_URL = 'https://t.me/troutmasterua_bot?startapp';
   var WEB_URL = 'https://troutmaster.app/';
   // У Telegram ділимось посиланням на Mini App, у браузері — на сайт (картка: …?startapp=p9 / …/#p9)
+  // Посилання для «Поділитися»: з номером раунду (r1, r1-p9), щоб архівна картка не відкривала поточний раунд
   function shareUrl(n) {
     var tg = window.Telegram && window.Telegram.WebApp;
-    if (tg && tg.initData) return n ? SHARE_URL + '=p' + n : SHARE_URL;
-    return n ? WEB_URL + '#p' + n : WEB_URL;
+    var t = typeof roundTag === 'function' ? roundTag() : null;
+    var code = t ? 'r' + t + (n ? '-p' + n : '') : (n ? 'p' + n : '');
+    if (tg && tg.initData) return code ? SHARE_URL + '=' + code : SHARE_URL;
+    return code ? WEB_URL + '#' + code : WEB_URL;
   }
+  window.__tmShareUrl = function () { return shareUrl(state.selected && drawData() ? (drawData().players.find(function (x) { return normName(x.name) === normName(selectedPlayerName()); }) || {}).n : null); };   // для автотестів
   var ZEBRA = true;
   var RC = { w: ['В', 'Перемога'], d: ['РН', 'Рибна нічия'], z: ['БН', 'Безрибна нічия'], l: ['П', 'Поразка'] };
   state.query = '';

@@ -218,7 +218,8 @@
   function goCard() {
     if (state.view === 'card') return;
     state.regPushed = true;
-    try { history.pushState({ tmView: 'card' }, '', IN_TG ? location.href : '#player'); } catch (e) { state.regPushed = false; }
+    var nm = selectedPlayerName(), dpc = nm && drawData() ? drawData().players.find(function (x) { return normName(x.name) === normName(nm); }) : null;
+    try { history.pushState({ tmView: 'card' }, '', IN_TG ? location.href : viewHash(dpc ? 'p' + dpc.n : null)); } catch (e) { state.regPushed = false; }
     setView('card');
   }
 
@@ -226,14 +227,14 @@
     if (state.view === 'stats' && state.rulesOpen) { state.rulesOpen = false; renderStats(); renderChrome(); window.scrollTo(0, 0); return; }
     if (state.view === 'stats') return;
     state.regPushed = true;
-    try { history.pushState({ tmView: 'stats' }, '', IN_TG ? location.href : '#stats'); } catch (e) { state.regPushed = false; }
+    try { history.pushState({ tmView: 'stats' }, '', IN_TG ? location.href : viewHash('stats')); } catch (e) { state.regPushed = false; }
     setView('stats');
   }
 
   function goList() {
     if (state.view === 'list') return;
     if (state.regPushed && history.state && history.state.tmView === state.view) { history.back(); return; }
-    try { history.replaceState({ tmView: 'list' }, '', IN_TG ? location.href : location.pathname + location.search); } catch (e) { /* */ }
+    try { history.replaceState({ tmView: 'list', round: HOME.n || null }, '', IN_TG ? location.href : viewHash(null)); } catch (e) { /* */ }
     setView('list');
   }
 
