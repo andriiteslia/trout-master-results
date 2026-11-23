@@ -1860,7 +1860,11 @@
     pc.open.classList.toggle('btn-primary', !other);
     pc.open.classList.toggle('btn-secondary', other);
     reg.bar.classList.toggle('two', other && showCard);
-    var showBar = other || showCard;
+    // Раунд без даних (реєстрацію закрито, турів ще немає) і є головна — кнопка «На головну» замість порожньої панелі
+    var showHomeBtn = isList && hasHome() && !other && !showCard;
+    var hbtn = document.getElementById('homeOpen');
+    if (hbtn) hbtn.hidden = !showHomeBtn;
+    var showBar = other || showCard || showHomeBtn;
     // Без кнопок (реєстрацію закрито, турів ще немає) панель лишається в Telegram «порожньою» — заради кнопки партнера
     // з головною (картки раундів) кругла кнопка партнера — лише на головній, на сторінках раундів її немає
     var solo = !showBar && IN_TG && (state.view === 'home' || (isList && !hasHome()));
@@ -4679,6 +4683,8 @@
     HOME.pushed = false;
     showHome();
   }
+  var homeOpenBtn = document.getElementById('homeOpen');
+  if (homeOpenBtn) homeOpenBtn.addEventListener('click', function () { goHome(); });
   function showHome() {
     var left = leaveArchive();
     if (left) renderAll();

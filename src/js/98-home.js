@@ -85,6 +85,8 @@
     HOME.pushed = false;
     showHome();
   }
+  var homeOpenBtn = document.getElementById('homeOpen');
+  if (homeOpenBtn) homeOpenBtn.addEventListener('click', function () { goHome(); });
   function showHome() {
     var left = leaveArchive();
     if (left) renderAll();

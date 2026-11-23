@@ -92,6 +92,21 @@ const TESTS = {
     await t.ctx.close(); return t.errors;
   },
 
+  'раунд без даних: внизу «На головну» (телефон, Telegram)': async (b) => {
+    const fx = JSON.parse(FIX('season'));
+    fx.registration = false; fx.hash = 'empty-round';
+    fx.sheets.forEach((sh) => { sh.values = sh.values.slice(0, sh.headerRows || 1); });
+    const t = await page(b, MOB, null, { tg: true, body: JSON.stringify(fx) });
+    await t.p.locator('[data-round="2"]').first().click();
+    await t.p.waitForTimeout(900);
+    assert(await visible(t.p, '#homeOpen'), 'у порожньому раунді немає кнопки «На головну»');
+    await shot(t.p, 'mob-empty-round');
+    await t.p.click('#homeOpen'); await t.p.waitForTimeout(700);
+    assert(await visible(t.p, '#home'), '«На головну» не повернула на головну');
+    assert(!(await visible(t.p, '#homeOpen')), 'на головній видно «На головну»');
+    await t.ctx.close(); return t.errors;
+  },
+
   'головна: картки сезону → архів R1 → «Усі раунди» → поточний раунд': async (b) => {
     for (const opts of [MOB, DESK]) {
       const t = await page(b, opts, 'season');

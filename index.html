@@ -27,8 +27,8 @@
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
   <link rel="preload" href="assets/fonts/fixel-cyrillic-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fish.webp?v=2" as="image" type="image/webp">
-  <link rel="stylesheet" href="assets/style.css?v=20261124f">
-  <script src="config.js?v=20261124f"></script>
+  <link rel="stylesheet" href="assets/style.css?v=20261124g">
+  <script src="config.js?v=20261124g"></script>
   <script>
     // Запитуємо результати одразу, паралельно з завантаженням решти сторінки
     (function () {
@@ -46,8 +46,8 @@
     // Звичайне відкриття — з першого кадру головна (скелетон карток), щоб до запуску апки не блимала сторінка раунду
     else if (!/tgWebAppStartParam=|[?&]sel=|#(?:r\d+|player|stats|register|rules)(?:&|$)/.test(location.hash + '&' + location.search)) document.documentElement.className += ' home-wait';
   </script>
-  <script src="assets/i18n.js?v=20261124f"></script>
-  <script src="assets/app.js?v=20261124f" defer></script>
+  <script src="assets/i18n.js?v=20261124g"></script>
+  <script src="assets/app.js?v=20261124g" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -352,6 +352,10 @@
     <button type="button" class="btn btn-primary" id="statsOpen" hidden>
       <svg class="btn__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
       <span class="btn__text">Статистика</span>
+    </button>
+    <button type="button" class="btn btn-primary" id="homeOpen" hidden>
+      <svg class="btn__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
+      <span class="btn__text">На головну</span>
     </button>
   </div>
 
