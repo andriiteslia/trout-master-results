@@ -1910,7 +1910,7 @@
     // або від верху таблиці)
     var tbar = IN_TG ? document.querySelector('.topbar') : null;
     var capTop = tbar ? parseFloat(getComputedStyle(tbar).paddingTop) || 0 : 0;   // нижній край панелі Telegram
-    [].forEach.call(document.querySelectorAll('.pcard .pc-tour--head, .tg .rk-head, .tg .plist-head, .tg .tgrid-hd'), function (hd) {
+    [].forEach.call(document.querySelectorAll('.pcard .pc-tour--head, .tg .rk-head, .tg .plist-head, .tg .tgrid-hd, .lb-sticky'), function (hd) {
       if (!hd.offsetParent) return;
       var prev = hd.previousElementSibling, natural;
       if (prev && prev.offsetParent) natural = prev.getBoundingClientRect().bottom + (parseFloat(getComputedStyle(prev).marginBottom) || 0);
@@ -5072,7 +5072,7 @@
       (rows.length ? '<span>' + rows.length + ' ' + plural(rows.length, 'учасник', 'учасники', 'учасників') + '</span>' : '') + '</div>';
     var table;
     if (!rows.length) {
-      table = '<div class="lb-card">' + meta + '<div class="lb-empty">Таблиця з’явиться після першого фесту.</div></div>';
+      table = '<div class="lb-card"><div class="lb-sticky">' + meta + '</div><div class="lb-empty">Таблиця з’явиться після першого фесту.</div></div>';
     } else {
       var head = '<div class="lb-head d-only" aria-hidden="true"><span>#</span><span></span><span>Учасник</span>' +
         lg.fests.map(function (f) { return '<span class="c">R' + f.n + '</span>'; }).join('') + '<span class="r">Бали</span></div>';
@@ -5085,7 +5085,7 @@
           fest + '<span class="lb-pts"><b>' + p.total + '</b><small class="m-only">' + plural(p.total, 'бал', 'бали', 'балів') + '</small></span></button>';
       }).join('');
       var more = rows.length > LG_SHOW && !LG.all ? '<button type="button" class="lb-more m-only" data-lg-all>Показати всіх (' + rows.length + ')</button>' : '';
-      table = '<div class="lb-card" style="--nf:' + nF + '">' + meta + head + list + more + '</div>';
+      table = '<div class="lb-card" style="--nf:' + nF + '"><div class="lb-sticky">' + meta + head + '</div>' + list + more + '</div>';
     }
     return '<div class="home__col home__col--wide"><div class="lbd"><div class="lbx"><div class="m-only">' + lgPrizeHtml(lg) + '</div>' + table + '</div>' +
       '<div class="lb-side d-only">' + lgPrizeHtml(lg) + lgRulesHtml() + '</div></div></div>';

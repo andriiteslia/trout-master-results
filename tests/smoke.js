@@ -99,6 +99,11 @@ const TESTS = {
     assert((await t.p.locator('.lb-row').first().innerText()).includes('Красько Олег'), 'першим не Красько');
     assert(await visible(t.p, '.lb-side .lb-prize'), 'на компі немає картки призу');
     await shot(t.p, 'desk-lb');
+    await t.p.evaluate(() => window.scrollTo(0, 700)); await t.p.waitForTimeout(300);
+    const top = await t.p.evaluate(() => document.querySelector('.lb-sticky').getBoundingClientRect().top);
+    assert(Math.abs(top) < 2, 'шапка лідерборду не прилипла на компі: ' + top);
+    await shot(t.p, 'desk-lb-sticky');
+    await t.p.evaluate(() => window.scrollTo(0, 0));
     await t.p.locator('.lb-row').nth(1).click(); await t.p.waitForTimeout(500);
     assert(await visible(t.p, '#lbSheet .lbsheet__done'), 'не відкрилось віконце гравця');
     assert((await t.p.locator('#lbSheet .lb-fest li.g').count()) === 2, 'у Лічнера мало бути 2 бонуси (риба, лідер)');
@@ -110,6 +115,11 @@ const TESTS = {
     await m.p.click('#tabbar [data-sec="lb"]'); await m.p.waitForTimeout(500);
     assert((await m.p.locator('.lb-row:visible').count()) === 15, 'на телефоні спершу не 15 рядків');
     await shot(m.p, 'tg-lb');
+    await m.p.evaluate(() => window.scrollTo(0, 900)); await m.p.waitForTimeout(400);
+    const mt = await m.p.evaluate(() => { const r = document.querySelector('.lb-sticky').getBoundingClientRect(), c = document.querySelector('.lb-card').getBoundingClientRect(); return r.top - Math.max(c.top, 0); });
+    assert(mt >= 0 && await m.p.evaluate(() => document.querySelector('.lb-sticky').getBoundingClientRect().top < 120), 'шапка лідерборду не прилипла в Telegram');
+    await shot(m.p, 'tg-lb-sticky');
+    await m.p.evaluate(() => window.scrollTo(0, 0)); await m.p.waitForTimeout(200);
     await m.p.click('[data-lg-all]'); await m.p.waitForTimeout(300);
     assert((await m.p.locator('.lb-row:visible').count()) === 24, '«Показати всіх» не показала всіх');
     await m.p.locator('.lb-row').nth(1).click(); await m.p.waitForTimeout(500);

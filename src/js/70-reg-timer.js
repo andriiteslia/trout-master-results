@@ -124,7 +124,7 @@
     // або від верху таблиці)
     var tbar = IN_TG ? document.querySelector('.topbar') : null;
     var capTop = tbar ? parseFloat(getComputedStyle(tbar).paddingTop) || 0 : 0;   // нижній край панелі Telegram
-    [].forEach.call(document.querySelectorAll('.pcard .pc-tour--head, .tg .rk-head, .tg .plist-head, .tg .tgrid-hd'), function (hd) {
+    [].forEach.call(document.querySelectorAll('.pcard .pc-tour--head, .tg .rk-head, .tg .plist-head, .tg .tgrid-hd, .lb-sticky'), function (hd) {
       if (!hd.offsetParent) return;
       var prev = hd.previousElementSibling, natural;
       if (prev && prev.offsetParent) natural = prev.getBoundingClientRect().bottom + (parseFloat(getComputedStyle(prev).marginBottom) || 0);

@@ -1122,8 +1122,9 @@ function leagueManual_(sh) {
     var m = /^R(\d+)\b/.exec(String(h).trim());
     if (!m) return;
     var n = Number(m[1]), map = out[n] = {};
+    var nc = String(sh.getRange(2, c + 1).getDisplayValue()).trim() === 'Місце' ? c + 1 : c;   // нова розкладка: Місце, Учасник, …
     data.forEach(function (row) {
-      var name = String(row[c] || '').trim();
+      var name = String(row[nc] || '').trim();
       if (!name) return;
       var story = row[c + 6] === true || /^(так|є|1|true|\+)$/i.test(String(row[c + 6]).trim());
       var fr = Math.max(0, Math.min(2, parseInt(row[c + 7], 10) || 0));
@@ -1230,12 +1231,12 @@ function leagueWriteSheet_(ss, league) {
   sh.setColumnWidth(LEAGUE_FIRST_BLOCK_COL - 1, 32);
 
   // Блоки фестів: заголовок фесту на всю ширину блоку + підписи колонок, блакитні
-  var blockW = [180, 56, 64, 56, 52, 56, 56, 56, 64];
+  var blockW = [56, 180, 64, 56, 52, 56, 56, 56, 64];
   league.fests.forEach(function (f, i) {
     var c0 = LEAGUE_FIRST_BLOCK_COL + i * LEAGUE_BLOCK;
     var date = String(f.subtitle || '').split('•')[0].trim();
     sh.getRange(1, c0, 1, 9).merge().setValue('R' + f.n + ' · ' + f.title + (date ? ' · ' + date : '') + (f.played ? '' : ' — ще попереду'));
-    sh.getRange(2, c0, 1, 9).setValues([['Учасник', 'Місце', 'За місце', 'Участь', 'Риба', 'Лідер', 'Сторіс', 'Друзі', 'Разом']]);
+    sh.getRange(2, c0, 1, 9).setValues([['Місце', 'Учасник', 'За місце', 'Участь', 'Риба', 'Лідер', 'Сторіс', 'Друзі', 'Разом']]);
     sh.getRange(1, c0, 2, 9).setBackground(BLUE).setFontWeight('bold').setFontSize(10)
       .setBorder(true, true, true, true, true, true, LINE, SpreadsheetApp.BorderStyle.SOLID);
     sh.getRange(1, c0).setFontSize(12);
@@ -1248,10 +1249,11 @@ function leagueWriteSheet_(ss, league) {
     var r0 = 3, nR = ppl.length;
     sh.getRange(r0, c0, nR, 6).setValues(ppl.map(function (p) {
       var x = p.by[f.n];
-      return [p.name, x.place, x.pp, x.part, x.fish || '', x.lead || ''];
+      return [x.place, p.name, x.pp, x.part, x.fish || '', x.lead || ''];
     }));
     zebra(r0, c0, nR, 9);
-    sh.getRange(r0, c0, nR, 1).setHorizontalAlignment('left');
+    sh.getRange(r0, c0, nR, 1).setFontWeight('bold');
+    sh.getRange(r0, c0 + 1, nR, 1).setHorizontalAlignment('left');
     sh.getRange(r0, c0 + 6, nR, 1).insertCheckboxes().setValues(ppl.map(function (p) { return [p.by[f.n].story > 0]; }));
     sh.getRange(r0, c0 + 7, nR, 1).setDataValidation(SpreadsheetApp.newDataValidation()
       .requireValueInList(['0', '1', '2'], true).setAllowInvalid(false).build())
@@ -1261,7 +1263,7 @@ function leagueWriteSheet_(ss, league) {
       var r = r0 + j;
       return ['=N(' + A(2, r) + ')+N(' + A(3, r) + ')+N(' + A(4, r) + ')+N(' + A(5, r) + ')+3*N(' + A(6, r) + ')+2*N(' + A(7, r) + ')'];
     })).setFontWeight('bold');
-    box(sh.getRange(r0, c0, nR, 1)); box(sh.getRange(r0, c0 + 8, nR, 1));
+    box(sh.getRange(r0, c0, nR, 1)); box(sh.getRange(r0, c0 + 1, nR, 1)); box(sh.getRange(r0, c0 + 8, nR, 1));
     box(sh.getRange(1, c0, nR + 2, 9));
   });
 }
