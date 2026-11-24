@@ -1177,35 +1177,71 @@ function leagueBuild_(ss, cur) {
   return { fests: fests, minFests: LEAGUE_MIN_FESTS, played: fests.filter(function (f) { return f.played; }).length, rows: list };
 }
 
-/** Аркуш «Лідерборд» в адмінці: зліва зведена таблиця, праворуч блок на кожен фест (ручні — «Сторіс» і «Друзі»). */
+/** Аркуш «Лідерборд» в адмінці (оформлення як у PFL): зліва зведена таблиця, праворуч блок на кожен фест.
+ *  Ручні колонки — «Сторіс» (галочка) і «Друзі» (0/1/2); «Разом» — формула без роздільників (працює в будь-якій локалі). */
 function leagueWriteSheet_(ss, league) {
   if (!league) return;
   var sh = ss.getSheetByName(LEAGUE_SHEET);
   if (!sh) sh = ss.insertSheet(LEAGUE_SHEET);
-  var nF = league.fests.length;
+  var nF = league.fests.length, nP = league.rows.length;
   var width = LEAGUE_FIRST_BLOCK_COL - 1 + nF * LEAGUE_BLOCK;
   if (sh.getMaxColumns() < width) sh.insertColumnsAfter(sh.getMaxColumns(), width - sh.getMaxColumns());
-  var height = Math.max(league.rows.length + 2, 3);
-  sh.getRange(1, 1, Math.max(sh.getMaxRows(), height), sh.getMaxColumns()).clearContent().clearDataValidations().setFontWeight('normal').setBackground(null);
-  // Зведена таблиця
-  sh.getRange(1, 1).setValue('Лідерборд сезону').setFontWeight('bold').setFontSize(12);
-  sh.getRange(1, 3).setValue('Бали: місце + 10 участь + 3 риба + 2 лідер після 4/8 туру + 3 сторіс + 2 за друга (до 2). Сторіс і Друзі — вручну в блоках фестів.')
-    .setFontColor('#667085');
-  var labels = ['№', 'Учасник', 'Бали', 'Фести', 'Перемоги', 'Риба', 'РН'];
-  sh.getRange(2, 1, 1, labels.length).setValues([labels]).setFontWeight('bold').setBackground('#f2f4f7');
-  if (league.rows.length) {
-    sh.getRange(3, 1, league.rows.length, labels.length).setValues(league.rows.map(function (p) {
-      return [p.place, p.name, p.total, p.fests + ' з ' + nF, p.wins, p.fish, p.rn];
+  var height = Math.max(nP + 2, 3);
+  if (sh.getMaxRows() < height + 2) sh.insertRowsAfter(sh.getMaxRows(), height + 2 - sh.getMaxRows());
+  var all = sh.getRange(1, 1, sh.getMaxRows(), sh.getMaxColumns());
+  all.breakApart().clearContent().clearDataValidations().clearNote()
+    .setBorder(false, false, false, false, false, false).setBackground(null)
+    .setFontFamily('Rubik').setFontSize(11).setFontWeight('normal').setFontColor('#000000')
+    .setVerticalAlignment('middle').setHorizontalAlignment('center').setWrap(false);
+  sh.setFrozenRows(2);
+  sh.setRowHeights(1, height, 32);
+  var GREEN = '#d9ead3', BLUE = '#cfe2f3', ZEBRA = '#f3f3f3', LINE = '#b7b7b7';
+  var zebra = function (r0, c0, nR, nC) {
+    if (!nR) return;
+    sh.getRange(r0, c0, nR, nC).setBackgrounds(Array.apply(null, Array(nR)).map(function (_, j) {
+      return Array.apply(null, Array(nC)).map(function () { return j % 2 ? ZEBRA : '#ffffff'; });
     }));
-    sh.getRange(3, 3, league.rows.length, 1).setFontWeight('bold');
+  };
+  var box = function (rg) { rg.setBorder(true, true, true, true, null, null, LINE, SpreadsheetApp.BorderStyle.SOLID); };
+
+  // Зведена таблиця: заголовки на два рядки (об'єднані), зелені
+  var labels = ['№', 'Учасник', 'Бали', 'Фести', 'Перемоги', 'Риба', 'РН'];
+  labels.forEach(function (t, i) {
+    sh.getRange(1, i + 1, 2, 1).merge().setValue(t);
+  });
+  var hd = sh.getRange(1, 1, 2, labels.length);
+  hd.setBackground(GREEN).setFontWeight('bold').setFontSize(10).setBorder(true, true, true, true, true, true, LINE, SpreadsheetApp.BorderStyle.SOLID);
+  sh.getRange(1, 1, 2, 2).setFontSize(12);
+  sh.getRange(1, 2).setNote('Бали за фест: місце (24, 18, 15 … 1 для топ-15) + 10 участь + 3 найбільше риби + 2 лідер після 4-го або 8-го туру (раз) ' +
+    '+ 3 сторіс + 2 за друга (до 2). Рівні бали: перемоги → риба → рибні нічиї. «Сторіс» і «Друзі» — вручну в блоках фестів праворуч.');
+  if (nP) {
+    var medal = { 1: '🥇', 2: '🥈', 3: '🥉' };
+    sh.getRange(3, 1, nP, labels.length).setValues(league.rows.map(function (p) {
+      return [medal[p.place] || p.place, p.name, p.total, p.fests + ' з ' + nF, p.wins, p.fish, p.rn];
+    }));
+    zebra(3, 1, nP, labels.length);
+    sh.getRange(3, 1, nP, 1).setFontSize(12).setFontWeight('bold');
+    sh.getRange(3, 2, nP, 1).setHorizontalAlignment('left');
+    sh.getRange(3, 3, nP, 1).setFontWeight('bold');
+    box(sh.getRange(3, 1, nP, 1)); box(sh.getRange(3, 2, nP, 1)); box(sh.getRange(3, 3, nP, 1));
+    box(sh.getRange(1, 1, nP + 2, labels.length));
   }
-  // Блоки фестів
+  [32, 220, 64, 64, 80, 64, 52].forEach(function (w, i) { sh.setColumnWidth(i + 1, w); });
+  sh.setColumnWidth(LEAGUE_FIRST_BLOCK_COL - 1, 32);
+
+  // Блоки фестів: заголовок фесту на всю ширину блоку + підписи колонок, блакитні
+  var blockW = [180, 56, 64, 56, 52, 56, 56, 56, 64];
   league.fests.forEach(function (f, i) {
     var c0 = LEAGUE_FIRST_BLOCK_COL + i * LEAGUE_BLOCK;
-    sh.getRange(1, c0).setValue('R' + f.n + ' · ' + f.title + (f.played ? '' : ' — ще попереду')).setFontWeight('bold');
-    sh.getRange(2, c0, 1, 9).setValues([['Учасник', 'Місце', 'За місце', 'Участь', 'Риба', 'Лідер', 'Сторіс', 'Друзі', 'Разом']])
-      .setFontWeight('bold').setBackground('#f2f4f7');
-    sh.getRange(2, c0 + 6, 1, 2).setBackground('#fdf3e1');
+    var date = String(f.subtitle || '').split('•')[0].trim();
+    sh.getRange(1, c0, 1, 9).merge().setValue('R' + f.n + ' · ' + f.title + (date ? ' · ' + date : '') + (f.played ? '' : ' — ще попереду'));
+    sh.getRange(2, c0, 1, 9).setValues([['Учасник', 'Місце', 'За місце', 'Участь', 'Риба', 'Лідер', 'Сторіс', 'Друзі', 'Разом']]);
+    sh.getRange(1, c0, 2, 9).setBackground(BLUE).setFontWeight('bold').setFontSize(10)
+      .setBorder(true, true, true, true, true, true, LINE, SpreadsheetApp.BorderStyle.SOLID);
+    sh.getRange(1, c0).setFontSize(12);
+    sh.getRange(2, c0 + 6, 1, 2).setBackground('#fce5cd');   // ручні колонки
+    blockW.forEach(function (w, k) { sh.setColumnWidth(c0 + k, w); });
+    if (i < nF - 1) sh.setColumnWidth(c0 + 9, 32);
     var ppl = league.rows.filter(function (p) { return p.by[f.n]; })
       .sort(function (a, b) { return a.by[f.n].place - b.by[f.n].place; });
     if (!ppl.length) return;
@@ -1214,20 +1250,20 @@ function leagueWriteSheet_(ss, league) {
       var x = p.by[f.n];
       return [p.name, x.place, x.pp, x.part, x.fish || '', x.lead || ''];
     }));
+    zebra(r0, c0, nR, 9);
+    sh.getRange(r0, c0, nR, 1).setHorizontalAlignment('left');
     sh.getRange(r0, c0 + 6, nR, 1).insertCheckboxes().setValues(ppl.map(function (p) { return [p.by[f.n].story > 0]; }));
     sh.getRange(r0, c0 + 7, nR, 1).setDataValidation(SpreadsheetApp.newDataValidation()
       .requireValueInList(['0', '1', '2'], true).setAllowInvalid(false).build())
-      .setValues(ppl.map(function (p) { return [p.by[f.n].friends ? String(p.by[f.n].friends / 2) : '0']; }));
-    sh.getRange(r0, c0 + 6, nR, 2).setBackground('#fdf3e1');
+      .setValues(ppl.map(function (p) { return [p.by[f.n].friends ? p.by[f.n].friends / 2 : 0]; }));
     var A = function (k, r) { return sh.getRange(r, c0 + k).getA1Notation(); };
     sh.getRange(r0, c0 + 8, nR, 1).setFormulas(ppl.map(function (p, j) {
       var r = r0 + j;
-      return ['=N(' + A(2, r) + ')+N(' + A(3, r) + ')+N(' + A(4, r) + ')+N(' + A(5, r) + ')+IF(' + A(6, r) + ',3,0)+2*N(' + A(7, r) + ')'];
+      return ['=N(' + A(2, r) + ')+N(' + A(3, r) + ')+N(' + A(4, r) + ')+N(' + A(5, r) + ')+3*N(' + A(6, r) + ')+2*N(' + A(7, r) + ')'];
     })).setFontWeight('bold');
+    box(sh.getRange(r0, c0, nR, 1)); box(sh.getRange(r0, c0 + 8, nR, 1));
+    box(sh.getRange(1, c0, nR + 2, 9));
   });
-  sh.setFrozenRows(2);
-  sh.setColumnWidth(2, 190);
-  for (var i = 0; i < nF; i++) sh.setColumnWidth(LEAGUE_FIRST_BLOCK_COL + i * LEAGUE_BLOCK, 180);
 }
 
 /** Додати лідерборд у payload і перерахувати hash (інакше сайт не побачить зміну). */
