@@ -2882,7 +2882,9 @@ body > .home { flex: 1 0 auto; }
 .btn-primary:disabled { box-shadow: none; }
 
 /* Картка раунду з відкритою реєстрацією: дві кнопки — «Детальніше» (другорядна) і «Зареєструватися» */
-.hc-acts { display: grid; grid-template-columns: 1fr 1.35fr; gap: 10px; margin-top: 16px; }
+.hc-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+/* Телефон: одна над одною, «Зареєструватися» зверху */
+@media (max-width: 979px) { .hc-acts { grid-template-columns: 1fr; gap: 8px; } .hc-acts [data-reg] { order: -1; } }
 .hc-acts .hc-go { margin-top: 0; }
 .hc-go--sec { background: #f2f4f7; color: #0a0a0a; box-shadow: none; }
 @media (hover: hover) { .hc-go--sec:hover { background: #e4e7ec; box-shadow: none; } }
