@@ -5078,7 +5078,7 @@
         lg.fests.map(function (f) { return '<span class="c">R' + f.n + '</span>'; }).join('') + '<span class="r">Бали</span></div>';
       var list = rows.map(function (p, i) {
         var fest = lg.fests.map(function (f) { var x = p.by[f.n]; return '<span class="lb-fe d-only' + (x ? '' : ' no') + '">' + (x ? x.total : '—') + '</span>'; }).join('');
-        return '<button type="button" class="lb-row' + (i >= LG_SHOW && !LG.all ? ' is-more' : '') + '" data-lg="' + i + '" style="--nf:' + nF + '">' +
+        return '<button type="button" class="lb-row' + (i % 2 ? ' z' : '') + (i >= LG_SHOW && !LG.all ? ' is-more' : '') + '" data-lg="' + i + '" style="--nf:' + nF + '">' +
           lgPlace(p.place) + avatarHtml(p.name) +
           '<span class="lb-nm"><b>' + esc(p.name) + '</b><span>' + lgDots(lg, p) +
           '<i class="m-only">' + p.fests + ' з ' + nF + ' · </i>' + p.wins + ' В · ' + fmtNum(p.fish) + ' ' + plural(Math.round(p.fish), 'риба', 'риби', 'риб') + '</span></span>' +

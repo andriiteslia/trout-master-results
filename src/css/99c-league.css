@@ -35,8 +35,9 @@
 .lb-row { display: grid; grid-template-columns: 32px 40px minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; padding: 12px 16px;
   border: 0; border-top: 1px solid var(--row-line); background: #fff; color: inherit; font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .lb-card > .lb-row:first-child, .lb-head + .lb-row { border-top: 0; }
-.lb-row:active { background: #f8f9fb; }
-@media (hover: hover) { .lb-row:hover { background: #fafbfc; } }
+.lb-row.z { background: var(--zebra2); }   /* легенька зебра, як у таблиці раунду */
+.lb-row:active { background: #f2f4f7; }
+@media (hover: hover) { .lb-row:hover { background: #f2f4f7; } }
 .lb-row.is-more { display: none; }
 .lb-pl { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 750; font-size: 14px; color: #344054; background: #f2f4f7; }
 .lb-pl.g1 { background: #fbf1d0; color: #6b4d00; }
