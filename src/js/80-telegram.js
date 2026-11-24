@@ -54,6 +54,7 @@
     }
     document.addEventListener('touchstart', function (e) {
       if (busy || e.touches.length !== 1 || (window.scrollY || document.documentElement.scrollTop) > 0) return;
+      if (document.querySelector('.mapsheet:not([hidden])')) return;   // відкритий аркуш — тягнемо його, а не оновлюємо сторінку
       var t = e.touches[0];
       if (t.clientX <= 28) return;   // від лівого краю — це жест «Назад»
       on = true; decided = false; armed = false; sy = t.clientY; sx = t.clientX; dy = 0;
@@ -114,6 +115,7 @@
     }
     document.addEventListener('touchstart', function (e) {
       if (state.view === rootView() || e.touches.length !== 1) return;
+      if (document.querySelector('.mapsheet:not([hidden])')) return;
       var t = e.touches[0];
       if (t.clientX > EDGE) return;
       on = true; decided = false; sx = t.clientX; sy = t.clientY; dx = 0;

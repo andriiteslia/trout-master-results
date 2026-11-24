@@ -2997,3 +2997,6 @@ body > .home { flex: 1 0 auto; }
   .lb-pl, .lb-dots i, .lbsheet__grip { corner-shape: round; }
   @media (max-width: 979px) { html.tg .lbsheet__done, html.tg .lb-pl { corner-shape: round; } }
 }
+
+.mapsheet__box { overscroll-behavior: contain; touch-action: pan-y; }
+html:has(.mapsheet:not([hidden])) { overflow: hidden; }   /* сторінка під аркушем не прокручується */

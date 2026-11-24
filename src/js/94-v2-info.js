@@ -194,3 +194,46 @@
     if (k === 'mono') { if (openLinkOut(t.href)) e.preventDefault(); closePaySheet(); }
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePaySheet(); });
+
+  // ----- Аркуші знизу (.mapsheet): потягнути вниз — закрити (телефон, Telegram) -----
+  (function sheetSwipe() {
+    var box = null, sy = 0, dy = 0, t0 = 0, on = false, decided = false;
+    function closeOf(sheet) { return sheet.querySelector('[data-lg-close], [data-pay="close"], [data-map="close"]'); }
+    document.addEventListener('touchstart', function (e) {
+      var b = e.target.closest && e.target.closest('.mapsheet:not([hidden]) .mapsheet__box');
+      if (!b || e.touches.length !== 1 || window.innerWidth >= 980) return;
+      if (b.scrollTop > 0 && !e.target.closest('.lbsheet__grip')) return;   // аркуш прокручено — спершу гортаємо його
+      box = b; on = true; decided = false; sy = e.touches[0].clientY; dy = 0; t0 = Date.now();
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
+      if (!on) return;
+      var my = e.touches[0].clientY - sy;
+      if (!decided) {
+        if (Math.abs(my) < 6) return;
+        decided = true;
+        if (my < 0) { on = false; return; }   // вгору — звичайна прокрутка аркуша
+        box.style.transition = 'none';
+      }
+      dy = Math.max(0, my);
+      if (e.cancelable) e.preventDefault();
+      box.style.transform = 'translateY(' + dy + 'px)';
+    }, { passive: false });
+    function end() {
+      if (!on) return;
+      on = false;
+      if (!decided) return;
+      var b = box, fast = dy > 40 && dy / Math.max(1, Date.now() - t0) > 0.6;
+      b.style.transition = '';
+      b.style.transform = '';
+      if (dy > Math.min(140, b.offsetHeight * 0.25) || fast) {
+        var x = closeOf(b.closest('.mapsheet'));
+        if (x) x.click();
+      }
+    }
+    document.addEventListener('touchend', end);
+    document.addEventListener('touchcancel', end);
+    // Тло під аркушем не прокручується й не тягне сторінку
+    document.addEventListener('touchmove', function (e) {
+      if (e.target.closest && e.target.closest('.mapsheet:not([hidden]) .mapsheet__bg') && e.cancelable) e.preventDefault();
+    }, { passive: false });
+  })();

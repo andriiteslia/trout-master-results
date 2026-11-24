@@ -114,8 +114,15 @@ const TESTS = {
     assert((await m.p.locator('.lb-row:visible').count()) === 24, '«Показати всіх» не показала всіх');
     await m.p.locator('.lb-row').nth(1).click(); await m.p.waitForTimeout(500);
     await shot(m.p, 'tg-lb-sheet');
-    await m.p.click('#lbSheet .mapsheet__bg', { position: { x: 20, y: 20 } }); await m.p.waitForTimeout(450);
-    assert(!(await visible(m.p, '#lbSheet')), 'тап по тлу не закрив аркуш');
+    // свайп униз по аркушу — закриває
+    const bx = await m.p.locator('#lbSheet .mapsheet__box').boundingBox();
+    const cdp = await m.ctx.newCDPSession(m.p);
+    const tp = (type, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x: 200, y }] });
+    await tp('touchStart', bx.y + 30);
+    for (let k = 1; k <= 8; k++) { await tp('touchMove', bx.y + 30 + k * 30); await m.p.waitForTimeout(16); }
+    await tp('touchEnd'); await m.p.waitForTimeout(500);
+    assert(!(await visible(m.p, '#lbSheet')), 'свайп униз не закрив аркуш');
+    assert(!(await m.p.evaluate(() => document.querySelector('.ptr.is-busy'))), 'під аркушем спрацювало оновлення сторінки');
     await m.ctx.close();
     return t.errors.concat(m.errors);
   },
