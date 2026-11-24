@@ -159,7 +159,7 @@
 
   function curCardHtml(r) {
     var p = HOME.live ? HOME.live.payload : state.payload;
-    var chip = '', chipCls = '', extra = '';
+    var chip = '', chipCls = '', extra = '', regBtn = false;
     var parts = subParts(r);
     var meta = parts.map(function (s, i) { return '<span>' + (i === 0 ? ICON_CAL : i === 1 ? ICON_PIN : '') + esc(s) + '</span>'; }).join('');
     if (p && isListMode()) {
@@ -168,6 +168,7 @@
       var soon = !open && (!si || !si.n);
       chip = open ? 'Реєстрацію відкрито' : soon ? 'Скоро' : 'Реєстрацію закрито';
       chipCls = open ? 'reg' : soon ? 'soon' : 'off';
+      regBtn = open;
       if (si) {
         var pct = si.seats ? Math.min(100, Math.round(si.n / si.seats * 100)) : 0;
         extra += '<div class="hc-seats"><div class="hc-seats__r"><span>Зареєстровано <b>' + si.n + (si.seats ? ' з ' + si.seats : '') + '</b></span>' +
@@ -196,7 +197,11 @@
       '<button type="button" class="hc-ban-btn" data-round="' + r.n + '" tabindex="-1" aria-hidden="true">' + bannerHtml(r, 'hc-ban') +
       (chip ? '<span class="hc-chip hc-chip--' + chipCls + '"><i></i>' + esc(chip) + '</span>' : '') + '</button>' +
       '<div class="hc-body"><h2 class="hc-t">' + esc(r.title) + '</h2>' + (meta ? '<p class="hc-meta">' + meta + '</p>' : '') + extra +
-      '<button type="button" class="hc-go" data-round="' + r.n + '">Детальніше</button></div></article>';
+      (regBtn
+        // Реєстрацію відкрито: «Зареєструватися» — головна дія, «Детальніше» — другорядна
+        ? '<div class="hc-acts"><button type="button" class="hc-go hc-go--sec" data-round="' + r.n + '">Детальніше</button>' +
+          '<button type="button" class="hc-go" data-reg="' + r.n + '">Зареєструватися</button></div>'
+        : '<button type="button" class="hc-go" data-round="' + r.n + '">Детальніше</button>') + '</div></article>';
   }
   function daysLeft(d) {
     var days = Math.ceil((d.getTime() - Date.now()) / 86400000);
@@ -333,6 +338,8 @@
   }
 
   HOME.body.addEventListener('click', function (e) {
+    var rg = e.target.closest('[data-reg]');
+    if (rg) { openRound(parseInt(rg.getAttribute('data-reg'), 10)); goReg(); return; }
     var b = e.target.closest('[data-round]');
     if (!b) return;
     openRound(parseInt(b.getAttribute('data-round'), 10));

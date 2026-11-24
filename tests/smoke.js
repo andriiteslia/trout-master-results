@@ -178,6 +178,16 @@ const TESTS = {
     await t.ctx.close(); return t.errors;
   },
 
+  'картка раунду: реєстрацію відкрито — «Зареєструватися» веде одразу у форму': async (b) => {
+    const t = await page(b, MOB, 'season');
+    assert(await visible(t.p, '.hc--cur [data-reg="2"]'), 'на картці немає «Зареєструватися»');
+    assert(await visible(t.p, '.hc--cur .hc-go--sec'), 'на картці немає другорядної «Детальніше»');
+    await shot(t.p, 'mob-home-reg');
+    await t.p.click('.hc--cur [data-reg="2"]'); await t.p.waitForTimeout(700);
+    assert(await t.p.evaluate(() => document.documentElement.classList.contains('view-reg')), '«Зареєструватися» не відкрила форму');
+    await t.ctx.close(); return t.errors;
+  },
+
   'раунд без даних: внизу «На головну» (телефон, Telegram)': async (b) => {
     const fx = JSON.parse(FIX('season'));
     fx.registration = false; fx.hash = 'empty-round';
