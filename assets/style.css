@@ -2890,3 +2890,6 @@ body > .home { flex: 1 0 auto; }
 @media (hover: hover) { .hc-go--sec:hover { background: #e4e7ec; box-shadow: none; } }
 .hc-go--sec:active { box-shadow: none; }
 @supports (corner-shape: squircle) { @media (max-width: 979px) { html.tg .hc-go--sec { corner-shape: round; } } }
+/* Рибка на «Скоро» (Лідерборд, Про лігу) левітує, як логотип партнера */
+.league-empty .empty-state__fish { animation: partner-float 2s ease-in-out infinite alternate; }
+@media (prefers-reduced-motion: reduce) { .league-empty .empty-state__fish { animation: none; } }
