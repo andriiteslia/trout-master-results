@@ -3009,3 +3009,10 @@ body > .home { flex: 1 0 auto; }
 
 .mapsheet__box { overscroll-behavior: contain; touch-action: pan-y; }
 html:has(.mapsheet:not([hidden])) { overflow: hidden; }   /* сторінка під аркушем не прокручується */
+/* Вузький комп (980–1199): приз і правила — над таблицею в два стовпці, таблиця на всю ширину (імена не обрізаються) */
+@media (min-width: 980px) and (max-width: 1199px) {
+  .lbd { grid-template-columns: minmax(0, 1fr); }
+  .lb-side { order: -1; }
+  .lb-side .lb-rules { display: none; }   /* на вузькому компі лише приз над таблицею — щоб таблиця не їхала вниз */
+  .lb-prize { min-height: 132px; }
+}
