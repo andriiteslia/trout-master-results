@@ -16,7 +16,8 @@
 @media (max-width: 979px) { .hw-uk { display: none; } }
 @media (min-width: 980px) { .lang-en .hw-uk { display: none; } .lang-en .hw-en { display: inline; } }
 /* Кнопки: на телефоні круглі «пігулки», на комп'ютері — супереліпс (загальне правило в 50-stats-regform.css) */
-@supports (corner-shape: squircle) { @media (max-width: 979px) { .hc-go, .hc-chip, .home__kicker, .list-home .hero-back { corner-shape: round; } } }
+/* Круглі кнопки — лише в Telegram; у мобільному браузері лишається супереліпс */
+@supports (corner-shape: squircle) { @media (max-width: 979px) { html.tg .hc-go, html.tg .hc-chip, html.tg .home__kicker, html.tg .list-home .hero-back, html.tg .tabbar, html.tg .tabbar button, html.tg .tabbar .seg-ind, html.tg .pt-go, html.tg .pt-join__go { corner-shape: round; } } }
 @media (min-width: 980px) {
   .home__inner { padding-top: 32px; padding-bottom: 48px; }
   .home__title { font-size: 44px; }
@@ -223,7 +224,7 @@ body > .home { flex: 1 0 auto; }
 .pt-name { margin: 8px 0 6px; font-size: 22px; line-height: 1.15; font-weight: 800; letter-spacing: -0.01em; }
 .pt-text { margin: 0 0 16px; color: var(--muted); font-size: 14.5px; line-height: 1.5; max-width: 560px; }
 .pt-go { display: inline-flex; gap: 8px; }
-.pt-go svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pt-go svg { width: 18px; height: 18px; flex: none; }
 .pt-join { margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px; border: 1px dashed #cfd4dc; border-radius: 20px; }
 .pt-join strong { display: block; font-size: 15px; font-weight: 700; }
 .pt-join span { display: block; margin-top: 2px; color: var(--muted); font-size: 13.5px; }
