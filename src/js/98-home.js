@@ -290,6 +290,7 @@
   }
   function secHtml(sec) {
     if (sec === 'partners') return partnersHtml();
+    if (sec === 'lb') { var lh = leagueHtml(); if (lh) return lh; }
     var c = LEAGUE_SECS[sec];
     return '<div class="home__col home__col--wide"><div class="card empty empty-state league-empty" role="status">' +
       '<img class="empty-state__fish" src="assets/fish.webp?v=2" alt="" width="640" height="296" decoding="async">' +
@@ -313,6 +314,7 @@
     if (sec !== 'tours') {
       HOME_HEAD.title.textContent = LEAGUE_SECS[sec].title;
       HOME_HEAD.lead.textContent = LEAGUE_SECS[sec].lead;
+      if (sec === 'lb' && leaguePayload() && homeSeason() && homeSeason().name) HOME_HEAD.lead.textContent = 'Сезон ' + homeSeason().name;
       HOME.body.innerHTML = secHtml(sec);
       document.title = LEAGUE_SECS[sec].title + ' — Trout Master';
       return;

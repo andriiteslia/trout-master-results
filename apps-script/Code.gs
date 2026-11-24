@@ -481,6 +481,11 @@ function handleSiteSync(e) {
     }
     return;
   }
+  // «Лідерборд»: змінили «Сторіс» чи «Друзі» — перераховуємо лідерборд на сайті
+  if (name === LEAGUE_SHEET) {
+    try { leagueRefresh_(ss); } catch (err) { console.error(err); }
+    return;
+  }
   if (name !== SYNC_SHEET) return;
   // «Раунди сезону» (F2:H9): новий раунд, банер чи назва сезону — підключаємо поточний, оновлюємо картки й архіви
   var er = e.range;
@@ -765,7 +770,7 @@ function sectorsFor_(ss, sh) {
 }
 
 function publish_(ss) {
-  var payload = buildPayload_(ss, null);
+  var payload = leagueAttach_(ss, buildPayload_(ss, null));
   saveSnapshot_(JSON.stringify(payload));
   try { resSavePlaces_(payload); } catch (err) { console.error(err); }
   return payload;
@@ -1029,6 +1034,225 @@ function buildArchives_(ss) {
     try { if (archiveJson_(ss, r.n)) done++; } catch (err) { console.error('Архів R' + r.n + ': ' + err); }
   });
   return done;
+}
+
+// ---------------------------------------------------------------------------
+// Ліга: лідерборд сезону (аркуш «Лідерборд» в адмінці + payload.league для сайту)
+// ---------------------------------------------------------------------------
+// Бали за фест: місце (24, 18, 15 … 1 для топ-15) + 10 за участь + 3 за найбільше риби (усім, хто ділить максимум)
+// + 2 лідеру після 4-го або 8-го туру (раз за фест, перший за офіційним порядком) + 3 за сторіс (раз за фест)
+// + 2 за кожного запрошеного друга (до 2). Рівні бали: перемоги → риба за сезон → рибні нічиї (більше — вище).
+var LEAGUE_SHEET = 'Лідерборд';
+var LEAGUE_FESTS = 4;                       // фестів у сезоні ліги
+var LEAGUE_MIN_FESTS = 3;                   // мінімум фестів для головного призу
+var LEAGUE_PP = { 1: 24, 2: 18, 3: 15, 4: 12, 5: 10, 6: 8, 7: 6, 8: 4, 9: 3, 10: 3, 11: 2, 12: 2, 13: 1, 14: 1, 15: 1 };
+var LEAGUE_TOUR_PTS = { 'В': 3, 'РН': 2, 'БН': 1, 'П': 0 };
+var LEAGUE_LEAD_TOURS = [4, 8];
+var LEAGUE_BLOCK = 10;                      // колонок на блок фесту (9 + порожня)
+var LEAGUE_FIRST_BLOCK_COL = 9;             // I — перший блок; A–G — зведена таблиця
+
+/** Бали одного фесту з даних раунду (payload.sheets). null — фест ще не почався. */
+function leagueFest_(sheets) {
+  var d = resData_(sheets);
+  if (!d || !d.round) return null;
+  var num = function (s) { var x = Number(String(s == null ? '' : s).replace(',', '.').replace(/\s/g, '')); return isNaN(x) ? 0 : x; };
+  // Улов по турах (для таблиці після 4-го / 8-го туру): «Тури» — під «Тур N» код, праворуч риба
+  var fishBy = {};
+  var tSh = (sheets || []).find(function (x) { return /^тур/i.test(x.name || ''); });
+  if (tSh && tSh.values && tSh.values.length > 2) {
+    var cols = {}, tName = -1;
+    tSh.values[0].forEach(function (x, i) {
+      var m = /^тур\s*(\d+)/i.exec(String(x || '').trim());
+      if (m) cols[Number(m[1])] = i;
+      if (/учасник|прізвище|піб/i.test(String(x || ''))) tName = i;
+    });
+    if (tName < 0) tName = 1;
+    tSh.values.slice(1).forEach(function (row) {
+      var k = resKey_(row[tName] || '');
+      if (!d.people[k]) return;
+      var arr = [];
+      for (var n = 1; n <= d.total; n++) arr[n - 1] = cols[n] != null ? num(row[cols[n] + 1]) : 0;
+      fishBy[k] = arr;
+    });
+  }
+  var keys = Object.keys(d.people);
+  var played = function (p) { return p.codes.some(function (c) { return !!c; }) || p.pts > 0 || p.fish > 0; };
+  var out = {}, maxFish = 0;
+  keys.forEach(function (k) { var p = d.people[k]; if (played(p)) maxFish = Math.max(maxFish, p.fish || 0); });
+  // Лідер після 4-го / 8-го туру: бали → перемоги → риба → офіційне місце
+  var leaders = {};
+  LEAGUE_LEAD_TOURS.forEach(function (N) {
+    if (d.round < N) return;
+    var st = keys.filter(function (k) { return played(d.people[k]); }).map(function (k) {
+      var p = d.people[k], pts = 0, w = 0, f = 0;
+      for (var i = 0; i < N; i++) {
+        var c = p.codes[i] || '';
+        pts += LEAGUE_TOUR_PTS[c] || 0;
+        if (c === 'В') w++;
+        f += (fishBy[k] && fishBy[k][i]) || 0;
+      }
+      return { k: k, pts: pts, w: w, f: f, place: p.place };
+    });
+    st.sort(function (a, b) { return b.pts - a.pts || b.w - a.w || b.f - a.f || a.place - b.place; });
+    if (st.length) leaders[st[0].k] = true;
+  });
+  keys.forEach(function (k) {
+    var p = d.people[k];
+    if (!played(p)) return;
+    out[k] = {
+      name: p.name, place: p.place,
+      pp: LEAGUE_PP[p.place] || 0, part: 10,
+      fish: maxFish > 0 && p.fish === maxFish ? 3 : 0,
+      lead: leaders[k] ? 2 : 0,
+      wins: p.wins || 0, fishN: p.fish || 0,
+      rn: p.codes.filter(function (c) { return c === 'РН'; }).length
+    };
+  });
+  return { round: d.round, total: d.total, people: out };
+}
+
+/** Ручні бонуси з аркуша «Лідерборд»: { n: { ключ імені: { story, friends } } }. */
+function leagueManual_(sh) {
+  var out = {};
+  if (!sh || sh.getLastRow() < 3) return out;
+  var lastCol = sh.getLastColumn(), lastRow = sh.getLastRow();
+  var head = sh.getRange(1, 1, 1, lastCol).getDisplayValues()[0];
+  var data = sh.getRange(3, 1, lastRow - 2, lastCol).getValues();
+  head.forEach(function (h, c) {
+    var m = /^R(\d+)\b/.exec(String(h).trim());
+    if (!m) return;
+    var n = Number(m[1]), map = out[n] = {};
+    data.forEach(function (row) {
+      var name = String(row[c] || '').trim();
+      if (!name) return;
+      var story = row[c + 6] === true || /^(так|є|1|true|\+)$/i.test(String(row[c + 6]).trim());
+      var fr = Math.max(0, Math.min(2, parseInt(row[c + 7], 10) || 0));
+      if (story || fr) map[resKey_(name)] = { story: story, friends: fr };
+    });
+  });
+  return out;
+}
+
+/** Лідерборд сезону. cur — payload поточного раунду (щойно зібраний або зі знімка). */
+function leagueBuild_(ss, cur) {
+  var site = ss.getSheetByName(SYNC_SHEET);
+  var rows = seasonRows_(site);
+  if (!rows.length) return null;
+  var manual = leagueManual_(ss.getSheetByName(LEAGUE_SHEET));
+  var season = (cur && cur.season) || seasonPayload_(ss, rows) || { rounds: [] };
+  var meta = {};
+  (season.rounds || []).forEach(function (r) { meta[r.n] = r; });
+  var nF = Math.max(LEAGUE_FESTS, rows.length);
+  var fests = [], players = {};
+  for (var n = 1; n <= nF; n++) {
+    var row = rows.filter(function (r) { return r.n === n; })[0];
+    var m = meta[n] || {};
+    var f = { n: n, title: m.title || ('TM • Round ' + n), subtitle: m.subtitle || '', played: false, tours: 0, of: m.tours || null };
+    fests.push(f);
+    if (!row) continue;
+    var p = null;
+    try {
+      if (row === rows[rows.length - 1]) p = cur && cur.mode === MODE_RES ? cur : null;
+      else { var js = archiveJson_(ss, n); p = js ? JSON.parse(js) : null; }
+    } catch (err) { console.error('Ліга R' + n + ': ' + err); }
+    var fest = p ? leagueFest_(p.sheets) : null;
+    if (!fest) continue;
+    f.played = true; f.tours = fest.round; f.of = fest.total || f.of;
+    var man = manual[n] || {};
+    Object.keys(fest.people).forEach(function (k) {
+      var x = fest.people[k], mm = man[k] || {};
+      x.story = mm.story ? 3 : 0;
+      x.friends = (mm.friends || 0) * 2;
+      x.total = x.pp + x.part + x.fish + x.lead + x.story + x.friends;
+      var pl = players[k] || (players[k] = { name: x.name, total: 0, fests: 0, wins: 0, fish: 0, rn: 0, by: {} });
+      pl.name = x.name;
+      pl.total += x.total; pl.fests++; pl.wins += x.wins; pl.fish += x.fishN; pl.rn += x.rn;
+      pl.by[n] = { place: x.place, pp: x.pp, part: x.part, fish: x.fish, lead: x.lead, story: x.story, friends: x.friends, total: x.total };
+    });
+  }
+  var list = Object.keys(players).map(function (k) { return players[k]; });
+  var cmp = function (a, b) { return b.total - a.total || b.wins - a.wins || b.fish - a.fish || b.rn - a.rn; };
+  list.sort(function (a, b) { return cmp(a, b) || a.name.localeCompare(b.name, 'uk'); });
+  list.forEach(function (p, i) { p.place = i && !cmp(list[i - 1], p) ? list[i - 1].place : i + 1; p.fish = Math.round(p.fish * 10) / 10; });
+  return { fests: fests, minFests: LEAGUE_MIN_FESTS, played: fests.filter(function (f) { return f.played; }).length, rows: list };
+}
+
+/** Аркуш «Лідерборд» в адмінці: зліва зведена таблиця, праворуч блок на кожен фест (ручні — «Сторіс» і «Друзі»). */
+function leagueWriteSheet_(ss, league) {
+  if (!league) return;
+  var sh = ss.getSheetByName(LEAGUE_SHEET);
+  if (!sh) sh = ss.insertSheet(LEAGUE_SHEET);
+  var nF = league.fests.length;
+  var width = LEAGUE_FIRST_BLOCK_COL - 1 + nF * LEAGUE_BLOCK;
+  if (sh.getMaxColumns() < width) sh.insertColumnsAfter(sh.getMaxColumns(), width - sh.getMaxColumns());
+  var height = Math.max(league.rows.length + 2, 3);
+  sh.getRange(1, 1, Math.max(sh.getMaxRows(), height), sh.getMaxColumns()).clearContent().clearDataValidations().setFontWeight('normal').setBackground(null);
+  // Зведена таблиця
+  sh.getRange(1, 1).setValue('Лідерборд сезону').setFontWeight('bold').setFontSize(12);
+  sh.getRange(1, 3).setValue('Бали: місце + 10 участь + 3 риба + 2 лідер після 4/8 туру + 3 сторіс + 2 за друга (до 2). Сторіс і Друзі — вручну в блоках фестів.')
+    .setFontColor('#667085');
+  var labels = ['№', 'Учасник', 'Бали', 'Фести', 'Перемоги', 'Риба', 'РН'];
+  sh.getRange(2, 1, 1, labels.length).setValues([labels]).setFontWeight('bold').setBackground('#f2f4f7');
+  if (league.rows.length) {
+    sh.getRange(3, 1, league.rows.length, labels.length).setValues(league.rows.map(function (p) {
+      return [p.place, p.name, p.total, p.fests + ' з ' + nF, p.wins, p.fish, p.rn];
+    }));
+    sh.getRange(3, 3, league.rows.length, 1).setFontWeight('bold');
+  }
+  // Блоки фестів
+  league.fests.forEach(function (f, i) {
+    var c0 = LEAGUE_FIRST_BLOCK_COL + i * LEAGUE_BLOCK;
+    sh.getRange(1, c0).setValue('R' + f.n + ' · ' + f.title + (f.played ? '' : ' — ще попереду')).setFontWeight('bold');
+    sh.getRange(2, c0, 1, 9).setValues([['Учасник', 'Місце', 'За місце', 'Участь', 'Риба', 'Лідер', 'Сторіс', 'Друзі', 'Разом']])
+      .setFontWeight('bold').setBackground('#f2f4f7');
+    sh.getRange(2, c0 + 6, 1, 2).setBackground('#fdf3e1');
+    var ppl = league.rows.filter(function (p) { return p.by[f.n]; })
+      .sort(function (a, b) { return a.by[f.n].place - b.by[f.n].place; });
+    if (!ppl.length) return;
+    var r0 = 3, nR = ppl.length;
+    sh.getRange(r0, c0, nR, 6).setValues(ppl.map(function (p) {
+      var x = p.by[f.n];
+      return [p.name, x.place, x.pp, x.part, x.fish || '', x.lead || ''];
+    }));
+    sh.getRange(r0, c0 + 6, nR, 1).insertCheckboxes().setValues(ppl.map(function (p) { return [p.by[f.n].story > 0]; }));
+    sh.getRange(r0, c0 + 7, nR, 1).setDataValidation(SpreadsheetApp.newDataValidation()
+      .requireValueInList(['0', '1', '2'], true).setAllowInvalid(false).build())
+      .setValues(ppl.map(function (p) { return [p.by[f.n].friends ? String(p.by[f.n].friends / 2) : '0']; }));
+    sh.getRange(r0, c0 + 6, nR, 2).setBackground('#fdf3e1');
+    var A = function (k, r) { return sh.getRange(r, c0 + k).getA1Notation(); };
+    sh.getRange(r0, c0 + 8, nR, 1).setFormulas(ppl.map(function (p, j) {
+      var r = r0 + j;
+      return ['=N(' + A(2, r) + ')+N(' + A(3, r) + ')+N(' + A(4, r) + ')+N(' + A(5, r) + ')+IF(' + A(6, r) + ',3,0)+2*N(' + A(7, r) + ')'];
+    })).setFontWeight('bold');
+  });
+  sh.setFrozenRows(2);
+  sh.setColumnWidth(2, 190);
+  for (var i = 0; i < nF; i++) sh.setColumnWidth(LEAGUE_FIRST_BLOCK_COL + i * LEAGUE_BLOCK, 180);
+}
+
+/** Додати лідерборд у payload і перерахувати hash (інакше сайт не побачить зміну). */
+function leagueAttach_(ss, p) {
+  if (!p) return p;
+  var lg = null;
+  try { lg = leagueBuild_(ss, p); } catch (err) { console.error('Ліга: ' + err); }
+  p.league = lg;
+  if (lg) {
+    p.hash = Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5,
+      String(p.hash) + JSON.stringify(lg), Utilities.Charset.UTF_8));
+    try { leagueWriteSheet_(ss, lg); } catch (err) { console.error('Аркуш «' + LEAGUE_SHEET + '»: ' + err); }
+  }
+  return p;
+}
+
+/** Змінили «Сторіс» чи «Друзі» на аркуші «Лідерборд» — перераховуємо й оновлюємо лише лідерборд в опублікованих даних. */
+function leagueRefresh_(ss) {
+  var json = getSnapshot_();
+  if (!json) return;
+  var p;
+  try { p = JSON.parse(json); } catch (err) { return; }
+  var oldHash = p.hash;
+  leagueAttach_(ss, p);
+  if (p.hash !== oldHash) saveSnapshot_(JSON.stringify(p));
 }
 
 /**

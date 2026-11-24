@@ -1,0 +1,104 @@
+/* ===== Лідерборд сезону (98c-league.js) ===== */
+.lbd { display: grid; gap: 20px; align-items: start; }
+.lbx { display: grid; gap: 14px; min-width: 0; }
+@media (min-width: 980px) { .lbd { grid-template-columns: minmax(0, 1fr) 340px; } }
+
+/* Картка призу з котушкою */
+.lb-prize { position: relative; overflow: hidden; min-height: 150px; border-radius: 20px; padding: 20px 44% 20px 20px; display: flex; align-items: center;
+  background: radial-gradient(120% 140% at 100% 0%, #1f4d12 0%, #0d1f08 45%, #0a0a0a 100%); color: #fff; }
+.lb-prize::after { content: ""; position: absolute; right: -20px; top: 50%; width: 260px; height: 260px; transform: translateY(-50%); pointer-events: none;
+  background: radial-gradient(closest-side, rgba(190, 230, 140, .32), rgba(190, 230, 140, 0)); }
+.lb-prize > div { position: relative; z-index: 1; }
+.lb-prize small { display: block; color: #9fd35a; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.lb-prize b { display: block; margin: 4px 0 6px; font-size: 20px; line-height: 1.2; font-weight: 800; letter-spacing: -.01em; }
+.lb-prize span { display: block; color: #b8c0cc; font-size: 13px; line-height: 1.4; }
+.lb-reel { position: absolute; z-index: 1; right: -18px; top: 52%; width: 52%; max-width: 250px; height: auto; transform: translateY(-50%) rotate(-10deg);
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, .5)); pointer-events: none; }
+
+.lb-meta { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 13px; }
+.lb-cap { padding: 14px 16px; border-bottom: 1px solid var(--row-line); }
+@media (min-width: 980px) { .lb-cap { padding: 14px 20px; } }
+.lb-cap + .lb-row { border-top: 0; }
+.lb-meta b { color: #0a0a0a; }
+
+/* Таблиця */
+.lb-card { background: #fff; border: 1px solid var(--card-line); border-radius: 20px; overflow: hidden; box-shadow: 0 1px 2px rgba(16, 24, 40, .05); }
+.lb-empty { padding: 28px 20px; text-align: center; color: var(--muted); font-size: 14px; }
+.lb-row { display: grid; grid-template-columns: 32px 40px minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; padding: 12px 16px;
+  border: 0; border-top: 1px solid var(--row-line); background: #fff; color: inherit; font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.lb-card > .lb-row:first-child, .lb-head + .lb-row { border-top: 0; }
+.lb-row:active { background: #f8f9fb; }
+@media (hover: hover) { .lb-row:hover { background: #fafbfc; } }
+.lb-row.is-more { display: none; }
+.lb-pl { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 750; font-size: 14px; color: #344054; background: #f2f4f7; }
+.lb-pl.g1 { background: #fbf1d0; color: #6b4d00; }
+.lb-pl.g2 { background: #eef1f5; color: #344054; box-shadow: inset 0 0 0 1px #d0d5dd; }
+.lb-pl.g3 { background: #f6e3d2; color: #7a3f12; }
+.lb-row .av { width: 40px; height: 40px; }
+.lb-nm { min-width: 0; }
+.lb-nm > b { display: block; font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-nm > span { display: flex; align-items: center; gap: 6px; margin-top: 3px; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+.lb-nm > span i { font-style: normal; margin-right: -2px; }
+.lb-dots { display: inline-flex; gap: 3px; margin-right: 2px; }
+.lb-dots i { width: 7px; height: 7px; border-radius: 50%; background: #e4e7ec; }
+.lb-dots i.on { background: #76b11d; }
+.lb-pts { text-align: right; }
+.lb-pts b { display: block; font-size: 20px; font-weight: 800; line-height: 1; }
+.lb-pts small { color: var(--muted); font-size: 11.5px; }
+.lb-more { display: block; width: 100%; padding: 14px; border: 0; border-top: 1px solid var(--row-line); background: #fff; color: #0a0a0a; font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }
+
+/* Комп: колонки фестів */
+.lb-head { display: grid; grid-template-columns: 36px 40px minmax(0, 1fr) repeat(var(--nf, 4), 64px) 70px; gap: 12px; padding: 12px 20px;
+  border-bottom: 1px solid var(--row-line); font-size: 11.5px; font-weight: 700; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.lb-head .c { text-align: center; }
+.lb-head .r { text-align: right; }
+.lb-fe { text-align: center; font-weight: 650; font-size: 14px; }
+.lb-fe.no { color: #c4c9d2; }
+@media (min-width: 980px) {
+  .lb-row { grid-template-columns: 36px 40px minmax(0, 1fr) repeat(var(--nf, 4), 64px) 70px; padding: 11px 20px; }
+  .lb-row.is-more { display: grid; }
+}
+
+/* Бокова панель (комп) */
+.lb-side { display: grid; gap: 16px; }
+.lb-rules { background: #fff; border: 1px solid var(--card-line); border-radius: 20px; padding: 18px 20px; }
+.lb-rules h3 { margin: 0 0 10px; font-size: 15px; font-weight: 750; }
+.lb-rules ul { list-style: none; margin: 0; padding: 0; }
+.lb-rules li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid var(--row-line); font-size: 13.5px; color: #344054; }
+.lb-rules li:first-child { border-top: 0; }
+.lb-rules li b { color: #0a0a0a; white-space: nowrap; }
+.lb-rules p { margin: 10px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+
+/* Аркуш гравця */
+.lbsheet .mapsheet__box { gap: 0; padding-top: 10px; max-height: 88vh; max-height: 88dvh; overflow: auto; }
+.lbsheet__grip { width: 40px; height: 5px; border-radius: 3px; background: #e4e7ec; margin: 0 auto 14px; flex: none; }
+.lbsheet__hd { display: flex; align-items: center; gap: 14px; }
+.lbsheet__hd .av { width: 56px; height: 56px; font-size: 16px; }
+.lbsheet__hd b { display: block; font-size: 19px; font-weight: 800; }
+.lbsheet__hd span { color: var(--muted); font-size: 13px; }
+.lbsheet__tot { margin-left: auto; text-align: right; }
+.lbsheet__tot b { font-size: 28px; line-height: 1; }
+.lbsheet__kpi { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0 8px; }
+.lbsheet__kpi div { background: #f6f7f9; border-radius: 14px; padding: 10px 12px; }
+.lbsheet__kpi small { display: block; color: var(--muted); font-size: 11.5px; }
+.lbsheet__kpi b { font-size: 17px; }
+.lb-fest { border: 1px solid var(--card-line); border-radius: 16px; padding: 12px 14px; margin-top: 8px; }
+.lb-fest-h { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 750; font-size: 14px; }
+.lb-fest-h span { color: var(--muted); font-weight: 600; }
+.lb-fest ul { list-style: none; margin: 0; padding: 0; }
+.lb-fest li { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13.5px; color: #344054; }
+.lb-fest li b { color: #0a0a0a; }
+.lb-fest li.g b { color: #067647; }
+.lb-fest.no { display: flex; justify-content: space-between; color: #98a2b3; font-size: 13.5px; border-style: dashed; }
+.lbsheet__done { flex: none; display: block; width: 100%; height: 52px; margin-top: 16px; border: 0; border-radius: 999px; background: #0a0a0a; color: #fff;
+  font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(10, 10, 10, .22); }
+@media (min-width: 980px) {   /* на компі — віконце по центру */
+  .lbsheet .mapsheet__box { top: 50%; bottom: auto; width: 480px; border-radius: 24px; padding: 20px;
+    transform: translateY(-46%); opacity: 0; transition: transform .24s cubic-bezier(.2, .9, .3, 1), opacity .2s ease; }
+  .lbsheet.is-on .mapsheet__box { transform: translateY(-50%); opacity: 1; }
+  .lbsheet__grip { display: none; }
+}
+@supports (corner-shape: squircle) {
+  .lb-pl, .lb-dots i, .lbsheet__grip { corner-shape: round; }
+  @media (max-width: 979px) { html.tg .lbsheet__done, html.tg .lb-pl { corner-shape: round; } }
+}

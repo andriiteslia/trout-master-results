@@ -92,6 +92,34 @@ const TESTS = {
     await t.ctx.close(); return t.errors;
   },
 
+  'лідерборд: таблиця, аркуш гравця (комп і телефон)': async (b) => {
+    const t = await page(b, DESK, 'league');
+    await t.p.click('#leagueNav [data-sec="lb"]'); await t.p.waitForTimeout(500);
+    assert((await t.p.locator('.lb-row').count()) === 24, 'у лідерборді не 24 рядки');
+    assert((await t.p.locator('.lb-row').first().innerText()).includes('Красько Олег'), 'першим не Красько');
+    assert(await visible(t.p, '.lb-side .lb-prize'), 'на компі немає картки призу');
+    await shot(t.p, 'desk-lb');
+    await t.p.locator('.lb-row').nth(1).click(); await t.p.waitForTimeout(500);
+    assert(await visible(t.p, '#lbSheet .lbsheet__done'), 'не відкрилось віконце гравця');
+    assert((await t.p.locator('#lbSheet .lb-fest li.g').count()) === 2, 'у Лічнера мало бути 2 бонуси (риба, лідер)');
+    await shot(t.p, 'desk-lb-sheet');
+    await t.p.click('#lbSheet .lbsheet__done'); await t.p.waitForTimeout(450);
+    assert(!(await visible(t.p, '#lbSheet')), '«Готово» не закрило віконце');
+    await t.ctx.close();
+    const m = await page(b, MOB, 'league', { tg: true });
+    await m.p.click('#tabbar [data-sec="lb"]'); await m.p.waitForTimeout(500);
+    assert((await m.p.locator('.lb-row:visible').count()) === 15, 'на телефоні спершу не 15 рядків');
+    await shot(m.p, 'tg-lb');
+    await m.p.click('[data-lg-all]'); await m.p.waitForTimeout(300);
+    assert((await m.p.locator('.lb-row:visible').count()) === 24, '«Показати всіх» не показала всіх');
+    await m.p.locator('.lb-row').nth(1).click(); await m.p.waitForTimeout(500);
+    await shot(m.p, 'tg-lb-sheet');
+    await m.p.click('#lbSheet .mapsheet__bg', { position: { x: 20, y: 20 } }); await m.p.waitForTimeout(450);
+    assert(!(await visible(m.p, '#lbSheet')), 'тап по тлу не закрив аркуш');
+    await m.ctx.close();
+    return t.errors.concat(m.errors);
+  },
+
   'навбар: Турніри / Лідерборд / Про лігу (комп)': async (b) => {
     const t = await page(b, DESK, 'season');
     assert(await visible(t.p, '#leagueNav'), 'на головній немає перемикача розділів');
