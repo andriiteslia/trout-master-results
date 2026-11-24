@@ -57,14 +57,15 @@
 .lb-more { display: block; width: 100%; padding: 14px; border: 0; border-top: 1px solid var(--row-line); background: #fff; color: #0a0a0a; font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }
 
 /* Комп: колонки фестів */
-.lb-head { display: grid; grid-template-columns: 36px 40px minmax(0, 1fr) repeat(var(--nf, 4), 64px) 70px; gap: 12px; padding: 12px 20px;
+.lb-head { display: grid; grid-template-columns: 36px 40px minmax(180px, 1fr) repeat(var(--nf, 4), minmax(30px, 64px)) 64px; gap: 10px; padding: 12px 20px;
   border-bottom: 1px solid var(--row-line); font-size: 11.5px; font-weight: 700; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
 .lb-head .c { text-align: center; }
 .lb-head .r { text-align: right; }
 .lb-fe { text-align: center; font-weight: 650; font-size: 14px; }
 .lb-fe.no { color: #c4c9d2; }
 @media (min-width: 980px) {
-  .lb-row { grid-template-columns: 36px 40px minmax(0, 1fr) repeat(var(--nf, 4), 64px) 70px; padding: 11px 20px; }
+  /* ім'я має пріоритет: на вузькому вікні стискаються колонки раундів, а не ім'я */
+  .lb-row { grid-template-columns: 36px 40px minmax(180px, 1fr) repeat(var(--nf, 4), minmax(30px, 64px)) 64px; gap: 10px; padding: 11px 20px; }
   .lb-row.is-more { display: grid; }
 }
 
@@ -114,10 +115,4 @@
 
 .mapsheet__box { overscroll-behavior: contain; touch-action: pan-y; }
 html:has(.mapsheet:not([hidden])) { overflow: hidden; }   /* сторінка під аркушем не прокручується */
-/* Вузький комп (980–1199): приз і правила — над таблицею в два стовпці, таблиця на всю ширину (імена не обрізаються) */
-@media (min-width: 980px) and (max-width: 1199px) {
-  .lbd { grid-template-columns: minmax(0, 1fr); }
-  .lb-side { order: -1; }
-  .lb-side .lb-rules { display: none; }   /* на вузькому компі лише приз над таблицею — щоб таблиця не їхала вниз */
-  .lb-prize { min-height: 132px; }
-}
+
