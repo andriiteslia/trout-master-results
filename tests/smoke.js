@@ -838,6 +838,33 @@ const TESTS = {
     await ctx.close(); return errors;
   },
 
+  'perf: автооновлення — перевіряє лише version.json, нова версія перезавантажує апку': async (b) => {
+    const ver = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8')).v;
+    const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+    assert(html.includes('assets/app.js?v=' + ver + '"'), 'version.json не збігається з index.html');
+    async function open(served) {
+      const ctx = await b.newContext(Object.assign({ locale: 'uk-UA' }, DESK));
+      const seen = [];
+      await ctx.route('https://script.google.com/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: FIX('results') }));
+      await ctx.route('**/version.json*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ v: served }) }));
+      const p = await ctx.newPage();
+      p.on('request', (q) => seen.push(q.url()));
+      const errors = [];
+      p.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+      await p.goto('http://localhost:' + PORT + '/'); await p.waitForTimeout(4200);
+      const url = p.url();
+      await ctx.close();
+      return { url, seen, errors };
+    }
+    const same = await open(ver);
+    assert(!/[?&]v=/.test(same.url), 'перезавантажилось без нової версії: ' + same.url);
+    assert(same.seen.some((u) => /\/version\.json\?_=/.test(u)), 'version.json не запитано');
+    assert(!same.seen.some((u) => /localhost:\d+\/\?_=/.test(u)), 'досі тягне всю сторінку для перевірки версії');
+    const newer = await open(ver + 'z');
+    assert(new RegExp('[?&]v=' + ver + 'z').test(newer.url), 'нова версія не перезавантажила апку: ' + newer.url);
+    return same.errors.concat(newer.errors);
+  },
+
   'telegram: апка в TG, партнер рахує клік («Партнери»)': async (b) => {
     const t = await page(b, MOB, 'season', { tg: true });
     await t.p.click('#tabbar [data-sec="partners"]'); await t.p.waitForTimeout(400);

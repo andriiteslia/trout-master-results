@@ -11,11 +11,10 @@ var busy = false;
 function check() {
 if (busy || document.hidden) return;
 busy = true;
-fetch((SITE_ROOT || '/') + '?_=' + Date.now(), { cache: 'no-store' })
-.then(function (r) { return r.ok ? r.text() : ''; })
-.then(function (html) {
-var m = /assets\/app\.js\?v=([\w.-]+)/.exec(html || '');
-var v = m ? m[1] : null;
+fetch((SITE_ROOT || '/') + 'version.json?_=' + Date.now(), { cache: 'no-store' })
+.then(function (r) { return r.ok ? r.json() : null; })
+.then(function (j) {
+var v = j && typeof j.v === 'string' && /^[\w.-]+$/.test(j.v) ? j.v : null;
 if (!v || v === MY_V) return;
 var key = 'tm:reloadedTo';
 try { if (sessionStorage.getItem(key) === v) return; sessionStorage.setItem(key, v); } catch (e) {   }

@@ -59,6 +59,10 @@ for (let r = 1; r <= ROUNDS; r++) {
   for (let n = 1; n <= PLAYERS; n++) PAGES['r' + r + '/p' + n] = 'Учасник №' + n + ' · ' + R;
 }
 for (const [dir, title] of Object.entries(PAGES)) out[dir + '/index.html'] = copyOf(dir, title);
+// Номер версії для автооновлення апки (00-core.js перевіряє його замість усієї сторінки)
+const VER = /assets\/app\.js\?v=([\w.-]+)/.exec(INDEX);
+if (!VER) throw new Error('index.html: не знайдено assets/app.js?v=…');
+out['version.json'] = JSON.stringify({ v: VER[1] }) + '\n';
 out['404.html'] = INDEX.replace(/<head>/, '<head>\n  ' + NOTE);
 // Старі копії, яких уже немає в списку (напр. зменшили ROUNDS) — прибрати
 const GEN = /^(leaderboard|partners|about|r\d+(\/(stats|rules|p\d+))?)\/index\.html$/;
