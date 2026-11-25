@@ -1959,20 +1959,3 @@ html:has(.mapsheet:not([hidden])){overflow: hidden}
 .lb-row.is-q.is-more{display: grid}
 .lb-row[hidden]{display: none !important}
 
-/* src/css/99d-sticky-nav.css */
-:root{--cap-top: 60px}
-@media (min-width: 980px){:root{--cap-top: 68px}
-}
-.topbar{position: sticky;top: 0;z-index: 62}
-@media (min-width: 980px){.bcard > .btools{top: var(--cap-top)}
-.bcard .rk-head, .bcard .tgrid-hd{top: calc(var(--cap-top) + var(--bt-h, 81px))}
-.bcard .rk-row, .bcard .tr-row, .bcard .plist > li{scroll-margin-top: calc(var(--cap-top) + var(--bt-h, 81px) + 56px)}
-}
-.bh, .pcard .pc-tour--head, .lb-sticky{top: var(--cap-top)}
-.tg .bh{top: calc(var(--cap-top) + var(--tg-gap))}
-@media (max-width: 979px){.tg .rk-head, .tg .plist-head, .tg .tgrid-hd, .tg .lb-sticky, .tg .pcard .pc-tour--head{top: calc(var(--cap-top) + 12px)}
-.tg.tg-stuck::before, .tg.tg-stuck body::after{top: var(--cap-top)}
-}
-.vt-tabs .topbar{view-transition-name: topbar}
-::view-transition-group(topbar){animation: none}
-

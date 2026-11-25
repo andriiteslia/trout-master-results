@@ -89,11 +89,10 @@
       if (!main) { var hm = document.querySelector('.home:not([hidden]) .home__inner'); if (hm && hm.getClientRects().length) main = hm; }
       main = main || document.querySelector('.main');
       if (!tb || !main) return;
-      var top = capTop();   // нижній край закріпленого навбару
-      // Аркуш доїхав до навбару — під ним «кришка» з кутами.
+      var top = parseFloat(getComputedStyle(tb).paddingTop) || 0;
+      // Аркуш доїхав до панелі Telegram — під нею чорна смуга й «кришка» з кутами.
       // Аркуш уже проїхав (під панеллю чорний футер) — смуга лишається, а «кришки» немає (tg-past)
-      // (без прокрутки «кришки» немає: на головній аркуш і так стоїть одразу під навбаром)
-      var mr = main.getBoundingClientRect(), stuck = mr.top <= top + 0.5 && (window.scrollY || 0) > 0;
+      var mr = main.getBoundingClientRect(), stuck = mr.top <= top + 0.5;
       document.documentElement.classList.toggle('tg-stuck', stuck);
       document.documentElement.classList.toggle('tg-past', stuck && mr.bottom <= top + 24);
     }
@@ -102,26 +101,6 @@
     window.addEventListener('resize', schedule);
     s.addEventListener('load', schedule);
     document.addEventListener('DOMContentLoaded', schedule);
-  })();
-
-  // ----- Закріплений навбар: його нижній край — лінія, під якою прилипають шапки таблиць і «кришка» аркуша -----
-  // CSS бере її зі змінної --cap-top (src/css/99d-sticky-nav.css), JS — з capTop().
-  function capTop() {
-    var tb = document.querySelector('.topbar');
-    return tb ? Math.max(0, tb.getBoundingClientRect().bottom) : 0;
-  }
-  (function watchCapTop() {
-    var tb = document.querySelector('.topbar');
-    if (!tb) return;
-    var last = -1;
-    // Дробова висота, без округлення: інакше між навбаром і прилиплою шапкою буває щілина в 1 px
-    function put() {
-      var h = tb.getBoundingClientRect().height;
-      if (h !== last) { last = h; document.documentElement.style.setProperty('--cap-top', h + 'px'); }
-    }
-    put();
-    if (window.ResizeObserver) new ResizeObserver(put).observe(tb);
-    window.addEventListener('resize', put);
   })();
 
   // ---------- Config ----------
