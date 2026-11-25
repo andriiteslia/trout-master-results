@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <!-- Зібрано з index.html командою node tools/build.js — правте index.html, а не цей файл. -->
+  <base href="/">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Учасник №33 · Раунд 4 — TROUT MASTER</title>
+  <meta name="description" content="Таблиця, тури, картки учасників і статистика турніру з ловлі форелі. Оновлюється наживо.">
+  <!-- Прев'ю посилання в Telegram, Viber, iMessage, Facebook -->
+  <link rel="canonical" href="https://troutmaster.app/r4/p33">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="TROUT MASTER">
+  <meta property="og:locale" content="uk_UA">
+  <meta property="og:url" content="https://troutmaster.app/r4/p33">
+  <meta property="og:title" content="Учасник №33 · Раунд 4 — TROUT MASTER">
+  <meta property="og:description" content="Таблиця, тури, картки учасників і статистика турніру з ловлі форелі. Оновлюється наживо.">
+  <meta property="og:image" content="https://troutmaster.app/assets/og.jpg?v=2">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="TROUT MASTER — результати онлайн">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Учасник №33 · Раунд 4 — TROUT MASTER">
+  <meta name="twitter:description" content="Таблиця, тури, картки учасників і статистика турніру з ловлі форелі. Оновлюється наживо.">
+  <meta name="twitter:image" content="https://troutmaster.app/assets/og.jpg?v=2">
+  <meta name="theme-color" content="#0a0a0a">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23101828'/%3E%3Cpath d='M15 17h34v9H37v23H27V26H15z' fill='%23fff'/%3E%3Crect x='15' y='53' width='34' height='4' rx='2' fill='%2376b11d'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://script.google.com" crossorigin>
+  <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+  <link rel="preload" href="assets/fonts/fixel-cyrillic-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fish.webp?v=2" as="image" type="image/webp">
+  <link rel="stylesheet" href="assets/style.css?v=20261125s">
+  <script src="config.js?v=20261125s"></script>
+  <script>
+    // Запитуємо результати одразу, паралельно з завантаженням решти сторінки
+    (function () {
+      try {
+        var u = String((window.RESULTS_CONFIG || {}).API_URL || '').trim() || 'demo.json';
+        window.__tmEarly = fetch(u + (u.indexOf('?') < 0 ? '?' : '&') + '_=' + Date.now(), { cache: 'no-store' })
+          .then(function (r) { if (!r.ok) throw new Error('status ' + r.status); return r.json(); });
+        window.__tmEarly.catch(function () {});
+      } catch (e) { window.__tmEarly = null; }
+    })();
+  </script>
+  <script>
+    // Посилання на картку (…/#p9, startapp=p9): з першого кадру ховаємо головну, щоб не блимав список до картки
+    if (/(?:tgWebAppStartParam=|#)p\d+(?:&|$)/.test(location.hash + '&' + location.search.slice(1)) || /\/r\d+\/p\d+\/?$/.test(location.pathname)) document.documentElement.className += ' view-card deep-wait';
+    // Звичайне відкриття — з першого кадру головна (скелетон карток), щоб до запуску апки не блимала сторінка раунду
+    else if (!/tgWebAppStartParam=|[?&]sel=|#(?:r\d+|player|stats|register|rules)(?:&|$)/.test(location.hash + '&' + location.search)) document.documentElement.className += ' home-wait';
+  </script>
+  <script src="assets/i18n.js?v=20261125s"></script>
+  <script src="assets/app.js?v=20261125s" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar__inner">
+      <a class="logo-link" href="./" id="logoHome" aria-label="Trout Master — на головну"><img class="logo" src="assets/logo.svg?v=3" width="1020" height="306" alt="Trout Master"></a>
+      <nav class="topnav" id="topnav" aria-label="Розділи" hidden>
+        <button type="button" data-nav="list" id="navList">Результати</button>
+        <button type="button" data-nav="stats" id="navStats">Статистика</button>
+      </nav>
+      <nav class="topnav leaguenav" id="leagueNav" aria-label="Розділи ліги" hidden>
+        <button type="button" data-sec="tours">Турніри</button>
+        <button type="button" data-sec="lb">Лідерборд</button>
+        <button type="button" data-sec="partners">Партнери</button>
+        <button type="button" data-sec="about">Про лігу</button>
+      </nav>
+      <span class="status" id="status" data-state="load" role="status" aria-live="polite">
+        <span class="status__dot" aria-hidden="true"></span>
+        <span id="statusText">Завантаження…</span>
+      </span>
+      <button type="button" class="refresh" id="refreshBtn" title="Оновити" aria-label="Оновити дані">
+        <span>Оновити</span>
+        <i class="refresh__spin" aria-hidden="true"></i>
+      </button>
+      <div class="lang" id="langSw" role="group" aria-label="Мова">
+        <button type="button" data-lang="uk" lang="uk">УКР</button>
+        <button type="button" data-lang="en" lang="en">ENG</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Головна: картки раундів сезону (src/js/98-home.js) -->
+  <section class="home" id="home" aria-labelledby="homeTitle" hidden>
+    <div class="wrap home__inner">
+      <span class="home__kicker is-skel" id="homeSeason"><i aria-hidden="true"></i><span></span></span>
+      <div class="home__head">
+        <div class="home__htxt">
+          <h1 class="home__title" id="homeTitle" tabindex="-1"><span class="hw-uk">Турніри </span>TROUT MASTER<span class="hw-en"> tournaments</span></h1>
+          <p class="home__lead">Реєстрація, результати онлайн та статистика</p>
+        </div>
+        <div class="home__acts d-only">
+          <a class="partner-web" id="partnerHome" data-partner="FISH.ME.FISH" href="https://t.me/fishmefish_japan" target="_blank" rel="noopener" title="Наш партнер FISH.ME.FISH" aria-label="Наш партнер FISH.ME.FISH у Telegram">
+            <img src="assets/partners/fishmefish.svg?v=1" alt="" width="288" height="288" decoding="async">
+          </a>
+          <a class="btn2 btn2-tg" id="chatHome" href="https://t.me/troutmasterua" target="_blank" rel="noopener" aria-label="Telegram-чат турніру">
+          <svg class="tg-ic" viewBox="26 23 446 446" aria-hidden="true"><path d="M192.579 406.775C179.579 406.775 181.912 401.775 177.246 389.442L139.246 264.108L375.246 116.775L402.912 124.108L379.912 186.775L192.579 406.775Z" fill="#C8DAEA"/><path d="M192.579 406.775C202.579 406.775 206.912 402.108 212.579 396.775C221.245 388.442 332.579 280.108 332.579 280.108L264.245 263.442L200.912 303.442L192.579 403.442V406.775Z" fill="#A9C9DD"/><path d="M199.245 304.775L360.579 423.775C378.912 433.775 392.245 428.775 396.912 406.775L462.579 97.4416C469.245 70.4416 452.245 58.4416 434.579 66.4416L49.2453 215.108C22.912 225.775 23.2453 240.442 44.5787 246.775L143.579 277.775L372.579 133.442C383.245 126.775 393.245 130.442 385.245 137.775L199.245 304.775Z" fill="url(#tgPlaneH)"/><defs><linearGradient id="tgPlaneH" x1="295.882" y1="235.958" x2="379.215" y2="369.292" gradientUnits="userSpaceOnUse"><stop stop-color="#EFF7FC"/><stop offset="1" stop-color="#fff"/></linearGradient></defs></svg>
+          <span>Telegram-чат</span>
+        </a>
+        </div>
+      </div>
+      <div class="home__grid" id="homeBody"><div class="home-skel" aria-hidden="true"><i></i><i></i></div></div>
+    </div>
+  </section>
+
+  <!-- Шапка турніру: на телефоні темна, на комп'ютері світла -->
+  <section class="hero" id="hero">
+    <div class="wrap hero__inner">
+      <div class="hero__txt">
+        <button type="button" class="hero-back" id="heroBack">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg><span>Назад</span>
+        </button>
+        <h1 class="title" id="title">Результати</h1>
+        <!-- Плашка стану (реєстрація / «Зіграно N з M») — у рядку з датою й місцем, щоб заголовок не стрибав між екранами -->
+        <div class="hero__metarow"><p class="meta" id="subtitle" hidden></p><span class="pill" id="heroPill" hidden></span></div>
+      </div>
+      <div class="hero__actions" id="heroActions">
+        <a class="partner-web" id="partnerWeb" data-partner="FISH.ME.FISH" href="https://t.me/fishmefish_japan" target="_blank" rel="noopener" title="Наш партнер FISH.ME.FISH" aria-label="Наш партнер FISH.ME.FISH у Telegram">
+          <img src="assets/partners/fishmefish.svg?v=1" alt="" width="288" height="288" decoding="async">
+        </a>
+        <a class="btn2 btn2-tg" id="chatWeb" href="https://t.me/troutmasterua" target="_blank" rel="noopener" aria-label="Telegram-чат турніру">
+          <svg class="tg-ic" viewBox="26 23 446 446" aria-hidden="true"><path d="M192.579 406.775C179.579 406.775 181.912 401.775 177.246 389.442L139.246 264.108L375.246 116.775L402.912 124.108L379.912 186.775L192.579 406.775Z" fill="#C8DAEA"/><path d="M192.579 406.775C202.579 406.775 206.912 402.108 212.579 396.775C221.245 388.442 332.579 280.108 332.579 280.108L264.245 263.442L200.912 303.442L192.579 403.442V406.775Z" fill="#A9C9DD"/><path d="M199.245 304.775L360.579 423.775C378.912 433.775 392.245 428.775 396.912 406.775L462.579 97.4416C469.245 70.4416 452.245 58.4416 434.579 66.4416L49.2453 215.108C22.912 225.775 23.2453 240.442 44.5787 246.775L143.579 277.775L372.579 133.442C383.245 126.775 393.245 130.442 385.245 137.775L199.245 304.775Z" fill="url(#tgPlaneA)"/><defs><linearGradient id="tgPlaneA" x1="295.882" y1="235.958" x2="379.215" y2="369.292" gradientUnits="userSpaceOnUse"><stop stop-color="#EFF7FC"/><stop offset="1" stop-color="#fff"/></linearGradient></defs></svg>
+          <span>Telegram-чат</span>
+        </a>
+        <button type="button" class="btn2 btn2-dark" id="heroStats" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+          <span>Статистика</span>
+        </button>
+        <button type="button" class="btn2 btn2-dark" id="heroReg" hidden><span>Зареєструватися</span></button>
+      </div>
+      <div class="kpis" id="kpis" aria-label="Підсумки"></div>
+      <div class="hlinks" id="heroLinks" hidden></div>
+      <div class="paybox m-only" id="payBox" hidden>
+        <a class="paybtn" id="payBtn" href="#" target="_blank" rel="noopener">
+          <img src="assets/icons/paid.webp?v=2" alt="" aria-hidden="true">
+          <span>Оплатити участь</span>
+        </a>
+        <p class="paybox__fee" id="payFee" hidden></p>
+      </div>
+    </div>
+  </section>
+
+  <main class="wrap main">
+    <div class="notice" id="notice" role="note" hidden></div>
+
+    <!-- Старі елементи, на які спирається логіка (у новому дизайні не показуються) -->
+    <p class="reg-live" id="regLive" hidden>
+      <span class="reg-live__timer" id="regTimer" hidden>
+        <span class="visually-hidden" id="regTimerSr"></span>
+        <span aria-hidden="true" id="regTimerTxt"></span>
+      </span>
+    </p>
+    <p class="info" id="info" hidden></p>
+
+    <div class="layout" id="layout">
+      <section class="bcard" id="bcard" aria-labelledby="boardTitle">
+        <div class="btools">
+          <div class="btools__title">
+            <div class="btools__h"><h2 id="boardTitle">Підсумкова таблиця</h2><span class="plist-paid d-only" id="boardPaid" title="Оплатили участь" hidden></span></div>
+            <span id="boardSub"></span>
+          </div>
+          <div class="legend" id="legend" hidden>
+            <span><i class="lg-w"></i>В</span><span><i class="lg-d"></i>РН</span><span><i class="lg-z"></i>БН</span><span><i class="lg-l"></i>П</span>
+          </div>
+          <div class="tabs" id="tabs" role="tablist" aria-label="Вигляд"></div>
+          <button type="button" class="tshare" id="tableShare" aria-label="Поділитися таблицею" title="Поділитися таблицею" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v6.5A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5V12"/></svg>
+          </button>
+          <label class="search" id="searchBox">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+            <span class="visually-hidden">Знайти учасника</span>
+            <input type="search" id="search" placeholder="Знайти учасника" autocomplete="off">
+            <button type="button" class="search__clear" id="searchClear" aria-label="Очистити пошук" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8l8 8M16 8l-8 8"/></svg>
+            </button>
+          </label>
+        </div>
+        <div class="fillcard" id="fillCard" hidden></div>
+        <div class="selbar" id="selbar" hidden>
+          <span class="selbar__place" id="selPlace" hidden></span>
+          <span class="selbar__place selbar__place--2" id="selPlace2" hidden></span>
+          <span class="selbar__txt"><small id="selLbl">Вибрано в таблиці</small><b id="selName"></b></span>
+          <button type="button" class="btn2 btn2-white" id="selCard">
+            <svg class="ic-card" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6"/></svg>
+            <svg class="ic-cmp" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M17 4v16M3 8l4-4 4 4M13 16l4 4 4-4"/></svg>
+            <span id="selCardText">Картка учасника</span>
+          </button>
+          <button type="button" class="selbar__x" id="selClear" aria-label="Зняти вибір">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <div class="nbar" id="nbar" hidden>
+          <span class="nbar__ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 10a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg></span>
+          <span class="nbar__txt" id="nbarTxt"><b>Результати — у Telegram</b><small>Бот напише ваше місце й підсумки після турніру</small></span>
+          <button type="button" class="nbar__x" id="nbarX" aria-label="Закрити"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <button type="button" class="nbar__go" id="nbarGo">Отримувати результати</button>
+        </div>
+        <section class="board" id="board" role="tabpanel" aria-label="Таблиця результатів"></section>
+      </section>
+      <aside class="side" id="side" hidden></aside>
+    </div>
+
+    <!-- Реєстрація: показується замість таблиці -->
+    <section class="reg" id="reg" aria-labelledby="regTitle" hidden>
+      <button type="button" class="back" id="regBack">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg>
+        До списку
+      </button>
+      <h1 class="title" id="regTitle" tabindex="-1">Реєстрація</h1>
+      <p class="subtitle" id="regEvent" hidden></p>
+
+      <div class="card2 seats" id="regSeats" hidden></div>
+
+      <form class="card form" id="regForm" novalidate>
+        <div class="field">
+          <label for="fName">Прізвище та ім’я</label>
+          <input id="fName" name="name" type="text" autocomplete="name" autocapitalize="words" spellcheck="false"
+                 maxlength="60" placeholder="Шевченко Тарас" aria-describedby="fNameErr" required>
+          <p class="err" id="fNameErr" hidden></p>
+        </div>
+        <div class="field">
+          <label for="fPhone">Номер телефону</label>
+          <input id="fPhone" name="phone" type="tel" inputmode="numeric" autocomplete="tel"
+                 placeholder="+380 XX XXX XX XX" aria-describedby="fPhoneHint fPhoneErr" required>
+          <p class="hint" id="fPhoneHint">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+            Номер бачить лише організатор. На сайті буде тільки прізвище та ім’я.
+          </p>
+          <p class="err" id="fPhoneErr" hidden></p>
+        </div>
+        <div class="hp" aria-hidden="true">
+          <label>Сайт <input name="website" type="text" tabindex="-1" autocomplete="off"></label>
+        </div>
+        <div class="form-alert" id="regAlert" role="alert" hidden></div>
+        <button type="submit" class="btn btn-primary" id="regSubmit">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="btn__text">Підтвердити реєстрацію</span>
+        </button>
+        <p class="hint fee-hint" id="regFee" hidden></p>
+      </form>
+      <p class="botnote" id="regBotNote" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg>
+        Після реєстрації бот зможе надіслати нагадування перед турніром і ваші результати.
+      </p>
+
+      <div class="card done" id="regDone" tabindex="-1" hidden>
+        <svg class="done__icon" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22"/><path d="m15 24.5 6 6 12-13"/></svg>
+        <h2 class="done__title">Реєстрацію підтверджено</h2>
+        <p class="done__text" id="regDoneText"></p>
+        <div class="notify" id="regNotify" hidden>
+          <p class="notify__text">Хочете отримувати нагадування перед турніром і результати в Telegram?</p>
+          <button type="button" class="btn btn-primary" id="regNotifyBtn">
+            <svg class="btn__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg>
+            <span>Отримувати сповіщення</span>
+          </button>
+        </div>
+        <p class="notify__ok" id="regNotifyOk" role="status" hidden>🔔 Готово! Сповіщення прийдуть у Telegram.</p>
+        <a class="tgjoin" id="regChat" href="https://t.me/troutmasterua" target="_blank" rel="noopener">
+          <span class="tgjoin__ic"><svg class="tg-ic" viewBox="26 23 446 446" aria-hidden="true"><path d="M192.579 406.775C179.579 406.775 181.912 401.775 177.246 389.442L139.246 264.108L375.246 116.775L402.912 124.108L379.912 186.775L192.579 406.775Z" fill="#C8DAEA"/><path d="M192.579 406.775C202.579 406.775 206.912 402.108 212.579 396.775C221.245 388.442 332.579 280.108 332.579 280.108L264.245 263.442L200.912 303.442L192.579 403.442V406.775Z" fill="#A9C9DD"/><path d="M199.245 304.775L360.579 423.775C378.912 433.775 392.245 428.775 396.912 406.775L462.579 97.4416C469.245 70.4416 452.245 58.4416 434.579 66.4416L49.2453 215.108C22.912 225.775 23.2453 240.442 44.5787 246.775L143.579 277.775L372.579 133.442C383.245 126.775 393.245 130.442 385.245 137.775L199.245 304.775Z" fill="url(#tgPlaneB)"/><defs><linearGradient id="tgPlaneB" x1="295.882" y1="235.958" x2="379.215" y2="369.292" gradientUnits="userSpaceOnUse"><stop stop-color="#EFF7FC"/><stop offset="1" stop-color="#fff"/></linearGradient></defs></svg></span>
+          <span class="tgjoin__txt"><b>Приєднуйтесь до Telegram‑чату</b><span>Анонси, новини й усе важливе про турнір — щоб нічого не пропустити.</span></span>
+          <span class="tgjoin__btn">Приєднатися</span>
+        </a>
+        <button type="button" class="btn btn-secondary" id="regToList">Переглянути список</button>
+      </div>
+
+      <div class="card done" id="regClosed" hidden>
+        <svg class="done__icon done__icon--late" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22"/><circle class="face" cx="24" cy="25" r="11"/><path d="M24 19v6l4 3M21 11h6"/></svg>
+        <h2 class="done__title">Ой, не встигли 😔</h2>
+        <p class="done__text">На жаль, реєстрацію вже закрито. Але не засмучуйтесь: стежте за анонсами, наступного разу обов’язково встигнете!</p>
+        <button type="button" class="btn btn-secondary" id="regClosedBack">До списку учасників</button>
+      </div>
+    </section>
+
+    <!-- Картка учасника: показується замість таблиці -->
+    <section class="pcard" id="pcard" aria-labelledby="pcTitle" hidden>
+      <button type="button" class="back" id="pcBack">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg>
+        До таблиці
+      </button>
+      <!-- Скелетон картки з першого кадру (посилання …/#p9); app.js замінює його справжньою карткою -->
+      <div id="pcBody"><div class="pc-skel" role="status" aria-live="polite"><span class="visually-hidden">Завантаження картки…</span><header class="pc-hero"><div class="pc-hero__bar"><button type="button" class="hero-back pc-back" data-act="back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg><span class="l-m">Назад</span><span class="l-d">До підсумку</span></button></div><div class="pc-hero__main" aria-hidden="true"><div class="pc-ava pc-ava--ini skel__dot"></div><div class="pc-head__txt"><i class="skel__bar" style="width:min(320px, 60vw);height:30px;"></i><i class="skel__bar" style="width:min(200px, 40vw);height:14px;margin-top:14px"></i></div></div></header><div class="pc-sheet" aria-hidden="true"><section class="card pc-block"><div class="skel" aria-hidden="true"><div class="skel__row" aria-hidden="true"><i class="skel__dot"></i><i class="skel__bar" style="width:62%"></i><i class="skel__num"></i></div><div class="skel__row" aria-hidden="true"><i class="skel__dot"></i><i class="skel__bar" style="width:48%"></i><i class="skel__num"></i></div><div class="skel__row" aria-hidden="true"><i class="skel__dot"></i><i class="skel__bar" style="width:70%"></i><i class="skel__num"></i></div><div class="skel__row" aria-hidden="true"><i class="skel__dot"></i><i class="skel__bar" style="width:54%"></i><i class="skel__num"></i></div><div class="skel__row" aria-hidden="true"><i class="skel__dot"></i><i class="skel__bar" style="width:66%"></i><i class="skel__num"></i></div><div class="skel__row" aria-hidden="true"><i class="skel__dot"></i><i class="skel__bar" style="width:44%"></i><i class="skel__num"></i></div><div class="skel__row" aria-hidden="true"><i class="skel__dot"></i><i class="skel__bar" style="width:58%"></i><i class="skel__num"></i></div></div></section></div></div></div>
+    </section>
+
+    <!-- Вибір навігатора для «Як доїхати» -->
+    <div class="mapsheet" id="mapSheet" hidden>
+      <div class="mapsheet__bg" data-map="close"></div>
+      <div class="mapsheet__box" role="dialog" aria-modal="true" aria-labelledby="mapTitle">
+        <p class="mapsheet__t" id="mapTitle">Відкрити в навігаторі</p>
+        <p class="mapsheet__s" id="mapName"></p>
+        <a class="mapsheet__btn mapsheet__btn--google" data-map="google" href="#" target="_blank" rel="noopener"><img src="assets/icons/google-maps.svg" alt="" aria-hidden="true"><span>Google Maps</span></a>
+        <a class="mapsheet__btn mapsheet__btn--waze" data-map="waze" href="#" target="_blank" rel="noopener"><img src="assets/icons/waze.png" alt="" aria-hidden="true"><span>Waze</span></a>
+        <button type="button" class="mapsheet__btn mapsheet__btn--x" data-map="close">Скасувати</button>
+      </div>
+    </div>
+
+    <!-- Оплата участі: реквізити або Monobank -->
+    <div class="mapsheet" id="paySheet" hidden>
+      <div class="mapsheet__bg" data-pay="close"></div>
+      <div class="mapsheet__box" role="dialog" aria-modal="true" aria-labelledby="payTitle">
+        <p class="mapsheet__t" id="payTitle">Оплата участі</p>
+        <p class="mapsheet__s" id="payFeeS"></p>
+        <div class="paycard" id="payCard"></div>
+        <button type="button" class="mapsheet__btn mapsheet__btn--google" data-pay="copy">
+          <svg class="paysheet__ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></svg><span id="payCopyTxt">Скопіювати реквізити</span></button>
+        <a class="mapsheet__btn mapsheet__btn--mono" data-pay="mono" href="#" target="_blank" rel="noopener"><span>Оплатити в Monobank</span></a>
+        <button type="button" class="mapsheet__btn mapsheet__btn--x" data-pay="close">Скасувати</button>
+      </div>
+    </div>
+
+    <!-- Статистика турніру: показується замість таблиці -->
+    <section class="pcard tstats" id="tstats" aria-labelledby="tsTitle" hidden>
+      <button type="button" class="back" id="tsBack">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg>
+        До таблиці
+      </button>
+      <div id="tsBody"></div>
+    </section>
+  </main>
+
+  <footer class="foot" id="siteFoot">
+    <div class="wrap foot__inner">
+      <div class="foot__brand">
+        <img class="foot__logo" src="assets/logo.svg?v=3" width="1020" height="306" alt="Trout Master" loading="lazy">
+        <p>Результати й статистика турнірів з ловлі форелі</p>
+      </div>
+      <nav class="foot__col" aria-label="Спільнота">
+        <h3>Спільнота</h3>
+        <a href="https://t.me/troutmasterua" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.2 4.4 2.9 11.5c-1.2.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.8.8.4 0 .6-.2.9-.4l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.6c.3-1.3-.5-1.9-1.5-1.5Zm-3.4 3.4-8.4 7.6-.3 3.4-1.6-5 9.9-6.3c.5-.3.8 0 .4.3Z" fill="currentColor"/></svg><span>Telegram-чат</span></a>
+        <a class="foot__web" href="https://t.me/troutmasterua_bot" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16.5h5"/></svg><span>Бот @troutmasterua_bot</span></a>
+        <a class="foot__tg" href="https://troutmaster.app/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z"/></svg><span>Сайт troutmaster.app</span></a>
+        <a href="https://instagram.com/troutmasterua" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg><span>Instagram</span></a>
+      </nav>
+      <nav class="foot__col" aria-label="Партнери">
+        <h3>Партнери</h3>
+        <a data-partner="FISH.ME.FISH" href="https://t.me/fishmefish_japan" target="_blank" rel="noopener"><img class="foot__plogo" src="assets/partners/fishmefish.svg?v=1" alt="" width="288" height="288" loading="lazy"><span>FISH.ME.FISH</span></a>
+      </nav>
+      <div class="foot__col">
+        <h3>Співпраця</h3>
+        <p class="foot__note">Пропозиції співпраці й партнерства — пишіть:</p>
+        <a href="https://t.me/andriiteslia" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.2 4.4 2.9 11.5c-1.2.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.8.8.4 0 .6-.2.9-.4l2.3-2.2 4.7 3.5c.9.5 1.5.2 1.7-.8l3.1-14.6c.3-1.3-.5-1.9-1.5-1.5Zm-3.4 3.4-8.4 7.6-.3 3.4-1.6-5 9.9-6.3c.5-.3.8 0 .4.3Z" fill="currentColor"/></svg><span>@andriiteslia</span></a>
+        <a href="tel:+380955085475"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 3.5h2.6l1.4 4.2-2 1.4a12 12 0 0 0 6.3 6.3l1.4-2 4.2 1.4v2.6a2 2 0 0 1-2.1 2A16.5 16.5 0 0 1 4.6 5.6a2 2 0 0 1 2-2.1Z"/></svg><span>+380 95 508 54 75</span></a>
+      </div>
+    </div>
+    <div class="wrap"><div class="foot__bottom">
+      <span>© <span id="footYear">2026</span> TROUT MASTER. Усі права захищено.</span>
+      <span>troutmaster.app</span>
+    </div></div>
+  </footer>
+
+  <div class="regbar" id="regbar" hidden>
+    <button type="button" class="btn btn-primary" id="cardOpen" hidden>
+      <svg class="btn__icon ic-card" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6"/></svg>
+      <svg class="btn__icon ic-cmp" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M17 4v16M3 8l4-4 4 4M13 16l4 4 4-4"/></svg>
+      <span class="btn__text" id="cardOpenText">Картка учасника</span>
+    </button>
+    <button type="button" class="btn btn-primary" id="regOpen">Зареєструватися</button>
+    <button type="button" class="btn btn-primary" id="statsOpen" hidden>
+      <svg class="btn__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+      <span class="btn__text">Статистика</span>
+    </button>
+    <button type="button" class="btn btn-primary" id="homeOpen" hidden>
+      <svg class="btn__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
+      <span class="btn__text">На головну</span>
+    </button>
+  </div>
+
+  <!-- Розділи ліги на телефоні й у Telegram: таббар унизу (лише на головних розділах, не в раунді) -->
+  <nav class="tabbar" id="tabbar" aria-label="Розділи ліги" hidden>
+    <button type="button" data-sec="tours"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/></svg><span>Турніри</span></button>
+    <button type="button" data-sec="lb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6V2h-1"/><path d="M9 15a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1"/><path d="M9 21V11a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v10"/></svg><span>Лідерборд</span></button>
+    <button type="button" data-sec="partners"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4"/><path d="m21 3 1 11h-2"/><path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3"/><path d="M3 4h8"/></svg><span>Партнери</span></button>
+    <button type="button" data-sec="about"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><span>Про лігу</span></button>
+  </nav>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

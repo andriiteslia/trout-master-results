@@ -27,20 +27,36 @@ const out = {
   'assets/style.css': BANNER('src/css') + read('src/css', '.css').join('')
 };
 
-// Окремі адреси розділів ліги: troutmaster.app/leaderboard, /partners, /about — копії index.html
-// з <base href="../"> (файли беруться з кореня) і своїми назвою/описом для превʼю посилань
-const SECS = { leaderboard: 'Лідерборд', partners: 'Партнери', about: 'Про лігу' };
+// Окремі адреси сторінок — копії index.html (у всіх <base href="/">, тож файли беруться з кореня;
+// превʼю посилань — загальна картинка og.jpg, назва своя). Правити лише index.html.
+//   розділи ліги: /leaderboard, /partners, /about
+//   раунди: /r1 … /r4, у кожному /stats, /rules і картки /p1 … /p48
+//   решта адрес (напр. /r5) — 404.html: той самий сайт, app.js сам відкриває потрібний екран
+const ROUNDS = 4, PLAYERS = 48;
 const INDEX = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-for (const [dir, name] of Object.entries(SECS)) {
-  const t = name + ' — TROUT MASTER';
-  out[dir + '/index.html'] = INDEX
-    .replace(/<head>/, '<head>\n  <!-- Зібрано з index.html командою node tools/build.js — правте index.html, а не цей файл. -->\n  <base href="../">')
+const NOTE = '<!-- Зібрано з index.html командою node tools/build.js — правте index.html, а не цей файл. -->';
+function copyOf(dir, title) {
+  const t = title + ' — TROUT MASTER', url = 'https://troutmaster.app/' + dir;
+  return INDEX
+    .replace(/<head>/, '<head>\n  ' + NOTE)
     .replace(/<title>[^<]*<\/title>/, '<title>' + t + '</title>')
     .replace(/(<meta property="og:title" content=")[^"]*/, '$1' + t)
     .replace(/(<meta name="twitter:title" content=")[^"]*/, '$1' + t)
-    .replace(/(<meta property="og:url" content=")[^"]*/, '$1https://troutmaster.app/' + dir)
-    .replace(/(<link rel="canonical" href=")[^"]*/, '$1https://troutmaster.app/' + dir);
+    .replace(/(<meta property="og:url" content=")[^"]*/, '$1' + url)
+    .replace(/(<link rel="canonical" href=")[^"]*/, '$1' + url);
 }
+const PAGES = { leaderboard: 'Лідерборд', partners: 'Партнери', about: 'Про лігу' };
+for (let r = 1; r <= ROUNDS; r++) {
+  const R = 'Раунд ' + r;
+  PAGES['r' + r] = R;
+  PAGES['r' + r + '/stats'] = 'Статистика · ' + R;
+  PAGES['r' + r + '/rules'] = 'Правила · ' + R;
+  for (let n = 1; n <= PLAYERS; n++) PAGES['r' + r + '/p' + n] = 'Учасник №' + n + ' · ' + R;
+}
+for (const [dir, title] of Object.entries(PAGES)) out[dir + '/index.html'] = copyOf(dir, title);
+out['404.html'] = INDEX.replace(/<head>/, '<head>\n  ' + NOTE);
+// Старі копії, яких уже немає в списку (напр. зменшили ROUNDS) — прибрати
+const GEN = /^(leaderboard|partners|about|r\d+(\/(stats|rules|p\d+))?)\/index\.html$/;
 
 const check = process.argv.includes('--check');
 let stale = [], wrote = 0;
@@ -51,6 +67,15 @@ for (const [file, text] of Object.entries(out)) {
   if (check) stale.push(file);
   else { wrote++; fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, text); console.log('зібрано ' + file + ' (' + text.split('\n').length + ' рядків)'); }
 }
+(function prune(dir) {
+  for (const f of fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
+    const rel = (dir ? dir + '/' : '') + f.name;
+    if (f.isDirectory() && /^(r\d+|stats|rules|p\d+|leaderboard|partners|about)$/.test(f.name)) prune(rel);
+    else if (f.isFile() && GEN.test(rel) && !out[rel]) {
+      if (check) stale.push(rel); else { fs.unlinkSync(path.join(ROOT, rel)); console.log('прибрано ' + rel); }
+    }
+  }
+})('');
 if (check && stale.length) {
   console.error('Не зібрано з src/: ' + stale.join(', ') + ' — запустіть node tools/build.js');
   process.exit(1);

@@ -16,6 +16,7 @@
     var t = typeof roundTag === 'function' ? roundTag() : null;
     var code = t ? 'r' + t + (n ? '-p' + n : '') : (n ? 'p' + n : '');
     if (tg && tg.initData) return code ? SHARE_URL + '=' + code : SHARE_URL;
+    if (t) return WEB_URL + 'r' + t + (n ? '/p' + n : '');
     return code ? WEB_URL + '#' + code : WEB_URL;
   }
   window.__tmShareUrl = function () { return shareUrl(state.selected && drawData() ? (drawData().players.find(function (x) { return normName(x.name) === normName(selectedPlayerName()); }) || {}).n : null); };   // для автотестів

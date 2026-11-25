@@ -13,7 +13,7 @@
     function check() {
       if (busy || document.hidden) return;
       busy = true;
-      fetch(location.pathname + '?_=' + Date.now(), { cache: 'no-store' })
+      fetch((SITE_ROOT || '/') + '?_=' + Date.now(), { cache: 'no-store' })
         .then(function (r) { return r.ok ? r.text() : ''; })
         .then(function (html) {
           var m = /assets\/app\.js\?v=([\w.-]+)/.exec(html || '');
@@ -43,7 +43,12 @@
   var SEC_PATH = { lb: 'leaderboard', partners: 'partners', about: 'about' };
   function secOfPath(p) { for (var k in SEC_PATH) if (new RegExp('/' + SEC_PATH[k] + '/?$').test(p)) return k; return null; }
   var PATH_SEC = secOfPath(location.pathname);
-  var SITE_ROOT = PATH_SEC ? location.pathname.replace(/[^/]+\/?$/, '') : location.pathname.replace(/[^/]*$/, '');
+  // Адреси раундів і екранів у них: /r1, /r1/stats, /r1/rules, /r1/p9 (відкриває 404.html — копія index.html, теж від tools/build.js)
+  var ROUND_PATH_RE = /\/r(\d+)(?:\/(stats|rules|p\d+))?\/?$/;
+  var PATH_DEEP = (function (m) { return m ? { n: +m[1], sub: m[2] || null } : null; })(ROUND_PATH_RE.exec(location.pathname));
+  var SITE_ROOT = PATH_SEC ? location.pathname.replace(/[^/]+\/?$/, '') :
+    PATH_DEEP ? location.pathname.replace(ROUND_PATH_RE, '/') : location.pathname.replace(/[^/]*$/, '');
+  function roundUrl(n, sub) { return SITE_ROOT + 'r' + n + (sub ? '/' + sub : ''); }
   function secUrl(sec) { return SITE_ROOT + (SEC_PATH[sec] || ''); }
   (function initTelegram() {
     if (!IN_TG) return;

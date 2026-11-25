@@ -17,7 +17,7 @@
   // Посилання на раунд і на екран у ньому: браузер #r1, #r1-stats, #r1-rules, #r1-p9; Telegram startapp=r1, r1-stats, r1-p9
   var DEEP_RE = /^r(\d+)(?:-(stats|rules|p\d+))?$/;
   function deepOf(s) { var m = DEEP_RE.exec(s || ''); return m ? { n: +m[1], sub: m[2] || null } : null; }
-  var HOME_HASH = deepOf(location.hash.replace(/^#/, '')) ||
+  var HOME_HASH = PATH_DEEP || deepOf(location.hash.replace(/^#/, '')) ||
     deepOf((/tgWebAppStartParam=([\w-]+)/.exec(location.hash + '&' + location.search) || [])[1]);
   var HOME_FIRST = !state.wantPlayer && !wantReg && !HOME_HASH && !/[?&]sel=/.test(location.search) &&
     !/tgWebAppStartParam=(?!(leaderboard|partners|about)(&|$))/.test(location.hash + location.search) && !/^#(player|stats|rules|register)$/.test(location.hash);
@@ -32,7 +32,7 @@
   // Адреса екрана в браузері: #r2, #r2-stats, #r2-rules, #r2-p9 (без сезону — як раніше)
   function viewHash(sub) {
     var t = roundTag();
-    if (t) return SITE_ROOT + '#r' + t + (sub ? '-' + sub : '');
+    if (t) return roundUrl(t, sub);
     if (sub === 'stats') return SITE_ROOT + '#stats';
     if (sub === 'rules') return SITE_ROOT + '#rules';
     if (sub) return SITE_ROOT + '#player';
@@ -105,7 +105,7 @@
     var past = !!cur && n !== cur.n;
     if (!noPush) {
       HOME.pushed = true;
-      try { history.pushState({ tmView: 'list', round: past ? n : null }, '', IN_TG ? location.href : SITE_ROOT + '#r' + n); } catch (e) { HOME.pushed = false; }
+      try { history.pushState({ tmView: 'list', round: past ? n : null }, '', IN_TG ? location.href : roundUrl(n)); } catch (e) { HOME.pushed = false; }
     }
     if (past) enterArchive(n); else leaveArchive();
     if (state.view === 'list') { renderAll(); renderReg(); tgBack(true); window.scrollTo(0, 0); }
@@ -387,7 +387,7 @@
     HOME_HASH = null;
     if (!homeSeason().rounds.some(function (r) { return r.n === dl.n; })) return;
     var cur0 = homeCurrent();
-    try { history.replaceState({ tmView: 'list', round: cur0 && dl.n !== cur0.n ? dl.n : null }, '', IN_TG ? location.href : SITE_ROOT + '#r' + dl.n); } catch (e) { /* */ }
+    try { history.replaceState({ tmView: 'list', round: cur0 && dl.n !== cur0.n ? dl.n : null }, '', IN_TG ? location.href : roundUrl(dl.n)); } catch (e) { /* */ }
     openRound(dl.n, true);
     runDeep(dl.sub);
   }
@@ -404,6 +404,7 @@
     if (d.sub && here && ((d.sub === 'stats' && state.view === 'stats' && !state.rulesOpen) || (d.sub === 'rules' && state.rulesOpen) ||
       (d.sub[0] === 'p' && state.view === 'card'))) return;   // «Назад»/«Вперед» по історії — екран уже відкрила обробка popstate
     HOME.pushed = false;
+    try { history.replaceState({ tmView: 'list', round: cur && n !== cur.n ? n : null }, '', roundUrl(n)); } catch (e) { /* */ }   // старе …/#r1 → /r1
     if (!here || state.view !== 'list') openRound(n, true);
     runDeep(d.sub);
   });

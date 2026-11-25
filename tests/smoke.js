@@ -27,7 +27,9 @@ const srv = http.createServer((q, r) => {
   let p = path.join(ROOT, decodeURIComponent(q.url.split('?')[0]));
   if (!p.startsWith(ROOT)) { r.writeHead(403); return r.end(); }
   if (p.endsWith('/')) p += 'index.html';
+  else if (fs.existsSync(p) && fs.statSync(p).isDirectory()) p += '/index.html';   // як GitHub Pages: /r1 → r1/index.html
   fs.readFile(p, (e, d) => {
+    if (e && !path.extname(p)) return fs.readFile(path.join(ROOT, '404.html'), (e2, d2) => { r.writeHead(404, { 'Content-Type': 'text/html' }); r.end(d2); });   // як GitHub Pages: 404.html
     if (e) { r.writeHead(404); return r.end(); }
     r.writeHead(200, { 'Content-Type': TYPES[path.extname(p)] || 'application/octet-stream' });
     r.end(d);
@@ -188,11 +190,11 @@ const TESTS = {
     await t.p.click('#leagueNav [data-sec="tours"]'); await t.p.waitForTimeout(400);
     assert(u() === '/', 'адреса турнірів: ' + u());
     await t.p.locator('[data-round="1"]:visible').first().click(); await t.p.waitForTimeout(800);
-    assert(u() === '/#r1', 'адреса раунду: ' + u());
+    assert(u() === '/r1', 'адреса раунду: ' + u());
     await t.p.click('#leagueNav [data-sec="lb"]'); await t.p.waitForTimeout(400);
     assert(u() === '/leaderboard' && await visible(t.p, '.lb-row'), 'з раунду в лідерборд: ' + u());
     await t.p.goBack(); await t.p.waitForTimeout(600);
-    assert(u() === '/#r1' && await visible(t.p, '#board'), '«Назад» з лідерборду не в раунд: ' + u());
+    assert(u() === '/r1' && await visible(t.p, '#board'), '«Назад» з лідерборду не в раунд: ' + u());
     // перезавантаження на /partners/ — ті самі файли з кореня, без помилок
     await t.p.goto('http://localhost:' + PORT + '/partners/'); await t.p.waitForTimeout(1500);
     assert((await t.p.getAttribute('#leagueNav [data-sec="partners"]', 'aria-current')) === 'page', '/partners/ не відкрив партнерів');
@@ -276,15 +278,25 @@ const TESTS = {
     let t = await page(b, DESK, 'season', { hash: '#r1-stats', wait: 2500 });
     assert(await visible(t.p, '#tstats'), '#r1-stats не відкрив статистику');
     assert(await t.p.evaluate(() => document.documentElement.classList.contains('is-archive')), '#r1-stats відкрив не архів R1');
-    assert(/#r1-stats$/.test(t.p.url()), 'адреса статистики без раунду: ' + t.p.url());
+    assert(/\/r1\/stats$/.test(t.p.url()), 'старе #r1-stats не перейшло на /r1/stats: ' + t.p.url());
     await t.p.evaluate(() => history.back()); await t.p.waitForTimeout(600);
-    assert(/#r1$/.test(t.p.url()) && await visible(t.p, '#board'), '«Назад» зі статистики не на список R1: ' + t.p.url());
+    assert(/\/r1$/.test(t.p.url()) && await visible(t.p, '#board'), '«Назад» зі статистики не на список R1: ' + t.p.url());
     // картка з архіву: адреса #r1-pN, а «Поділитися» — теж із r1
     await t.p.locator('#board [data-key]').first().click(); await t.p.waitForTimeout(300);
     await t.p.evaluate(() => { const b2 = document.getElementById('selCard') || document.getElementById('cardOpen'); b2 && b2.click(); });
     await t.p.waitForTimeout(800);
-    assert(/#r1-p\d+$/.test(t.p.url()), 'адреса картки без раунду: ' + t.p.url());
-    assert(await t.p.evaluate(() => /#r1-p\d+$/.test(window.__tmShareUrl())), 'посилання «Поділитися» без раунду');
+    assert(/\/r1\/p\d+$/.test(t.p.url()), 'адреса картки без раунду: ' + t.p.url());
+    assert(await t.p.evaluate(() => /troutmaster\.app\/r1\/p\d+$/.test(window.__tmShareUrl())), 'посилання «Поділитися» без раунду');
+    await t.ctx.close();
+    // Нові адреси: /r1/stats, /r1/p3 (копії сторінки), /r5 (немає копії — 404.html) відкривають потрібне
+    t = await page(b, DESK, 'season', { hash: 'r1/stats', wait: 2500 });
+    assert(await visible(t.p, '#tstats') && await t.p.evaluate(() => document.documentElement.classList.contains('is-archive')), '/r1/stats не відкрив статистику R1');
+    await t.ctx.close();
+    t = await page(b, DESK, 'season', { hash: 'r1/p3', wait: 2500 });
+    assert(/\/r1\/p3$/.test(t.p.url()) && (await cardTitle(t.p)) && await t.p.evaluate(() => document.documentElement.classList.contains('is-archive')), '/r1/p3 не відкрив картку з R1: ' + t.p.url());
+    await t.ctx.close();
+    t = await page(b, DESK, 'season', { hash: 'r2', wait: 2500 });
+    assert(await visible(t.p, '#board') && !(await t.p.evaluate(() => document.documentElement.classList.contains('is-archive'))), '/r2 не відкрив поточний раунд');
     await t.ctx.close();
     // Поточний раунд R2: #r2-stats — статистика поточного
     t = await page(b, DESK, 'season-live', { hash: '#r2-stats', wait: 2500 });

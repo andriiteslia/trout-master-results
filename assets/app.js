@@ -16,7 +16,7 @@
     function check() {
       if (busy || document.hidden) return;
       busy = true;
-      fetch(location.pathname + '?_=' + Date.now(), { cache: 'no-store' })
+      fetch((SITE_ROOT || '/') + '?_=' + Date.now(), { cache: 'no-store' })
         .then(function (r) { return r.ok ? r.text() : ''; })
         .then(function (html) {
           var m = /assets\/app\.js\?v=([\w.-]+)/.exec(html || '');
@@ -46,7 +46,12 @@
   var SEC_PATH = { lb: 'leaderboard', partners: 'partners', about: 'about' };
   function secOfPath(p) { for (var k in SEC_PATH) if (new RegExp('/' + SEC_PATH[k] + '/?$').test(p)) return k; return null; }
   var PATH_SEC = secOfPath(location.pathname);
-  var SITE_ROOT = PATH_SEC ? location.pathname.replace(/[^/]+\/?$/, '') : location.pathname.replace(/[^/]*$/, '');
+  // Адреси раундів і екранів у них: /r1, /r1/stats, /r1/rules, /r1/p9 (відкриває 404.html — копія index.html, теж від tools/build.js)
+  var ROUND_PATH_RE = /\/r(\d+)(?:\/(stats|rules|p\d+))?\/?$/;
+  var PATH_DEEP = (function (m) { return m ? { n: +m[1], sub: m[2] || null } : null; })(ROUND_PATH_RE.exec(location.pathname));
+  var SITE_ROOT = PATH_SEC ? location.pathname.replace(/[^/]+\/?$/, '') :
+    PATH_DEEP ? location.pathname.replace(ROUND_PATH_RE, '/') : location.pathname.replace(/[^/]*$/, '');
+  function roundUrl(n, sub) { return SITE_ROOT + 'r' + n + (sub ? '/' + sub : ''); }
   function secUrl(sec) { return SITE_ROOT + (SEC_PATH[sec] || ''); }
   (function initTelegram() {
     if (!IN_TG) return;
@@ -2450,7 +2455,7 @@
     if (takeHashPlayer()) return;   // вставили …/#p9 у ту саму вкладку — відкрити картку, а не список
     // Головна з картками раундів і перехід між раундами
     if (e.state && e.state.tmView === 'home') { HOME.pushed = false; HOME.sec = e.state.sec || secOfPath(location.pathname) || 'tours'; showHome(); return; }
-    if (hasHome() && (!e.state || !e.state.tmView) && !location.hash) { HOME.pushed = false; HOME.sec = secOfPath(location.pathname) || 'tours'; showHome(); return; }
+    if (hasHome() && (!e.state || !e.state.tmView) && !location.hash && !ROUND_PATH_RE.test(location.pathname)) { HOME.pushed = false; HOME.sec = secOfPath(location.pathname) || 'tours'; showHome(); return; }
     if (e.state && e.state.tmView === 'list' && hasHome()) {
       var want = e.state.round || null;
       if (want !== HOME.n) { if (want) enterArchive(want); else leaveArchive(); renderAll(); }
@@ -2737,6 +2742,7 @@
     var t = typeof roundTag === 'function' ? roundTag() : null;
     var code = t ? 'r' + t + (n ? '-p' + n : '') : (n ? 'p' + n : '');
     if (tg && tg.initData) return code ? SHARE_URL + '=' + code : SHARE_URL;
+    if (t) return WEB_URL + 'r' + t + (n ? '/p' + n : '');
     return code ? WEB_URL + '#' + code : WEB_URL;
   }
   window.__tmShareUrl = function () { return shareUrl(state.selected && drawData() ? (drawData().players.find(function (x) { return normName(x.name) === normName(selectedPlayerName()); }) || {}).n : null); };   // для автотестів
@@ -4677,7 +4683,7 @@
   // Посилання на раунд і на екран у ньому: браузер #r1, #r1-stats, #r1-rules, #r1-p9; Telegram startapp=r1, r1-stats, r1-p9
   var DEEP_RE = /^r(\d+)(?:-(stats|rules|p\d+))?$/;
   function deepOf(s) { var m = DEEP_RE.exec(s || ''); return m ? { n: +m[1], sub: m[2] || null } : null; }
-  var HOME_HASH = deepOf(location.hash.replace(/^#/, '')) ||
+  var HOME_HASH = PATH_DEEP || deepOf(location.hash.replace(/^#/, '')) ||
     deepOf((/tgWebAppStartParam=([\w-]+)/.exec(location.hash + '&' + location.search) || [])[1]);
   var HOME_FIRST = !state.wantPlayer && !wantReg && !HOME_HASH && !/[?&]sel=/.test(location.search) &&
     !/tgWebAppStartParam=(?!(leaderboard|partners|about)(&|$))/.test(location.hash + location.search) && !/^#(player|stats|rules|register)$/.test(location.hash);
@@ -4692,7 +4698,7 @@
   // Адреса екрана в браузері: #r2, #r2-stats, #r2-rules, #r2-p9 (без сезону — як раніше)
   function viewHash(sub) {
     var t = roundTag();
-    if (t) return SITE_ROOT + '#r' + t + (sub ? '-' + sub : '');
+    if (t) return roundUrl(t, sub);
     if (sub === 'stats') return SITE_ROOT + '#stats';
     if (sub === 'rules') return SITE_ROOT + '#rules';
     if (sub) return SITE_ROOT + '#player';
@@ -4765,7 +4771,7 @@
     var past = !!cur && n !== cur.n;
     if (!noPush) {
       HOME.pushed = true;
-      try { history.pushState({ tmView: 'list', round: past ? n : null }, '', IN_TG ? location.href : SITE_ROOT + '#r' + n); } catch (e) { HOME.pushed = false; }
+      try { history.pushState({ tmView: 'list', round: past ? n : null }, '', IN_TG ? location.href : roundUrl(n)); } catch (e) { HOME.pushed = false; }
     }
     if (past) enterArchive(n); else leaveArchive();
     if (state.view === 'list') { renderAll(); renderReg(); tgBack(true); window.scrollTo(0, 0); }
@@ -5047,7 +5053,7 @@
     HOME_HASH = null;
     if (!homeSeason().rounds.some(function (r) { return r.n === dl.n; })) return;
     var cur0 = homeCurrent();
-    try { history.replaceState({ tmView: 'list', round: cur0 && dl.n !== cur0.n ? dl.n : null }, '', IN_TG ? location.href : SITE_ROOT + '#r' + dl.n); } catch (e) { /* */ }
+    try { history.replaceState({ tmView: 'list', round: cur0 && dl.n !== cur0.n ? dl.n : null }, '', IN_TG ? location.href : roundUrl(dl.n)); } catch (e) { /* */ }
     openRound(dl.n, true);
     runDeep(dl.sub);
   }
@@ -5064,6 +5070,7 @@
     if (d.sub && here && ((d.sub === 'stats' && state.view === 'stats' && !state.rulesOpen) || (d.sub === 'rules' && state.rulesOpen) ||
       (d.sub[0] === 'p' && state.view === 'card'))) return;   // «Назад»/«Вперед» по історії — екран уже відкрила обробка popstate
     HOME.pushed = false;
+    try { history.replaceState({ tmView: 'list', round: cur && n !== cur.n ? n : null }, '', roundUrl(n)); } catch (e) { /* */ }   // старе …/#r1 → /r1
     if (!here || state.view !== 'list') openRound(n, true);
     runDeep(d.sub);
   });
