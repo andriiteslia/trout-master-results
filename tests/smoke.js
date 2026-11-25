@@ -151,7 +151,14 @@ const TESTS = {
     await t.p.click('#leagueNav [data-sec="lb"]'); await t.p.waitForTimeout(500);
     assert((await t.p.locator('#homeTitle').innerText()).includes('Лідерборд'), 'не відкрився «Лідерборд»');
     await shot(t.p, 'desk-nav-lb');
-    await t.p.click('#leagueNav [data-sec="partners"]'); await t.p.waitForTimeout(500);
+    // «таблетка» має їхати, а не перескакувати: одразу після кліку вона ще між пунктами
+    const midX = await t.p.evaluate(() => new Promise(res => {
+      const nav = document.getElementById('leagueNav'), ind = nav.querySelector('.seg-ind');
+      nav.querySelector('[data-sec="partners"]').click();
+      setTimeout(() => res({ x: new DOMMatrix(getComputedStyle(ind).transform).m41, to: nav.querySelector('[data-sec="partners"]').offsetLeft }), 60);
+    }));
+    assert(Math.abs(midX.x - midX.to) > 2, 'таблетка в навбарі перескакує без анімації');
+    await t.p.waitForTimeout(500);
     assert((await t.p.locator('#homeTitle').innerText()).includes('Партнери') && await visible(t.p, '.pt-card [data-partner="FISH.ME.FISH"]'), 'не відкрились «Партнери»');
     await shot(t.p, 'desk-nav-partners');
     await t.p.click('#leagueNav [data-sec="about"]'); await t.p.waitForTimeout(500);

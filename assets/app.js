@@ -4922,7 +4922,15 @@
   window.addEventListener('resize', remeasureNavs);
   // Розмір перемикача змінився з будь-якої причини (Telegram розгорнув вікно, довантажився шрифт) — переміряємо «таблетку»
   if (window.ResizeObserver) {
-    var navRO = new ResizeObserver(function () { remeasureNavs(); });
+    // …але лише коли «таблетка» справді стоїть не там: після кліку вона вже виміряна й анімується — не збиваємо анімацію
+    var navRO = new ResizeObserver(function () {
+      [LEAGUE_NAV, TABBAR].forEach(function (nav) {
+        if (!nav || nav.hidden) return;
+        var b = nav.querySelector('[aria-current="page"]'), s = nav._seg;
+        if (b && s && b.offsetLeft === s.x && b.offsetWidth === s.w && b.offsetTop === s.y && b.offsetHeight === s.h) return;
+        nav._seg = null; segSlide(nav, '[aria-current="page"]');
+      });
+    });
     [LEAGUE_NAV, TABBAR].forEach(function (nav) { if (nav) navRO.observe(nav); });
   }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(remeasureNavs);
