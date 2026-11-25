@@ -119,15 +119,15 @@ const TESTS = {
     await t.ctx.close();
     const m = await page(b, MOB, 'league', { tg: true });
     await m.p.click('#tabbar [data-sec="lb"]'); await m.p.waitForTimeout(500);
-    assert((await m.p.locator('.lb-row:visible').count()) === 15, 'на телефоні спершу не 15 рядків');
+    assert((await m.p.locator('.lb-row:visible').count()) === 24, 'на телефоні показано не всіх');
+    assert((await m.p.locator('[data-lg-all]').count()) === 0, 'зайва кнопка «Показати всіх»');
+    assert(await m.p.evaluate(() => getComputedStyle(document.querySelectorAll('.lb-pl')[3]).backgroundColor === 'rgba(0, 0, 0, 0)'), '4-те місце не має бути з кружечком');
     await shot(m.p, 'tg-lb');
     await m.p.evaluate(() => window.scrollTo(0, 900)); await m.p.waitForTimeout(400);
     const mt = await m.p.evaluate(() => { const r = document.querySelector('.lb-sticky').getBoundingClientRect(), c = document.querySelector('.lb-card').getBoundingClientRect(); return r.top - Math.max(c.top, 0); });
     assert(mt >= 0 && await m.p.evaluate(() => document.querySelector('.lb-sticky').getBoundingClientRect().top < 120), 'шапка лідерборду не прилипла в Telegram');
     await shot(m.p, 'tg-lb-sticky');
     await m.p.evaluate(() => window.scrollTo(0, 0)); await m.p.waitForTimeout(200);
-    await m.p.click('[data-lg-all]'); await m.p.waitForTimeout(300);
-    assert((await m.p.locator('.lb-row:visible').count()) === 24, '«Показати всіх» не показала всіх');
     await m.p.locator('.lb-row').nth(1).click(); await m.p.waitForTimeout(500);
     await shot(m.p, 'tg-lb-sheet');
     // свайп униз по аркушу — закриває

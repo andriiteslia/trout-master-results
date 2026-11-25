@@ -5042,7 +5042,6 @@
   });
   // ===== Лідерборд сезону (розділ «Лідерборд»): payload.league з Code.gs — бали за фести, бонуси, рівні бали =====
   var LG = { all: false, sheet: null, q: '' };
-  var LG_SHOW = 15;   // на телефоні спершу стільки рядків, далі «Показати всіх»
   function leaguePayload() {
     var p = HOME.live ? HOME.live.payload : state.payload;
     return p && p.league && p.league.fests ? p.league : null;
@@ -5088,13 +5087,13 @@
         lg.fests.map(function (f) { return '<span class="c">R' + f.n + '</span>'; }).join('') + '<span class="r">Бали</span></div>';
       var list = rows.map(function (p, i) {
         var fest = lg.fests.map(function (f) { var x = p.by[f.n]; return '<span class="lb-fe d-only' + (x ? '' : ' no') + '">' + (x ? x.total : '—') + '</span>'; }).join('');
-        return '<button type="button" class="lb-row' + (i % 2 ? ' z' : '') + (i >= LG_SHOW && !LG.all ? ' is-more' : '') + '" data-lg="' + i + '" data-nm="' + esc(normName(p.name)) + '" style="--nf:' + nF + '">' +
+        return '<button type="button" class="lb-row' + (i % 2 ? ' z' : '') + '" data-lg="' + i + '" data-nm="' + esc(normName(p.name)) + '" style="--nf:' + nF + '">' +
           lgPlace(p.place) + avatarHtml(p.name) +
           '<span class="lb-nm"><b>' + esc(p.name) + '</b><span>' + lgDots(lg, p) +
           '<i class="m-only">' + p.fests + ' з ' + nF + ' · </i>' + p.wins + ' В · ' + fmtNum(p.fish) + ' ' + plural(Math.round(p.fish), 'риба', 'риби', 'риб') + '</span></span>' +
           fest + '<span class="lb-pts"><b>' + p.total + '</b><small class="m-only">' + plural(p.total, 'бал', 'бали', 'балів') + '</small></span></button>';
       }).join('');
-      var more = rows.length > LG_SHOW && !LG.all ? '<button type="button" class="lb-more m-only" data-lg-all>Показати всіх (' + rows.length + ')</button>' : '';
+      var more = '';
       table = '<div class="lb-card" style="--nf:' + nF + '"><div class="lb-sticky">' + meta + head + '</div>' + list + more + '</div>';
     }
     return '<div class="home__col home__col--wide"><div class="lbd"><div class="lbx"><div class="m-only">' + lgPrizeHtml(lg) + '</div>' + table + '</div>' +
