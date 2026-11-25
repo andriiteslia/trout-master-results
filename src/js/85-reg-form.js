@@ -239,7 +239,7 @@
 
   // Пряме посилання на форму: сайт#register або t.me/бот?startapp=register
   if (location.hash === '#player' || location.hash === '#stats') {
-    try { history.replaceState({ tmView: 'list' }, '', location.pathname + location.search); } catch (e) { /* */ }
+    try { history.replaceState({ tmView: 'list' }, '', SITE_ROOT + location.search); } catch (e) { /* */ }
   }
   var wantReg = /^#register$/.test(location.hash) || /tgWebAppStartParam=register(&|$)/.test(location.hash + location.search);
 

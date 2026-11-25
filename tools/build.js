@@ -27,6 +27,21 @@ const out = {
   'assets/style.css': BANNER('src/css') + read('src/css', '.css').join('')
 };
 
+// Окремі адреси розділів ліги: troutmaster.app/leaderboard, /partners, /about — копії index.html
+// з <base href="../"> (файли беруться з кореня) і своїми назвою/описом для превʼю посилань
+const SECS = { leaderboard: 'Лідерборд', partners: 'Партнери', about: 'Про лігу' };
+const INDEX = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+for (const [dir, name] of Object.entries(SECS)) {
+  const t = name + ' — TROUT MASTER';
+  out[dir + '/index.html'] = INDEX
+    .replace(/<head>/, '<head>\n  <!-- Зібрано з index.html командою node tools/build.js — правте index.html, а не цей файл. -->\n  <base href="../">')
+    .replace(/<title>[^<]*<\/title>/, '<title>' + t + '</title>')
+    .replace(/(<meta property="og:title" content=")[^"]*/, '$1' + t)
+    .replace(/(<meta name="twitter:title" content=")[^"]*/, '$1' + t)
+    .replace(/(<meta property="og:url" content=")[^"]*/, '$1https://troutmaster.app/' + dir)
+    .replace(/(<link rel="canonical" href=")[^"]*/, '$1https://troutmaster.app/' + dir);
+}
+
 const check = process.argv.includes('--check');
 let stale = [], wrote = 0;
 for (const [file, text] of Object.entries(out)) {
@@ -34,7 +49,7 @@ for (const [file, text] of Object.entries(out)) {
   const cur = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null;
   if (cur === text) continue;
   if (check) stale.push(file);
-  else { wrote++; fs.writeFileSync(p, text); console.log('зібрано ' + file + ' (' + text.split('\n').length + ' рядків)'); }
+  else { wrote++; fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, text); console.log('зібрано ' + file + ' (' + text.split('\n').length + ' рядків)'); }
 }
 if (check && stale.length) {
   console.error('Не зібрано з src/: ' + stale.join(', ') + ' — запустіть node tools/build.js');

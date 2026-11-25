@@ -16,13 +16,13 @@
   }
   // Головна з картками раундів: одразу, якщо сезон відомий зі збережених даних, інакше — скелетон до завантаження
   if (HOME_FIRST && (!state.payload || hasHome())) {
-    try { history.replaceState({ tmView: 'home' }, '', location.href); } catch (e) { /* */ }
+    try { history.replaceState({ tmView: 'home', sec: HOME.sec }, '', location.href); } catch (e) { /* */ }
     setView('home');
   }
   openDeepRound();
   renderStatus(false);
   load();
   if (wantReg) {
-    try { history.replaceState({ tmView: 'list' }, '', IN_TG ? location.href : location.pathname + location.search); } catch (e) { /* */ }
+    try { history.replaceState({ tmView: 'list' }, '', IN_TG ? location.href : SITE_ROOT + location.search); } catch (e) { /* */ }
     goReg();
   }

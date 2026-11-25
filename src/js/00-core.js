@@ -38,6 +38,13 @@
   // без закриття свайпом вниз (закривається тільки кнопкою Telegram).
   // У звичайному браузері нічого не завантажується і не змінюється.
   var IN_TG = /tgWebApp/.test(location.hash + location.search) || !!window.TelegramWebviewProxy;
+  // Окремі адреси розділів ліги: /leaderboard, /partners, /about (копії index.html, їх робить tools/build.js).
+  // SITE_ROOT — корінь сайту (з «/» у кінці): раунди й екрани в ньому завжди відкриваються від кореня (/#r1)
+  var SEC_PATH = { lb: 'leaderboard', partners: 'partners', about: 'about' };
+  function secOfPath(p) { for (var k in SEC_PATH) if (new RegExp('/' + SEC_PATH[k] + '/?$').test(p)) return k; return null; }
+  var PATH_SEC = secOfPath(location.pathname);
+  var SITE_ROOT = PATH_SEC ? location.pathname.replace(/[^/]+\/?$/, '') : location.pathname.replace(/[^/]*$/, '');
+  function secUrl(sec) { return SITE_ROOT + (SEC_PATH[sec] || ''); }
   (function initTelegram() {
     if (!IN_TG) return;
     document.documentElement.classList.add('tg');

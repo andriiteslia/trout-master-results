@@ -41,6 +41,13 @@
   // без закриття свайпом вниз (закривається тільки кнопкою Telegram).
   // У звичайному браузері нічого не завантажується і не змінюється.
   var IN_TG = /tgWebApp/.test(location.hash + location.search) || !!window.TelegramWebviewProxy;
+  // Окремі адреси розділів ліги: /leaderboard, /partners, /about (копії index.html, їх робить tools/build.js).
+  // SITE_ROOT — корінь сайту (з «/» у кінці): раунди й екрани в ньому завжди відкриваються від кореня (/#r1)
+  var SEC_PATH = { lb: 'leaderboard', partners: 'partners', about: 'about' };
+  function secOfPath(p) { for (var k in SEC_PATH) if (new RegExp('/' + SEC_PATH[k] + '/?$').test(p)) return k; return null; }
+  var PATH_SEC = secOfPath(location.pathname);
+  var SITE_ROOT = PATH_SEC ? location.pathname.replace(/[^/]+\/?$/, '') : location.pathname.replace(/[^/]*$/, '');
+  function secUrl(sec) { return SITE_ROOT + (SEC_PATH[sec] || ''); }
   (function initTelegram() {
     if (!IN_TG) return;
     document.documentElement.classList.add('tg');
@@ -1997,7 +2004,7 @@
     if (state.view === 'reg') return;
     state.regDone = null;
     state.regPushed = true;
-    try { history.pushState({ tmView: 'reg' }, '', IN_TG ? location.href : '#register'); } catch (e) { state.regPushed = false; }
+    try { history.pushState({ tmView: 'reg' }, '', IN_TG ? location.href : SITE_ROOT + '#register'); } catch (e) { state.regPushed = false; }
     setView('reg');
   }
 
@@ -2442,8 +2449,8 @@
   window.addEventListener('popstate', function (e) {
     if (takeHashPlayer()) return;   // вставили …/#p9 у ту саму вкладку — відкрити картку, а не список
     // Головна з картками раундів і перехід між раундами
-    if (e.state && e.state.tmView === 'home') { HOME.pushed = false; showHome(); return; }
-    if (hasHome() && (!e.state || !e.state.tmView) && !location.hash) { HOME.pushed = false; showHome(); return; }
+    if (e.state && e.state.tmView === 'home') { HOME.pushed = false; HOME.sec = e.state.sec || secOfPath(location.pathname) || 'tours'; showHome(); return; }
+    if (hasHome() && (!e.state || !e.state.tmView) && !location.hash) { HOME.pushed = false; HOME.sec = secOfPath(location.pathname) || 'tours'; showHome(); return; }
     if (e.state && e.state.tmView === 'list' && hasHome()) {
       var want = e.state.round || null;
       if (want !== HOME.n) { if (want) enterArchive(want); else leaveArchive(); renderAll(); }
@@ -2708,7 +2715,7 @@
 
   // Пряме посилання на форму: сайт#register або t.me/бот?startapp=register
   if (location.hash === '#player' || location.hash === '#stats') {
-    try { history.replaceState({ tmView: 'list' }, '', location.pathname + location.search); } catch (e) { /* */ }
+    try { history.replaceState({ tmView: 'list' }, '', SITE_ROOT + location.search); } catch (e) { /* */ }
   }
   var wantReg = /^#register$/.test(location.hash) || /tgWebAppStartParam=register(&|$)/.test(location.hash + location.search);
 
@@ -4210,13 +4217,13 @@
   state.wantPlayer = wantM ? +wantM[1] : null;
   // …/#p9 у браузері: прибрати з адреси одразу, щоб після оновлення сторінки картка не відкривалась знову
   if (!IN_TG && /^#p\d+$/.test(location.hash)) {
-    try { history.replaceState({ tmView: 'list' }, '', location.pathname + location.search); } catch (e) { /* */ }
+    try { history.replaceState({ tmView: 'list' }, '', SITE_ROOT + location.search); } catch (e) { /* */ }
   }
   // Посилання …/#p9 вставили в уже відкриту вкладку (без перезавантаження)
   function takeHashPlayer() {
     var m = /^#p(\d+)$/.exec(location.hash);
     if (!m || IN_TG) return false;
-    try { history.replaceState({ tmView: 'list' }, '', location.pathname + location.search); } catch (e) { /* */ }
+    try { history.replaceState({ tmView: 'list' }, '', SITE_ROOT + location.search); } catch (e) { /* */ }
     state.wantPlayer = +m[1];
     if (state.payload) openWantedPlayer();
     return true;
@@ -4673,7 +4680,7 @@
   var HOME_HASH = deepOf(location.hash.replace(/^#/, '')) ||
     deepOf((/tgWebAppStartParam=([\w-]+)/.exec(location.hash + '&' + location.search) || [])[1]);
   var HOME_FIRST = !state.wantPlayer && !wantReg && !HOME_HASH && !/[?&]sel=/.test(location.search) &&
-    !/tgWebAppStartParam=/.test(location.hash + location.search) && !/^#(player|stats|rules|register)$/.test(location.hash);
+    !/tgWebAppStartParam=(?!(leaderboard|partners|about)(&|$))/.test(location.hash + location.search) && !/^#(player|stats|rules|register)$/.test(location.hash);
 
   // Номер раунду, який зараз відкрито (архів або поточний); без сезону — null
   function roundTag() {
@@ -4685,11 +4692,11 @@
   // Адреса екрана в браузері: #r2, #r2-stats, #r2-rules, #r2-p9 (без сезону — як раніше)
   function viewHash(sub) {
     var t = roundTag();
-    if (t) return '#r' + t + (sub ? '-' + sub : '');
-    if (sub === 'stats') return '#stats';
-    if (sub === 'rules') return '#rules';
-    if (sub) return '#player';
-    return location.pathname + location.search;
+    if (t) return SITE_ROOT + '#r' + t + (sub ? '-' + sub : '');
+    if (sub === 'stats') return SITE_ROOT + '#stats';
+    if (sub === 'rules') return SITE_ROOT + '#rules';
+    if (sub) return SITE_ROOT + '#player';
+    return SITE_ROOT + location.search;
   }
   // Екран раунду з посилання — коли дані раунду готові (архів може ще вантажитись)
   function runDeep(sub) {
@@ -4758,7 +4765,7 @@
     var past = !!cur && n !== cur.n;
     if (!noPush) {
       HOME.pushed = true;
-      try { history.pushState({ tmView: 'list', round: past ? n : null }, '', IN_TG ? location.href : '#r' + n); } catch (e) { HOME.pushed = false; }
+      try { history.pushState({ tmView: 'list', round: past ? n : null }, '', IN_TG ? location.href : SITE_ROOT + '#r' + n); } catch (e) { HOME.pushed = false; }
     }
     if (past) enterArchive(n); else leaveArchive();
     if (state.view === 'list') { renderAll(); renderReg(); tgBack(true); window.scrollTo(0, 0); }
@@ -4767,7 +4774,7 @@
   function goHome() {
     if (state.view === 'home') { window.scrollTo({ top: 0, behavior: REDUCED ? 'auto' : 'smooth' }); return; }
     if (state.view === 'list' && HOME.pushed && history.state && history.state.tmView === 'list') { history.back(); return; }
-    try { history.replaceState({ tmView: 'home' }, '', IN_TG ? location.href : location.pathname + location.search); } catch (e) { /* */ }
+    try { history.replaceState({ tmView: 'home', sec: HOME.sec }, '', IN_TG ? location.href : secUrl(HOME.sec) + location.search); } catch (e) { /* */ }
     HOME.pushed = false;
     showHome();
   }
@@ -4776,6 +4783,7 @@
   function showHome() {
     var left = leaveArchive();
     if (left) renderAll();
+    if (state.view === 'home') { renderHome(); renderLeagueNav(); window.scrollTo(0, 0); return; }   // «Назад» між розділами ліги
     setView('home');
   }
   // «Назад» (Telegram, «Усі раунди»): з картки/реєстрації/статистики — до раунду, з раунду — на головну
@@ -4870,7 +4878,11 @@
   }
 
   // ----- Розділи ліги: Турніри / Лідерборд / Партнери / Про лігу (навбар на компі, таббар на телефоні) -----
-  HOME.sec = 'tours';
+  // Розділ на старті: з адреси (/leaderboard) або з Telegram (startapp=leaderboard)
+  HOME.sec = PATH_SEC || (function () {
+    var m = /tgWebAppStartParam=(leaderboard|partners|about)(?:&|$)/.exec(location.hash + '&' + location.search.slice(1));
+    return m ? secOfPath('/' + m[1]) : null;
+  })() || 'tours';
   var LEAGUE_NAV = document.getElementById('leagueNav');
   var HOME_HEAD = { title: document.getElementById('homeTitle'), lead: document.querySelector('#home .home__lead') };
   // Оригінал — завжди українською (з DOM не беремо: якщо обрана ENG, i18n.js уже встиг його перекласти до запуску app.js)
@@ -4904,9 +4916,14 @@
     HOME.sec = LEAGUE_SECS[sec] ? sec : 'tours';
     if (state.view === 'home') {
       if (was === HOME.sec) { window.scrollTo({ top: 0, behavior: REDUCED ? 'auto' : 'smooth' }); return; }
+      if (!IN_TG) try { history.pushState({ tmView: 'home', sec: HOME.sec }, '', secUrl(HOME.sec)); } catch (e) { /* */ }
       renderHome(); renderLeagueNav(); window.scrollTo(0, 0); return;
     }
-    goHome();
+    if (HOME.sec === 'tours') { goHome(); return; }
+    // З раунду в розділ ліги — новий запис в історії («Назад» поверне в раунд)
+    HOME.pushed = false;
+    if (!IN_TG) try { history.pushState({ tmView: 'home', sec: HOME.sec }, '', secUrl(HOME.sec)); } catch (e) { /* */ }
+    showHome();
   }
   [LEAGUE_NAV, TABBAR].forEach(function (nav) {
     if (nav) nav.addEventListener('click', function (e) {
@@ -5018,7 +5035,7 @@
   // Після кожного завантаження поточних даних: сезону немає (стара версія скрипта) — головна не потрібна
   window.addEventListener('tm:loaded', function () {
     if (state.view === 'home' && state.payload && !hasHome()) {
-      try { history.replaceState({ tmView: 'list' }, '', location.pathname + location.search); } catch (e) { /* */ }
+      try { history.replaceState({ tmView: 'list' }, '', SITE_ROOT + location.search); } catch (e) { /* */ }
       setView('list');
     }
     openDeepRound();
@@ -5030,7 +5047,7 @@
     HOME_HASH = null;
     if (!homeSeason().rounds.some(function (r) { return r.n === dl.n; })) return;
     var cur0 = homeCurrent();
-    try { history.replaceState({ tmView: 'list', round: cur0 && dl.n !== cur0.n ? dl.n : null }, '', IN_TG ? location.href : '#r' + dl.n); } catch (e) { /* */ }
+    try { history.replaceState({ tmView: 'list', round: cur0 && dl.n !== cur0.n ? dl.n : null }, '', IN_TG ? location.href : SITE_ROOT + '#r' + dl.n); } catch (e) { /* */ }
     openRound(dl.n, true);
     runDeep(dl.sub);
   }
@@ -5193,14 +5210,14 @@
   }
   // Головна з картками раундів: одразу, якщо сезон відомий зі збережених даних, інакше — скелетон до завантаження
   if (HOME_FIRST && (!state.payload || hasHome())) {
-    try { history.replaceState({ tmView: 'home' }, '', location.href); } catch (e) { /* */ }
+    try { history.replaceState({ tmView: 'home', sec: HOME.sec }, '', location.href); } catch (e) { /* */ }
     setView('home');
   }
   openDeepRound();
   renderStatus(false);
   load();
   if (wantReg) {
-    try { history.replaceState({ tmView: 'list' }, '', IN_TG ? location.href : location.pathname + location.search); } catch (e) { /* */ }
+    try { history.replaceState({ tmView: 'list' }, '', IN_TG ? location.href : SITE_ROOT + location.search); } catch (e) { /* */ }
     goReg();
   }
 })();

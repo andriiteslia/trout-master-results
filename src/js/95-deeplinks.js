@@ -5,13 +5,13 @@
   state.wantPlayer = wantM ? +wantM[1] : null;
   // …/#p9 у браузері: прибрати з адреси одразу, щоб після оновлення сторінки картка не відкривалась знову
   if (!IN_TG && /^#p\d+$/.test(location.hash)) {
-    try { history.replaceState({ tmView: 'list' }, '', location.pathname + location.search); } catch (e) { /* */ }
+    try { history.replaceState({ tmView: 'list' }, '', SITE_ROOT + location.search); } catch (e) { /* */ }
   }
   // Посилання …/#p9 вставили в уже відкриту вкладку (без перезавантаження)
   function takeHashPlayer() {
     var m = /^#p(\d+)$/.exec(location.hash);
     if (!m || IN_TG) return false;
-    try { history.replaceState({ tmView: 'list' }, '', location.pathname + location.search); } catch (e) { /* */ }
+    try { history.replaceState({ tmView: 'list' }, '', SITE_ROOT + location.search); } catch (e) { /* */ }
     state.wantPlayer = +m[1];
     if (state.payload) openWantedPlayer();
     return true;

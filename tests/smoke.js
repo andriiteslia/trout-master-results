@@ -174,6 +174,35 @@ const TESTS = {
     return t.errors;
   },
 
+  'адреси розділів: /leaderboard, /partners, /about': async (b) => {
+    const t = await page(b, DESK, 'league', { hash: 'leaderboard/' });
+    const u = () => new URL(t.p.url()).pathname + new URL(t.p.url()).hash;
+    assert((await t.p.getAttribute('#leagueNav [data-sec="lb"]', 'aria-current')) === 'page' && await visible(t.p, '.lb-row'), '/leaderboard/ не відкрив лідерборд');
+    assert(/Лідерборд/.test(await t.p.title()), 'назва вкладки не «Лідерборд»: ' + await t.p.title());
+    await t.p.click('#leagueNav [data-sec="partners"]'); await t.p.waitForTimeout(400);
+    assert(u() === '/partners', 'адреса партнерів: ' + u());
+    await t.p.click('#leagueNav [data-sec="about"]'); await t.p.waitForTimeout(400);
+    assert(u() === '/about', 'адреса «Про лігу»: ' + u());
+    await t.p.goBack(); await t.p.waitForTimeout(400);
+    assert(u() === '/partners' && (await t.p.getAttribute('#leagueNav [data-sec="partners"]', 'aria-current')) === 'page', '«Назад» не повернув на партнерів: ' + u());
+    await t.p.click('#leagueNav [data-sec="tours"]'); await t.p.waitForTimeout(400);
+    assert(u() === '/', 'адреса турнірів: ' + u());
+    await t.p.locator('[data-round="1"]:visible').first().click(); await t.p.waitForTimeout(800);
+    assert(u() === '/#r1', 'адреса раунду: ' + u());
+    await t.p.click('#leagueNav [data-sec="lb"]'); await t.p.waitForTimeout(400);
+    assert(u() === '/leaderboard' && await visible(t.p, '.lb-row'), 'з раунду в лідерборд: ' + u());
+    await t.p.goBack(); await t.p.waitForTimeout(600);
+    assert(u() === '/#r1' && await visible(t.p, '#board'), '«Назад» з лідерборду не в раунд: ' + u());
+    // перезавантаження на /partners/ — ті самі файли з кореня, без помилок
+    await t.p.goto('http://localhost:' + PORT + '/partners/'); await t.p.waitForTimeout(1500);
+    assert((await t.p.getAttribute('#leagueNav [data-sec="partners"]', 'aria-current')) === 'page', '/partners/ не відкрив партнерів');
+    await t.ctx.close();
+    const m = await page(b, MOB, 'league', { tg: true, hash: '#tgWebAppStartParam=leaderboard&tgWebAppVersion=8.0&tgWebAppPlatform=ios' });
+    assert((await m.p.getAttribute('#tabbar [data-sec="lb"]', 'aria-current')) === 'page', 'startapp=leaderboard не відкрив лідерборд у Telegram');
+    await m.ctx.close();
+    return t.errors.concat(m.errors);
+  },
+
   'навбар: Турніри / Лідерборд / Про лігу (комп)': async (b) => {
     const t = await page(b, DESK, 'season');
     assert(await visible(t.p, '#leagueNav'), 'на головній немає перемикача розділів');

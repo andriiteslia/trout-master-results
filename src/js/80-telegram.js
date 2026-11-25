@@ -406,8 +406,8 @@
   window.addEventListener('popstate', function (e) {
     if (takeHashPlayer()) return;   // вставили …/#p9 у ту саму вкладку — відкрити картку, а не список
     // Головна з картками раундів і перехід між раундами
-    if (e.state && e.state.tmView === 'home') { HOME.pushed = false; showHome(); return; }
-    if (hasHome() && (!e.state || !e.state.tmView) && !location.hash) { HOME.pushed = false; showHome(); return; }
+    if (e.state && e.state.tmView === 'home') { HOME.pushed = false; HOME.sec = e.state.sec || secOfPath(location.pathname) || 'tours'; showHome(); return; }
+    if (hasHome() && (!e.state || !e.state.tmView) && !location.hash) { HOME.pushed = false; HOME.sec = secOfPath(location.pathname) || 'tours'; showHome(); return; }
     if (e.state && e.state.tmView === 'list' && hasHome()) {
       var want = e.state.round || null;
       if (want !== HOME.n) { if (want) enterArchive(want); else leaveArchive(); renderAll(); }

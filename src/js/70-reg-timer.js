@@ -211,7 +211,7 @@
     if (state.view === 'reg') return;
     state.regDone = null;
     state.regPushed = true;
-    try { history.pushState({ tmView: 'reg' }, '', IN_TG ? location.href : '#register'); } catch (e) { state.regPushed = false; }
+    try { history.pushState({ tmView: 'reg' }, '', IN_TG ? location.href : SITE_ROOT + '#register'); } catch (e) { state.regPushed = false; }
     setView('reg');
   }
 

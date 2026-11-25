@@ -20,7 +20,7 @@
   var HOME_HASH = deepOf(location.hash.replace(/^#/, '')) ||
     deepOf((/tgWebAppStartParam=([\w-]+)/.exec(location.hash + '&' + location.search) || [])[1]);
   var HOME_FIRST = !state.wantPlayer && !wantReg && !HOME_HASH && !/[?&]sel=/.test(location.search) &&
-    !/tgWebAppStartParam=/.test(location.hash + location.search) && !/^#(player|stats|rules|register)$/.test(location.hash);
+    !/tgWebAppStartParam=(?!(leaderboard|partners|about)(&|$))/.test(location.hash + location.search) && !/^#(player|stats|rules|register)$/.test(location.hash);
 
   // Номер раунду, який зараз відкрито (архів або поточний); без сезону — null
   function roundTag() {
@@ -32,11 +32,11 @@
   // Адреса екрана в браузері: #r2, #r2-stats, #r2-rules, #r2-p9 (без сезону — як раніше)
   function viewHash(sub) {
     var t = roundTag();
-    if (t) return '#r' + t + (sub ? '-' + sub : '');
-    if (sub === 'stats') return '#stats';
-    if (sub === 'rules') return '#rules';
-    if (sub) return '#player';
-    return location.pathname + location.search;
+    if (t) return SITE_ROOT + '#r' + t + (sub ? '-' + sub : '');
+    if (sub === 'stats') return SITE_ROOT + '#stats';
+    if (sub === 'rules') return SITE_ROOT + '#rules';
+    if (sub) return SITE_ROOT + '#player';
+    return SITE_ROOT + location.search;
   }
   // Екран раунду з посилання — коли дані раунду готові (архів може ще вантажитись)
   function runDeep(sub) {
@@ -105,7 +105,7 @@
     var past = !!cur && n !== cur.n;
     if (!noPush) {
       HOME.pushed = true;
-      try { history.pushState({ tmView: 'list', round: past ? n : null }, '', IN_TG ? location.href : '#r' + n); } catch (e) { HOME.pushed = false; }
+      try { history.pushState({ tmView: 'list', round: past ? n : null }, '', IN_TG ? location.href : SITE_ROOT + '#r' + n); } catch (e) { HOME.pushed = false; }
     }
     if (past) enterArchive(n); else leaveArchive();
     if (state.view === 'list') { renderAll(); renderReg(); tgBack(true); window.scrollTo(0, 0); }
@@ -114,7 +114,7 @@
   function goHome() {
     if (state.view === 'home') { window.scrollTo({ top: 0, behavior: REDUCED ? 'auto' : 'smooth' }); return; }
     if (state.view === 'list' && HOME.pushed && history.state && history.state.tmView === 'list') { history.back(); return; }
-    try { history.replaceState({ tmView: 'home' }, '', IN_TG ? location.href : location.pathname + location.search); } catch (e) { /* */ }
+    try { history.replaceState({ tmView: 'home', sec: HOME.sec }, '', IN_TG ? location.href : secUrl(HOME.sec) + location.search); } catch (e) { /* */ }
     HOME.pushed = false;
     showHome();
   }
@@ -123,6 +123,7 @@
   function showHome() {
     var left = leaveArchive();
     if (left) renderAll();
+    if (state.view === 'home') { renderHome(); renderLeagueNav(); window.scrollTo(0, 0); return; }   // «Назад» між розділами ліги
     setView('home');
   }
   // «Назад» (Telegram, «Усі раунди»): з картки/реєстрації/статистики — до раунду, з раунду — на головну
@@ -217,7 +218,11 @@
   }
 
   // ----- Розділи ліги: Турніри / Лідерборд / Партнери / Про лігу (навбар на компі, таббар на телефоні) -----
-  HOME.sec = 'tours';
+  // Розділ на старті: з адреси (/leaderboard) або з Telegram (startapp=leaderboard)
+  HOME.sec = PATH_SEC || (function () {
+    var m = /tgWebAppStartParam=(leaderboard|partners|about)(?:&|$)/.exec(location.hash + '&' + location.search.slice(1));
+    return m ? secOfPath('/' + m[1]) : null;
+  })() || 'tours';
   var LEAGUE_NAV = document.getElementById('leagueNav');
   var HOME_HEAD = { title: document.getElementById('homeTitle'), lead: document.querySelector('#home .home__lead') };
   // Оригінал — завжди українською (з DOM не беремо: якщо обрана ENG, i18n.js уже встиг його перекласти до запуску app.js)
@@ -251,9 +256,14 @@
     HOME.sec = LEAGUE_SECS[sec] ? sec : 'tours';
     if (state.view === 'home') {
       if (was === HOME.sec) { window.scrollTo({ top: 0, behavior: REDUCED ? 'auto' : 'smooth' }); return; }
+      if (!IN_TG) try { history.pushState({ tmView: 'home', sec: HOME.sec }, '', secUrl(HOME.sec)); } catch (e) { /* */ }
       renderHome(); renderLeagueNav(); window.scrollTo(0, 0); return;
     }
-    goHome();
+    if (HOME.sec === 'tours') { goHome(); return; }
+    // З раунду в розділ ліги — новий запис в історії («Назад» поверне в раунд)
+    HOME.pushed = false;
+    if (!IN_TG) try { history.pushState({ tmView: 'home', sec: HOME.sec }, '', secUrl(HOME.sec)); } catch (e) { /* */ }
+    showHome();
   }
   [LEAGUE_NAV, TABBAR].forEach(function (nav) {
     if (nav) nav.addEventListener('click', function (e) {
@@ -365,7 +375,7 @@
   // Після кожного завантаження поточних даних: сезону немає (стара версія скрипта) — головна не потрібна
   window.addEventListener('tm:loaded', function () {
     if (state.view === 'home' && state.payload && !hasHome()) {
-      try { history.replaceState({ tmView: 'list' }, '', location.pathname + location.search); } catch (e) { /* */ }
+      try { history.replaceState({ tmView: 'list' }, '', SITE_ROOT + location.search); } catch (e) { /* */ }
       setView('list');
     }
     openDeepRound();
@@ -377,7 +387,7 @@
     HOME_HASH = null;
     if (!homeSeason().rounds.some(function (r) { return r.n === dl.n; })) return;
     var cur0 = homeCurrent();
-    try { history.replaceState({ tmView: 'list', round: cur0 && dl.n !== cur0.n ? dl.n : null }, '', IN_TG ? location.href : '#r' + dl.n); } catch (e) { /* */ }
+    try { history.replaceState({ tmView: 'list', round: cur0 && dl.n !== cur0.n ? dl.n : null }, '', IN_TG ? location.href : SITE_ROOT + '#r' + dl.n); } catch (e) { /* */ }
     openRound(dl.n, true);
     runDeep(dl.sub);
   }
