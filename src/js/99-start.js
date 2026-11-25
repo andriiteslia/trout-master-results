@@ -19,6 +19,7 @@
     try { history.replaceState({ tmView: 'home' }, '', location.href); } catch (e) { /* */ }
     setView('home');
   }
+  openDeepRound();
   renderStatus(false);
   load();
   if (wantReg) {

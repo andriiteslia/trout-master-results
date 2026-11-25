@@ -368,18 +368,19 @@
       try { history.replaceState({ tmView: 'list' }, '', location.pathname + location.search); } catch (e) { /* */ }
       setView('list');
     }
-    // Посилання …/#r1: відкрити раунд, щойно відомий сезон
-    if (HOME_HASH && hasHome()) {
-      var dl = HOME_HASH;
-      HOME_HASH = null;
-      if (homeSeason().rounds.some(function (r) { return r.n === dl.n; })) {
-        var cur0 = homeCurrent();
-        try { history.replaceState({ tmView: 'list', round: cur0 && dl.n !== cur0.n ? dl.n : null }, '', IN_TG ? location.href : '#r' + dl.n); } catch (e) { /* */ }
-        openRound(dl.n, true);
-        runDeep(dl.sub);
-      }
-    }
+    openDeepRound();
   });
+  // Посилання …/#r1: відкрити раунд, щойно відомий сезон (зі збережених даних — одразу на старті, без проміжного поточного раунду)
+  function openDeepRound() {
+    if (!HOME_HASH || !hasHome()) return;
+    var dl = HOME_HASH;
+    HOME_HASH = null;
+    if (!homeSeason().rounds.some(function (r) { return r.n === dl.n; })) return;
+    var cur0 = homeCurrent();
+    try { history.replaceState({ tmView: 'list', round: cur0 && dl.n !== cur0.n ? dl.n : null }, '', IN_TG ? location.href : '#r' + dl.n); } catch (e) { /* */ }
+    openRound(dl.n, true);
+    runDeep(dl.sub);
+  }
 
   // Вставили …/#r1 у ту саму вкладку — відкрити цей раунд
   window.addEventListener('hashchange', function () {

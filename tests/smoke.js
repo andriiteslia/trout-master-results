@@ -154,6 +154,26 @@ const TESTS = {
     return t.errors;
   },
 
+  'посилання #r1 при збережених даних: одразу R1, без проміжного R2': async (b) => {
+    const t = await page(b, DESK, 'season');
+    await t.p.route('https://script.google.com/**', async (r) => {   // повільний сервер, як справжній Apps Script
+      const rn = /[?&]round=(\d+)/.exec(r.request().url());
+      await new Promise((z) => setTimeout(z, rn ? 1500 : 1000));
+      r.fulfill({ status: 200, contentType: 'application/json', body: rn ? FIX('arch-' + rn[1]) : FIX('season') });
+    });
+    await t.p.addInitScript(() => {
+      window.__h1s = [];
+      setInterval(() => { const h = [...document.querySelectorAll('h1')].filter((e) => e.offsetParent).map((e) => e.textContent.trim()).join('/'); if (h && window.__h1s[window.__h1s.length - 1] !== h) window.__h1s.push(h); }, 10);
+    });
+    await t.p.goto('http://localhost:' + PORT + '/?again=1#r1'); await t.p.waitForTimeout(3000);
+    const seq = await t.p.evaluate(() => window.__h1s);
+    if (process.env.SEQ) console.log(seq.join(' → '));
+    assert(!seq.some((h) => /Round 2/.test(h)), 'перед R1 блимає R2: ' + seq.join(' → '));
+    assert(/Round 1/.test(seq[seq.length - 1]), 'не відкрився R1: ' + seq.join(' → '));
+    await t.ctx.close();
+    return t.errors;
+  },
+
   'навбар: Турніри / Лідерборд / Про лігу (комп)': async (b) => {
     const t = await page(b, DESK, 'season');
     assert(await visible(t.p, '#leagueNav'), 'на головній немає перемикача розділів');
