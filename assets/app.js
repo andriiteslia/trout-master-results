@@ -4873,8 +4873,9 @@
   HOME.sec = 'tours';
   var LEAGUE_NAV = document.getElementById('leagueNav');
   var HOME_HEAD = { title: document.getElementById('homeTitle'), lead: document.querySelector('#home .home__lead') };
-  HOME_HEAD.titleHtml = HOME_HEAD.title.innerHTML;
-  HOME_HEAD.leadText = HOME_HEAD.lead.textContent;
+  // Оригінал — завжди українською (з DOM не беремо: якщо обрана ENG, i18n.js уже встиг його перекласти до запуску app.js)
+  HOME_HEAD.titleHtml = '<span class="hw-uk">Турніри </span>TROUT MASTER<span class="hw-en"> tournaments</span>';
+  HOME_HEAD.leadText = 'Реєстрація, результати онлайн та статистика';
   var LEAGUE_SECS = {
     lb: { title: 'Лідерборд', lead: 'Загальний залік сезону', empty: 'Лідерборд сезону з’явиться тут найближчим часом.' },
     partners: { title: 'Партнери', lead: 'Ті, хто підтримує лігу TROUT MASTER' },

@@ -143,6 +143,17 @@ const TESTS = {
     return t.errors.concat(m.errors);
   },
 
+  'мова: ENG → УКР, заголовок головної не лишається англійським': async (b) => {
+    const t = await page(b, DESK, 'season', { lang: 'en' });
+    await t.p.click('[data-lang="uk"]'); await t.p.waitForTimeout(300);
+    await t.p.click('#leagueNav [data-sec="lb"]'); await t.p.waitForTimeout(300);
+    await t.p.click('#leagueNav [data-sec="tours"]'); await t.p.waitForTimeout(300);
+    const head = await t.p.evaluate(() => document.getElementById('homeTitle').innerText + ' | ' + document.querySelector('#home .home__lead').textContent);
+    assert(!/Tournaments|Registration/.test(head), 'на УКР заголовок англійською: ' + head);
+    await t.ctx.close();
+    return t.errors;
+  },
+
   'навбар: Турніри / Лідерборд / Про лігу (комп)': async (b) => {
     const t = await page(b, DESK, 'season');
     assert(await visible(t.p, '#leagueNav'), 'на головній немає перемикача розділів');
