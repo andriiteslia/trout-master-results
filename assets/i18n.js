@@ -299,7 +299,7 @@
     'Карта водойми': 'Pond map', 'Карта секторів': 'Sector map', 'Улов по турах': 'Catch by round', 'Місце після кожного туру': 'Place after each round',
     'ще не зіграно': 'not played yet', 'до кінця': 'ends in', 'Реєстрація триває до': 'Registration is open until',
     'ви в списку учасників': 'you’re on the participant list', 'під номером': 'as number', 'картка учасника TROUT MASTER': 'TROUT MASTER player card',
-    'результати наживо': 'live results', 'Результат': 'Result', 'Триває реєстрація': 'Registration open', 'до': 'until',
+    'результати наживо': 'live results', 'Після': 'After', 'фестів': 'fests', 'Розділи ліги': 'League sections', 'Результат': 'Result', 'Триває реєстрація': 'Registration open', 'до': 'until',
     'Бали · риби': 'Points · fish', 'Риби': 'Fish', 'Сектор': 'Sector', 'сектор': 'sector', 'Тур': 'Round', 'тур': 'round',
     'на учасника': 'per participant', 'рибалив': 'fished', 'Наш партнер': 'Our partner', 'у Telegram': 'on Telegram',
     'Підсумок': 'Standings', 'Учасники': 'Participants', 'Результати': 'Results', 'Статистика': 'Statistics', 'Лідер': 'Leader'

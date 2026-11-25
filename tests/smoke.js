@@ -145,6 +145,15 @@ const TESTS = {
     return t.errors.concat(m.errors);
   },
 
+  'мова ENG: лідерборд без транслітерації': async (b) => {
+    const t = await page(b, DESK, 'league', { lang: 'en', hash: 'leaderboard/' });
+    const cap = await t.p.textContent('.lb-cap span');
+    assert(/^After 1 of 4 fests$/.test(cap.replace(/\s+/g, ' ').trim()), 'підпис лідерборду: ' + cap);
+    assert((await t.p.getAttribute('#leagueNav', 'aria-label')) === 'League sections', 'aria-label навігації не перекладено');
+    await t.ctx.close();
+    return t.errors;
+  },
+
   'мова: ENG → УКР, заголовок головної не лишається англійським': async (b) => {
     const t = await page(b, DESK, 'season', { lang: 'en' });
     await t.p.click('[data-lang="uk"]'); await t.p.waitForTimeout(300);
