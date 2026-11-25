@@ -92,7 +92,7 @@ var REFRESH_MS = Math.max(10, Number(CFG.REFRESH_SECONDS) || 20) * 1000;
 var CALM_REFRESH_MS = 60000;
 var FETCH_TIMEOUT_MS = 15000;
 var CODES = { 'В': 'code-w', 'П': 'code-l', 'РН': 'code-d', 'БН': 'code-z' };
-var LS = { data: 'tm2:data:' + SOURCE, sel: 'tm:selected', tab: 'tm:tab' };
+var LS = { data: 'tm2:data:' + SOURCE, sel: 'tm:selected', tab: 'tm:tab', hero: 'tm:hero' };
 var store = {
 get: function (k, d) {
 try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; }
@@ -4283,22 +4283,19 @@ else goList();
 var HOME_MONTHS = MONTHS_FULL;
 function subParts(r) { return String((I18N.en && r.subtitleEn) || r.subtitle || '').split(/\s*[•·]\s*/).filter(Boolean); }
 var BANNER_V = 2;
-function bannerSrc(u) {
+function bannerSrc(u, w) {
 var m = /^https:\/\/drive\.google\.com\/thumbnail\?id=([\w-]+)/.exec(String(u || ''));
 var v = /[?&]v=(\d+)/.exec(String(u || ''));
-return m ? 'https://lh3.googleusercontent.com/d/' + m[1] + '=w1200?v=' + (v ? v[1] : '0') + '&b=' + BANNER_V : u;
+return m ? 'https://lh3.googleusercontent.com/d/' + m[1] + '=w' + (w || 1200) + '?v=' + (v ? v[1] : '0') + '&b=' + BANNER_V : u;
 }
 function bannerHtml(r, cls) {
 var ph = '<span class="hb-ph"><small>TROUT MASTER</small><b>ROUND ' + r.n + '</b></span>';
 if (!r.banner) return '<span class="' + cls + '">' + ph + '</span>';
-var src = bannerSrc(r.banner), ok = IMG_OK[src];
-return '<span class="' + cls + (ok ? ' has-img' : ' hb-wait') + '">' + ph + '<img src="' + esc(src) + '" alt="" decoding="async"' + (ok ? ' class="ld"' : '') +
+var big = cls === 'hc-ban', src = bannerSrc(r.banner, big ? 1200 : 400), ok = IMG_OK[src];
+if (big) store.set(LS.hero, src);
+return '<span class="' + cls + (ok ? ' has-img' : ' hb-wait') + '">' + ph + '<img src="' + esc(src) + '" alt="" decoding="async" fetchpriority="' + (big ? 'high' : 'low') + '"' + (ok ? ' class="ld"' : '') +
 ' onerror="var p=this.parentNode;this.remove();if(p)p.classList.remove(\'hb-wait\')">' + '</span>';
 }
-(function () {
-var c = store.get(LS.data, null), s = c && c.season;
-(s && s.rounds || []).forEach(function (r) { if (r.banner) { var im = new Image(); im.src = bannerSrc(r.banner); } });
-})();
 function toursWord(n) { return n + ' ' + plural(n, 'тур', 'тури', 'турів'); }
 function curCardHtml(r) {
 var p = HOME.live ? HOME.live.payload : state.payload;

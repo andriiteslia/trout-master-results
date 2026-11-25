@@ -116,7 +116,7 @@
   // Коди результату туру → стиль бейджа
   var CODES = { 'В': 'code-w', 'П': 'code-l', 'РН': 'code-d', 'БН': 'code-z' };
 
-  var LS = { data: 'tm2:data:' + SOURCE, sel: 'tm:selected', tab: 'tm:tab' };
+  var LS = { data: 'tm2:data:' + SOURCE, sel: 'tm:selected', tab: 'tm:tab', hero: 'tm:hero' };   // hero — адреса банера поточного раунду (читає й <head> в index.html)
   var store = {
     get: function (k, d) {
       try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; }

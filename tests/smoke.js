@@ -806,6 +806,38 @@ const TESTS = {
     return errs;
   },
 
+  'perf: банери головної — великий 1200 з пріоритетом, мініатюри 400; наступного разу банер вантажиться з <head>': async (b) => {
+    const fx = JSON.parse(FIX('season-live'));
+    fx.season.rounds[0].banner = 'https://drive.google.com/thumbnail?id=R1file&sz=w1200&v=111';
+    fx.season.rounds[1].banner = 'https://drive.google.com/thumbnail?id=R2file&sz=w1200&v=222';
+    const ctx = await b.newContext(Object.assign({ locale: 'uk-UA' }, MOB));
+    const lh3 = [];
+    await ctx.route('https://lh3.googleusercontent.com/**', (r) => { lh3.push(r.request().url()); r.fulfill({ status: 200, contentType: 'image/webp', headers: { 'Cache-Control': 'max-age=3600' }, body: fs.readFileSync(path.join(ROOT, 'assets/reel.webp')) }); });
+    await ctx.route('https://script.google.com/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(fx) }));
+    await ctx.addInitScript(() => { try { localStorage.setItem('tm:lang', 'uk'); } catch (e) { /* */ } });
+    const p = await ctx.newPage();
+    const errors = [];
+    p.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+    await p.goto('http://localhost:' + PORT + '/'); await p.waitForTimeout(2000);
+    const BIG = 'https://lh3.googleusercontent.com/d/R2file=w1200?v=222&b=2', TH = 'https://lh3.googleusercontent.com/d/R1file=w400?v=111&b=2';
+    const imgs = await p.evaluate(() => Array.from(document.querySelectorAll('.hc-ban img, .hx-th img')).map((i) => [i.parentNode.className.split(' ')[0], i.getAttribute('src'), i.getAttribute('fetchpriority')]));
+    assert(imgs.some((x) => x[0] === 'hc-ban' && x[1] === BIG && x[2] === 'high'), 'великий банер не 1200/high: ' + JSON.stringify(imgs));
+    assert(imgs.some((x) => x[0] === 'hx-th' && x[1] === TH && x[2] === 'low'), 'мініатюра не 400/low: ' + JSON.stringify(imgs));
+    assert(!lh3.some((u) => /R1file=w1200/.test(u)), 'мініатюра тягне велику картинку');
+    assert((await p.evaluate(() => localStorage.getItem('tm:hero'))) === JSON.stringify(BIG), 'адресу банера не збережено');
+    // Повторний візит: банер у <link rel="preload"> ще до app.js, і вантажиться один раз
+    const before = lh3.length;
+    await p.goto('http://localhost:' + PORT + '/'); await p.waitForTimeout(2000);
+    const pre = await p.evaluate(() => Array.from(document.querySelectorAll('link[rel="preload"][as="image"]')).map((l) => l.href + '|' + l.getAttribute('fetchpriority')));
+    assert(pre.includes(BIG + '|high'), 'немає preload банера: ' + JSON.stringify(pre));
+    assert(lh3.slice(before).filter((u) => u === BIG).length <= 1, 'банер вантажиться двічі');
+    assert(await p.evaluate(() => typeof window.l === 'undefined' && (!window.hero || window.hero instanceof Element)), 'змінні з <head> потрапили в window');
+    // На /leaderboard банера немає — і preload теж
+    await p.goto('http://localhost:' + PORT + '/leaderboard'); await p.waitForTimeout(1500);
+    assert(!(await p.evaluate(() => document.querySelector('link[rel="preload"][as="image"][href*="lh3"]'))), 'preload банера на /leaderboard');
+    await ctx.close(); return errors;
+  },
+
   'telegram: апка в TG, партнер рахує клік («Партнери»)': async (b) => {
     const t = await page(b, MOB, 'season', { tg: true });
     await t.p.click('#tabbar [data-sec="partners"]'); await t.p.waitForTimeout(400);

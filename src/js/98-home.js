@@ -137,25 +137,22 @@
   function subParts(r) { return String((I18N.en && r.subtitleEn) || r.subtitle || '').split(/\s*[•·]\s*/).filter(Boolean); }
   // Банер з Google Drive: пряма адреса lh3.googleusercontent.com (без переадресації, браузер її кешує)
   var BANNER_V = 2;
-  function bannerSrc(u) {
+  // w — ширина: 1200 для великої картки поточного раунду, 400 для мініатюр зіграних (100 px на екрані)
+  function bannerSrc(u, w) {
     var m = /^https:\/\/drive\.google\.com\/thumbnail\?id=([\w-]+)/.exec(String(u || ''));
     var v = /[?&]v=(\d+)/.exec(String(u || ''));   // час зміни файлу: нова картинка в тому ж файлі — нова адреса
     // BANNER_V — підняти, коли iPhone/Telegram тримає старе фото, а Drive не змінив час файлу
-    return m ? 'https://lh3.googleusercontent.com/d/' + m[1] + '=w1200?v=' + (v ? v[1] : '0') + '&b=' + BANNER_V : u;
+    return m ? 'https://lh3.googleusercontent.com/d/' + m[1] + '=w' + (w || 1200) + '?v=' + (v ? v[1] : '0') + '&b=' + BANNER_V : u;
   }
   function bannerHtml(r, cls) {
     var ph = '<span class="hb-ph"><small>TROUT MASTER</small><b>ROUND ' + r.n + '</b></span>';
     if (!r.banner) return '<span class="' + cls + '">' + ph + '</span>';
-    var src = bannerSrc(r.banner), ok = IMG_OK[src];
+    var big = cls === 'hc-ban', src = bannerSrc(r.banner, big ? 1200 : 400), ok = IMG_OK[src];
+    if (big) store.set(LS.hero, src);   // наступного разу банер почне вантажитись ще в <head> (index.html)
     // ще не завантажувався — скелетон, а не заглушка «ROUND N», щоб не блимало; не вийшло — заглушка
-    return '<span class="' + cls + (ok ? ' has-img' : ' hb-wait') + '">' + ph + '<img src="' + esc(src) + '" alt="" decoding="async"' + (ok ? ' class="ld"' : '') +
+    return '<span class="' + cls + (ok ? ' has-img' : ' hb-wait') + '">' + ph + '<img src="' + esc(src) + '" alt="" decoding="async" fetchpriority="' + (big ? 'high' : 'low') + '"' + (ok ? ' class="ld"' : '') +
       ' onerror="var p=this.parentNode;this.remove();if(p)p.classList.remove(\'hb-wait\')">' + '</span>';
   }
-  // Банер поточного раунду — вантажимо одразу зі збережених даних, ще до першого малювання
-  (function () {
-    var c = store.get(LS.data, null), s = c && c.season;
-    (s && s.rounds || []).forEach(function (r) { if (r.banner) { var im = new Image(); im.src = bannerSrc(r.banner); } });
-  })();
   function toursWord(n) { return n + ' ' + plural(n, 'тур', 'тури', 'турів'); }
 
   function curCardHtml(r) {
