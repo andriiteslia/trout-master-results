@@ -84,6 +84,12 @@ const TESTS = {
     execFileSync(process.execPath, [path.join(ROOT, 'tools/build.js'), '--check'], { stdio: 'pipe' });
   },
 
+  'build: стиснення (tools/minify.js) нічого не змінює в JS і CSS': async (b) => {
+    const errs = await require('./minify-check.js')(b);
+    assert(!errs.length, errs.join('\n'));
+    return [];
+  },
+
   'desktop results: таблиця, плитки, бічна панель': async (b) => {
     const t = await page(b, DESK, 'results');
     const rows = await t.p.locator('#board [data-key]').count();

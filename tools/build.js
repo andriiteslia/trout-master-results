@@ -3,6 +3,7 @@
  * Збирання сайту з модулів (без залежностей, лише Node):
  *   src/js/*.js   → assets/app.js   (усі модулі в одній IIFE, у порядку назв: 00-…, 10-…, …)
  *   src/css/*.css → assets/style.css (у порядку назв; пізніші правила перекривають ранні)
+ *   обидва стискаються tools/minify.js (коментарі, відступи, зайві пробіли; перевірка — tests/minify-check.js)
  *
  *   node tools/build.js          — зібрати
  *   node tools/build.js --check  — лише перевірити, що assets/ зібрані з поточних src/ (для тестів)
@@ -15,16 +16,20 @@
 const fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 
-function read(dir, ext) {
+const MIN = require('./minify.js');
+// Модулі в порядку назв. Кожен стискається (tools/minify.js: без коментарів і відступів, нічого не перейменовується)
+// і позначається рядком «/* src/js/30-data.js */», щоб у DevTools було видно, звідки код.
+function read(dir, ext, min) {
   const d = path.join(ROOT, dir);
-  return fs.readdirSync(d).filter((f) => f.endsWith(ext)).sort().map((f) => fs.readFileSync(path.join(d, f), 'utf8'));
+  return fs.readdirSync(d).filter((f) => f.endsWith(ext)).sort()
+    .map((f) => '/* ' + dir + '/' + f + ' */\n' + min(fs.readFileSync(path.join(d, f), 'utf8'))).join('');
 }
-const BANNER = (dir) => '/* Зібрано з ' + dir + ' командою node tools/build.js — правте модулі там, а не цей файл. */\n';
-const JS_HEAD = BANNER('src/js') + "(function () {\n  'use strict';\n";
+const BANNER = (dir) => '/* Зібрано з ' + dir + ' командою node tools/build.js (стиснуто) — правте модулі там, а не цей файл. */\n';
+const JS_HEAD = BANNER('src/js') + "(function () {\n'use strict';\n";
 const JS_TAIL = '})();\n';
 const out = {
-  'assets/app.js': JS_HEAD + read('src/js', '.js').join('') + JS_TAIL,
-  'assets/style.css': BANNER('src/css') + read('src/css', '.css').join('')
+  'assets/app.js': JS_HEAD + read('src/js', '.js', MIN.js) + JS_TAIL,
+  'assets/style.css': BANNER('src/css') + read('src/css', '.css', MIN.css)
 };
 
 // Окремі адреси сторінок — копії index.html (у всіх <base href="/">, тож файли беруться з кореня;

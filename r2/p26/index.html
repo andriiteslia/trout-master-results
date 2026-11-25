@@ -31,7 +31,7 @@
   <link rel="preload" href="assets/fonts/fixel-cyrillic-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/fixel-latin-var.woff2" as="font" type="font/woff2" crossorigin>
   <!-- Дані запитуємо ДО стилів: скрипт після <link rel="stylesheet"> чекав би, доки завантажиться весь CSS -->
-  <script src="config.js?v=20261125u"></script>
+  <script src="config.js?v=20261125v"></script>
   <script>
     // Запитуємо результати одразу, паралельно з завантаженням решти сторінки
     (function () {
@@ -43,15 +43,15 @@
       } catch (e) { window.__tmEarly = null; }
     })();
   </script>
-  <link rel="stylesheet" href="assets/style.css?v=20261125u">
+  <link rel="stylesheet" href="assets/style.css?v=20261125v">
   <script>
     // Посилання на картку (…/#p9, startapp=p9): з першого кадру ховаємо головну, щоб не блимав список до картки
     if (/(?:tgWebAppStartParam=|#)p\d+(?:&|$)/.test(location.hash + '&' + location.search.slice(1)) || /\/r\d+\/p\d+\/?$/.test(location.pathname)) document.documentElement.className += ' view-card deep-wait';
     // Звичайне відкриття — з першого кадру головна (скелетон карток), щоб до запуску апки не блимала сторінка раунду
     else if (!/tgWebAppStartParam=|[?&]sel=|#(?:r\d+|player|stats|register|rules)(?:&|$)/.test(location.hash + '&' + location.search)) document.documentElement.className += ' home-wait';
   </script>
-  <script src="assets/i18n.js?v=20261125u"></script>
-  <script src="assets/app.js?v=20261125u" defer></script>
+  <script src="assets/i18n.js?v=20261125v"></script>
+  <script src="assets/app.js?v=20261125v" defer></script>
 </head>
 <body>
   <header class="topbar">
