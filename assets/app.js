@@ -4920,6 +4920,11 @@
     [LEAGUE_NAV, TABBAR].forEach(function (nav) { if (nav && !nav.hidden) { nav._seg = null; segSlide(nav, '[aria-current="page"]'); } });
   }
   window.addEventListener('resize', remeasureNavs);
+  // Розмір перемикача змінився з будь-якої причини (Telegram розгорнув вікно, довантажився шрифт) — переміряємо «таблетку»
+  if (window.ResizeObserver) {
+    var navRO = new ResizeObserver(function () { remeasureNavs(); });
+    [LEAGUE_NAV, TABBAR].forEach(function (nav) { if (nav) navRO.observe(nav); });
+  }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(remeasureNavs);
   // Партнери ліги: картка на кожного (зараз FISH.ME.FISH), нижче — «Стати партнером»
   var PARTNERS = [{
@@ -4969,6 +4974,7 @@
       HOME_HEAD.lead.textContent = LEAGUE_SECS[sec].lead;
       if (sec === 'lb' && leaguePayload() && homeSeason() && homeSeason().name) HOME_HEAD.lead.textContent = 'Сезон ' + homeSeason().name;
       HOME.body.innerHTML = secHtml(sec);
+      if (sec === 'lb' && typeof LG !== 'undefined' && LG.q) lgFilter();
       document.title = LEAGUE_SECS[sec].title + ' — Trout Master';
       return;
     }
@@ -5035,7 +5041,7 @@
     runDeep(d.sub);
   });
   // ===== Лідерборд сезону (розділ «Лідерборд»): payload.league з Code.gs — бали за фести, бонуси, рівні бали =====
-  var LG = { all: false, sheet: null };
+  var LG = { all: false, sheet: null, q: '' };
   var LG_SHOW = 15;   // на телефоні спершу стільки рядків, далі «Показати всіх»
   function leaguePayload() {
     var p = HOME.live ? HOME.live.payload : state.payload;
@@ -5069,7 +5075,11 @@
     if (!lg) return null;
     var nF = lg.fests.length, rows = lg.rows || [];
     var meta = '<div class="lb-meta lb-cap"><span>' + (lg.played ? 'Після <b>' + lg.played + ' з ' + nF + '</b> фестів' : 'Сезон ще не почався') + '</span>' +
-      (rows.length ? '<span>' + rows.length + ' ' + plural(rows.length, 'учасник', 'учасники', 'учасників') + '</span>' : '') + '</div>';
+      (rows.length ? '<span class="lb-cnt">' + rows.length + ' ' + plural(rows.length, 'учасник', 'учасники', 'учасників') + '</span>' : '') +
+      (rows.length ? '<label class="search lb-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>' +
+        '<span class="visually-hidden">Знайти учасника</span><input type="search" id="lbSearch" placeholder="Знайти учасника" autocomplete="off" value="' + esc(LG.q) + '">' +
+        '<button type="button" class="search__clear" id="lbSearchClear" aria-label="Очистити пошук"' + (LG.q ? '' : ' hidden') + '><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8l8 8M16 8l-8 8"/></svg></button></label>' : '') +
+      '</div>';
     var table;
     if (!rows.length) {
       table = '<div class="lb-card"><div class="lb-sticky">' + meta + '</div><div class="lb-empty">Таблиця з’явиться після першого фесту.</div></div>';
@@ -5078,7 +5088,7 @@
         lg.fests.map(function (f) { return '<span class="c">R' + f.n + '</span>'; }).join('') + '<span class="r">Бали</span></div>';
       var list = rows.map(function (p, i) {
         var fest = lg.fests.map(function (f) { var x = p.by[f.n]; return '<span class="lb-fe d-only' + (x ? '' : ' no') + '">' + (x ? x.total : '—') + '</span>'; }).join('');
-        return '<button type="button" class="lb-row' + (i % 2 ? ' z' : '') + (i >= LG_SHOW && !LG.all ? ' is-more' : '') + '" data-lg="' + i + '" style="--nf:' + nF + '">' +
+        return '<button type="button" class="lb-row' + (i % 2 ? ' z' : '') + (i >= LG_SHOW && !LG.all ? ' is-more' : '') + '" data-lg="' + i + '" data-nm="' + esc(normName(p.name)) + '" style="--nf:' + nF + '">' +
           lgPlace(p.place) + avatarHtml(p.name) +
           '<span class="lb-nm"><b>' + esc(p.name) + '</b><span>' + lgDots(lg, p) +
           '<i class="m-only">' + p.fests + ' з ' + nF + ' · </i>' + p.wins + ' В · ' + fmtNum(p.fish) + ' ' + plural(Math.round(p.fish), 'риба', 'риби', 'риб') + '</span></span>' +
@@ -5134,7 +5144,24 @@
     setTimeout(function () { el.hidden = true; }, REDUCED ? 0 : 280);
   }
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeLgSheet(); });
+  // Пошук по учаснику (комп, як у таблиці раунду): ховаємо рядки, зебру перераховуємо
+  function lgFilter() {
+    var q = normName(LG.q), n = 0;
+    [].forEach.call(HOME.body.querySelectorAll('.lb-row'), function (r) {
+      var ok = !q || r.getAttribute('data-nm').indexOf(q) >= 0;
+      r.hidden = !ok;
+      r.classList.toggle('is-q', !!q);
+      if (ok) r.classList.toggle('z', !!(n++ % 2));
+    });
+    var c = document.getElementById('lbSearchClear');
+    if (c) c.hidden = !LG.q;
+  }
+  HOME.body.addEventListener('input', function (e) {
+    if (e.target.id !== 'lbSearch') return;
+    LG.q = e.target.value; lgFilter();
+  });
   HOME.body.addEventListener('click', function (e) {
+    if (e.target.closest('#lbSearchClear')) { e.preventDefault(); LG.q = ''; var s = document.getElementById('lbSearch'); s.value = ''; s.focus(); lgFilter(); return; }
     if (e.target.closest('[data-lg-all]')) { LG.all = true; renderHome(); return; }
     var r = e.target.closest('[data-lg]');
     if (r) openLgSheet(parseInt(r.getAttribute('data-lg'), 10));

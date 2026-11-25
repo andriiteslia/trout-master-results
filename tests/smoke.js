@@ -99,6 +99,12 @@ const TESTS = {
     assert((await t.p.locator('.lb-row').first().innerText()).includes('Красько Олег'), 'першим не Красько');
     assert(await visible(t.p, '.lb-side .lb-prize'), 'на компі немає картки призу');
     await shot(t.p, 'desk-lb');
+    await t.p.fill('#lbSearch', 'лічн'); await t.p.waitForTimeout(200);
+    assert((await t.p.locator('.lb-row:visible').count()) === 1, 'пошук у лідерборді не відфільтрував');
+    await shot(t.p, 'desk-lb-search');
+    await t.p.click('#lbSearchClear'); await t.p.waitForTimeout(200);
+    assert((await t.p.locator('.lb-row:visible').count()) === 24, 'очищення пошуку не повернуло всіх');
+    assert(await t.p.evaluate(() => getComputedStyle(document.querySelector('.lb-sticky')).boxShadow === 'none'), 'у шапки є тінь');
     await t.p.evaluate(() => window.scrollTo(0, 700)); await t.p.waitForTimeout(300);
     const top = await t.p.evaluate(() => document.querySelector('.lb-sticky').getBoundingClientRect().top);
     assert(Math.abs(top) < 2, 'шапка лідерборду не прилипла на компі: ' + top);

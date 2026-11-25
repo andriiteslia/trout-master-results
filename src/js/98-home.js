@@ -267,6 +267,11 @@
     [LEAGUE_NAV, TABBAR].forEach(function (nav) { if (nav && !nav.hidden) { nav._seg = null; segSlide(nav, '[aria-current="page"]'); } });
   }
   window.addEventListener('resize', remeasureNavs);
+  // Розмір перемикача змінився з будь-якої причини (Telegram розгорнув вікно, довантажився шрифт) — переміряємо «таблетку»
+  if (window.ResizeObserver) {
+    var navRO = new ResizeObserver(function () { remeasureNavs(); });
+    [LEAGUE_NAV, TABBAR].forEach(function (nav) { if (nav) navRO.observe(nav); });
+  }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(remeasureNavs);
   // Партнери ліги: картка на кожного (зараз FISH.ME.FISH), нижче — «Стати партнером»
   var PARTNERS = [{
@@ -316,6 +321,7 @@
       HOME_HEAD.lead.textContent = LEAGUE_SECS[sec].lead;
       if (sec === 'lb' && leaguePayload() && homeSeason() && homeSeason().name) HOME_HEAD.lead.textContent = 'Сезон ' + homeSeason().name;
       HOME.body.innerHTML = secHtml(sec);
+      if (sec === 'lb' && typeof LG !== 'undefined' && LG.q) lgFilter();
       document.title = LEAGUE_SECS[sec].title + ' — Trout Master';
       return;
     }

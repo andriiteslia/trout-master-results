@@ -2917,7 +2917,6 @@ body > .home { flex: 1 0 auto; }
 .lb-head { border-bottom: 0; border-top: 1px solid var(--row-line); }
 .lb-sticky { position: sticky; top: 0; z-index: 6; background: #fff; border-bottom: 1px solid var(--row-line); border-radius: 19px 19px 0 0; }
 .lb-sticky .lb-cap { border-bottom: 0; }
-.lb-sticky.is-stuck { box-shadow: 0 6px 12px -8px rgba(16, 24, 40, .18); }
 @media (max-width: 979px) {
   .tg .lb-sticky { top: calc(var(--tg-top) + 12px); border-radius: 17px 17px 0 0; }
   .tg.tg-stuck .lb-sticky.over-cap { z-index: 52; }
@@ -3011,3 +3010,10 @@ body > .home { flex: 1 0 auto; }
 .mapsheet__box { overscroll-behavior: contain; touch-action: pan-y; }
 html:has(.mapsheet:not([hidden])) { overflow: hidden; }   /* сторінка під аркушем не прокручується */
 
+
+/* Пошук у шапці лідерборду (комп, як у таблиці раунду; на телефоні .search схований) */
+.lb-cap { gap: 16px; }
+.lb-cap .lb-cnt { margin-left: auto; }
+@media (min-width: 980px) { .lb-cap { padding: 12px 20px; } .lb-search { order: 0; width: 240px; height: 38px; } }
+.lb-row.is-q.is-more { display: grid; }
+.lb-row[hidden] { display: none !important; }
