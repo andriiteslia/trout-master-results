@@ -117,8 +117,8 @@ const TESTS = {
     assert((await t.p.locator('.lb-row:visible').count()) === 24, 'очищення пошуку не повернуло всіх');
     assert(await t.p.evaluate(() => getComputedStyle(document.querySelector('.lb-sticky')).boxShadow === 'none'), 'у шапки є тінь');
     await t.p.evaluate(() => window.scrollTo(0, 700)); await t.p.waitForTimeout(300);
-    const top = await t.p.evaluate(() => document.querySelector('.lb-sticky').getBoundingClientRect().top);
-    assert(Math.abs(top) < 2, 'шапка лідерборду не прилипла на компі: ' + top);
+    const top = await t.p.evaluate(() => document.querySelector('.lb-sticky').getBoundingClientRect().top - document.querySelector('.topbar').getBoundingClientRect().bottom);
+    assert(Math.abs(top) < 2, 'шапка лідерборду не прилипла під навбаром на компі: ' + top);
     await shot(t.p, 'desk-lb-sticky');
     await t.p.evaluate(() => window.scrollTo(0, 0));
     await t.p.locator('.lb-row').nth(1).click(); await t.p.waitForTimeout(500);
@@ -863,6 +863,35 @@ const TESTS = {
     const newer = await open(ver + 'z');
     assert(new RegExp('[?&]v=' + ver + 'z').test(newer.url), 'нова версія не перезавантажила апку: ' + newer.url);
     return same.errors.concat(newer.errors);
+  },
+
+  'навбар закріплений при прокрутці: комп, телефон, Telegram; шапки прилипають під ним': async (b) => {
+    const errs = [];
+    const nav = (p) => p.evaluate(() => { const r = document.querySelector('.topbar').getBoundingClientRect(); return { top: r.top, bottom: r.bottom, cap: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cap-top')) }; });
+    // Комп: навбар угорі, панель таблиці — одразу під ним, назви колонок — під панеллю
+    let t = await page(b, DESK, 'results');
+    await t.p.evaluate(() => scrollTo(0, 700)); await t.p.waitForTimeout(300);
+    let n = await nav(t.p);
+    assert(Math.abs(n.top) < 0.5 && Math.abs(n.cap - n.bottom) < 0.5, 'комп: навбар не закріплений ' + JSON.stringify(n));
+    const d = await t.p.evaluate(() => ({ tools: document.querySelector('.bcard > .btools').getBoundingClientRect(), head: document.querySelector('.bcard .rk-head').getBoundingClientRect().top }));
+    assert(Math.abs(d.tools.top - n.bottom) < 1 && d.head <= d.tools.bottom && d.head >= d.tools.bottom - 1.5, 'комп: шапка таблиці не під навбаром ' + JSON.stringify(d) + ' ' + JSON.stringify(n));
+    errs.push.apply(errs, t.errors); await t.ctx.close();
+    // Телефон у браузері
+    t = await page(b, MOB, 'results');
+    await t.p.evaluate(() => scrollTo(0, 700)); await t.p.waitForTimeout(300);
+    n = await nav(t.p);
+    assert(Math.abs(n.top) < 0.5 && n.bottom > 40, 'телефон: навбар не закріплений ' + JSON.stringify(n));
+    errs.push.apply(errs, t.errors); await t.ctx.close();
+    // Telegram: без прокрутки «кришки» немає; після — шапка таблиці на 12 px під навбаром, «кришка» є
+    t = await page(b, MOB, 'results', { tg: true });
+    assert(!(await t.p.evaluate(() => document.documentElement.classList.contains('tg-stuck'))), 'TG: «кришка» без прокрутки');
+    await t.p.evaluate(() => scrollTo(0, 700)); await t.p.waitForTimeout(400);
+    n = await nav(t.p);
+    const g = await t.p.evaluate(() => ({ head: document.querySelector('.tg .rk-head').getBoundingClientRect().top, stuck: document.documentElement.classList.contains('tg-stuck') }));
+    assert(Math.abs(n.top) < 0.5, 'TG: навбар не закріплений ' + JSON.stringify(n));
+    assert(g.stuck && Math.abs(g.head - (n.bottom + 12)) < 1, 'TG: шапка таблиці не на 12 px під навбаром ' + JSON.stringify(g) + ' ' + JSON.stringify(n));
+    errs.push.apply(errs, t.errors); await t.ctx.close();
+    return errs;
   },
 
   'telegram: апка в TG, партнер рахує клік («Партнери»)': async (b) => {

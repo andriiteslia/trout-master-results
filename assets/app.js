@@ -71,8 +71,8 @@ var main = null;
 if (!main) { var hm = document.querySelector('.home:not([hidden]) .home__inner'); if (hm && hm.getClientRects().length) main = hm; }
 main = main || document.querySelector('.main');
 if (!tb || !main) return;
-var top = parseFloat(getComputedStyle(tb).paddingTop) || 0;
-var mr = main.getBoundingClientRect(), stuck = mr.top <= top + 0.5;
+var top = capTop();
+var mr = main.getBoundingClientRect(), stuck = mr.top <= top + 0.5 && (window.scrollY || 0) > 0;
 document.documentElement.classList.toggle('tg-stuck', stuck);
 document.documentElement.classList.toggle('tg-past', stuck && mr.bottom <= top + 24);
 }
@@ -81,6 +81,22 @@ window.addEventListener('scroll', schedule, { passive: true });
 window.addEventListener('resize', schedule);
 s.addEventListener('load', schedule);
 document.addEventListener('DOMContentLoaded', schedule);
+})();
+function capTop() {
+var tb = document.querySelector('.topbar');
+return tb ? Math.max(0, tb.getBoundingClientRect().bottom) : 0;
+}
+(function watchCapTop() {
+var tb = document.querySelector('.topbar');
+if (!tb) return;
+var last = -1;
+function put() {
+var h = tb.getBoundingClientRect().height;
+if (h !== last) { last = h; document.documentElement.style.setProperty('--cap-top', h + 'px'); }
+}
+put();
+if (window.ResizeObserver) new ResizeObserver(put).observe(tb);
+window.addEventListener('resize', put);
 })();
 var CFG = Object.assign({ API_URL: '', HEADER_ROWS: 2, REFRESH_SECONDS: 20 }, window.RESULTS_CONFIG || {});
 var API = String(CFG.API_URL || '').trim();
@@ -1679,8 +1695,7 @@ if (show) { tg.BackButton.onClick(goBack); tg.BackButton.show(); } else tg.BackB
 var stuckFrame = 0;
 function markStuckHeads() {
 stuckFrame = 0;
-var tbar = IN_TG ? document.querySelector('.topbar') : null;
-var capTop = tbar ? parseFloat(getComputedStyle(tbar).paddingTop) || 0 : 0;
+var cap = IN_TG ? capTop() : 0;
 [].forEach.call(document.querySelectorAll('.pcard .pc-tour--head, .tg .rk-head, .tg .plist-head, .tg .tgrid-hd, .lb-sticky'), function (hd) {
 if (!hd.offsetParent) return;
 var prev = hd.previousElementSibling, natural;
@@ -1688,10 +1703,10 @@ if (prev && prev.offsetParent) natural = prev.getBoundingClientRect().bottom + (
 else { var par = hd.parentElement; natural = par.getBoundingClientRect().top + (parseFloat(getComputedStyle(par).borderTopWidth) || 0) + (parseFloat(getComputedStyle(par).paddingTop) || 0); }
 var r = hd.getBoundingClientRect().top;
 hd.classList.toggle('is-stuck', r > natural + 0.5);
-if (IN_TG) hd.classList.toggle('over-cap', r >= capTop + 11.5);
+if (IN_TG) hd.classList.toggle('over-cap', r >= cap + 11.5);
 });
 if (IN_TG && state.view === 'reg' && reg.form.offsetParent) {
-reg.form.classList.toggle('over-cap', reg.form.getBoundingClientRect().top >= capTop + 11.5);
+reg.form.classList.toggle('over-cap', reg.form.getBoundingClientRect().top >= cap + 11.5);
 }
 }
 window.addEventListener('scroll', function () { if (!stuckFrame) stuckFrame = requestAnimationFrame(markStuckHeads); }, { passive: true });
@@ -1703,12 +1718,7 @@ if (m) m.style.paddingBottom = formLift.spacer ? 'calc(' + formLift.spacer + 'px
 }
 function liftForm() {
 if (state.view !== 'reg' || window.innerWidth >= 980 || reg.form.hidden || !reg.form.offsetParent) return;
-var tgTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tg-top')) || 0;
-if (IN_TG) {
-var tb = document.querySelector('.topbar');
-tgTop = tb ? parseFloat(getComputedStyle(tb).paddingTop) || 0 : 0;
-}
-var target = reg.form.getBoundingClientRect().top + window.scrollY - (tgTop + 12);
+var target = reg.form.getBoundingClientRect().top + window.scrollY - (capTop() + 12);
 var room = document.documentElement.scrollHeight - window.innerHeight;
 if (target > room) setFormSpacer(formLift.spacer + target - room);
 var smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;

@@ -122,8 +122,7 @@
     stuckFrame = 0;
     // Шапка «прилипла», якщо вона нижче свого звичайного місця (одразу після попереднього елемента
     // або від верху таблиці)
-    var tbar = IN_TG ? document.querySelector('.topbar') : null;
-    var capTop = tbar ? parseFloat(getComputedStyle(tbar).paddingTop) || 0 : 0;   // нижній край панелі Telegram
+    var cap = IN_TG ? capTop() : 0;   // нижній край закріпленого навбару
     [].forEach.call(document.querySelectorAll('.pcard .pc-tour--head, .tg .rk-head, .tg .plist-head, .tg .tgrid-hd, .lb-sticky'), function (hd) {
       if (!hd.offsetParent) return;
       var prev = hd.previousElementSibling, natural;
@@ -133,11 +132,11 @@
       hd.classList.toggle('is-stuck', r > natural + 0.5);
       // Telegram: шапка над «кришкою» аркуша лише поки стоїть на своєму місці (12 px під панеллю);
       // коли таблиця закінчується і шапка їде вгору — ховається під заокруглення, а не налазить на кути
-      if (IN_TG) hd.classList.toggle('over-cap', r >= capTop + 11.5);
+      if (IN_TG) hd.classList.toggle('over-cap', r >= cap + 11.5);
     });
     // Форма реєстрації (Telegram): так само
     if (IN_TG && state.view === 'reg' && reg.form.offsetParent) {
-      reg.form.classList.toggle('over-cap', reg.form.getBoundingClientRect().top >= capTop + 11.5);
+      reg.form.classList.toggle('over-cap', reg.form.getBoundingClientRect().top >= cap + 11.5);
     }
   }
   window.addEventListener('scroll', function () { if (!stuckFrame) stuckFrame = requestAnimationFrame(markStuckHeads); }, { passive: true });
@@ -153,13 +152,8 @@
   }
   function liftForm() {
     if (state.view !== 'reg' || window.innerWidth >= 980 || reg.form.hidden || !reg.form.offsetParent) return;
-    var tgTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tg-top')) || 0;
-    if (IN_TG) {
-      // --tg-top — це calc() зі змінних Telegram; беремо готове значення з відступу шапки
-      var tb = document.querySelector('.topbar');
-      tgTop = tb ? parseFloat(getComputedStyle(tb).paddingTop) || 0 : 0;
-    }
-    var target = reg.form.getBoundingClientRect().top + window.scrollY - (tgTop + 12);
+    // форма стає на 12 px під закріпленим навбаром (у Telegram його висота вже містить відступ під панеллю)
+    var target = reg.form.getBoundingClientRect().top + window.scrollY - (capTop() + 12);
     var room = document.documentElement.scrollHeight - window.innerHeight;
     if (target > room) setFormSpacer(formLift.spacer + target - room);
     var smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;

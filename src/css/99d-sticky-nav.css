@@ -1,0 +1,31 @@
+/* ===== src/css/99d-sticky-nav.css ===== */
+/* ===== Закріплений навбар (комп, мобільний браузер, Telegram) =====
+   Навбар завжди вгорі. --cap-top — його нижній край у px (точне значення ставить 00-core.js за висотою .topbar;
+   у Telegram туди входить і відступ під панеллю Telegram). Усе, що раніше прилипало до верху екрана
+   (або до низу панелі Telegram, --tg-top), тепер прилипає під навбаром. */
+:root { --cap-top: 60px; }
+@media (min-width: 980px) { :root { --cap-top: 68px; } }
+
+.topbar { position: sticky; top: 0; z-index: 62; }
+
+/* Таблиця на компі: панель інструментів, назви колонок і копія шапки «По турах» */
+@media (min-width: 980px) {
+  .bcard > .btools { top: var(--cap-top); }
+  .bcard .rk-head, .bcard .tgrid-hd { top: calc(var(--cap-top) + var(--bt-h, 81px)); }
+  .bcard .rk-row, .bcard .tr-row, .bcard .plist > li { scroll-margin-top: calc(var(--cap-top) + var(--bt-h, 81px) + 56px); }
+}
+
+/* Шапки, що прилипали до верху екрана */
+.bh, .pcard .pc-tour--head, .lb-sticky { top: var(--cap-top); }
+
+/* Telegram на телефоні: «кришка» аркуша й прилиплі шапки — під навбаром, а не під панеллю Telegram */
+.tg .bh { top: calc(var(--cap-top) + var(--tg-gap)); }
+@media (max-width: 979px) {
+  .tg .rk-head, .tg .plist-head, .tg .tgrid-hd, .tg .lb-sticky, .tg .pcard .pc-tour--head { top: calc(var(--cap-top) + 12px); }
+  .tg.tg-stuck::before, .tg.tg-stuck body::after { top: var(--cap-top); }
+}
+
+/* Комп, «Підсумок ↔ По турах» (View Transition): знімок таблиці малюється над сторінкою — без власного шару
+   навбар на мить опинявся під рядками таблиці. Свій шар іде після таблиці, тож навбар лишається зверху. */
+.vt-tabs .topbar { view-transition-name: topbar; }
+::view-transition-group(topbar) { animation: none; }
