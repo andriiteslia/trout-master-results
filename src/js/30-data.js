@@ -2,12 +2,12 @@
   // ---------- Data ----------
   function applyPayload(p, opts) {
     opts = opts || {};
-    var models = (p.sheets || []).map(parseSheet);
     var same = state.payload && p.hash && state.payload.hash === p.hash;
-    if (same && !state.fromCache) {
+    if (same && !state.fromCache) {   // нічого не змінилось — не розбираємо таблиці знову
       state.payload.generatedAt = p.generatedAt;
       return false;
     }
+    var models = (p.sheets || []).map(parseSheet);
     if (state.models.length && !state.fromCache && !opts.cached) {
       var d = diff(state.models, models);
       state.moves = d.moves;
@@ -80,6 +80,14 @@
   function schedule() {
     clearTimeout(state.timer);
     if (DEMO || document.hidden) return;
-    state.timer = setTimeout(load, REFRESH_MS);
+    state.timer = setTimeout(load, pollMs());
+  }
+
+  // Як часто опитувати: часто — лише коли йде турнір (результати, не всі тури зіграно);
+  // список учасників або завершений раунд — рідше. Повернення в апку/вкладку однаково оновлює одразу.
+  function pollMs() {
+    if (!state.payload || state.error || (HOME && HOME.live)) return REFRESH_MS;   // відкрито архів — поточний раунд стежимо як завжди
+    var calm = isListMode() || tournamentDone();
+    return calm ? Math.max(REFRESH_MS, CALM_REFRESH_MS) : REFRESH_MS;
   }
 

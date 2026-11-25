@@ -113,6 +113,7 @@
   var SOURCE = DEMO ? 'demo.json' : API;
   var HEADER_ROWS = Math.max(1, parseInt(CFG.HEADER_ROWS, 10) || 2);
   var REFRESH_MS = Math.max(10, Number(CFG.REFRESH_SECONDS) || 20) * 1000;
+  var CALM_REFRESH_MS = 60000;   // список учасників / раунд завершено
   var FETCH_TIMEOUT_MS = 15000;
 
   // Коди результату туру → стиль бейджа
@@ -491,12 +492,12 @@
   // ---------- Data ----------
   function applyPayload(p, opts) {
     opts = opts || {};
-    var models = (p.sheets || []).map(parseSheet);
     var same = state.payload && p.hash && state.payload.hash === p.hash;
-    if (same && !state.fromCache) {
+    if (same && !state.fromCache) {   // нічого не змінилось — не розбираємо таблиці знову
       state.payload.generatedAt = p.generatedAt;
       return false;
     }
+    var models = (p.sheets || []).map(parseSheet);
     if (state.models.length && !state.fromCache && !opts.cached) {
       var d = diff(state.models, models);
       state.moves = d.moves;
@@ -569,7 +570,15 @@
   function schedule() {
     clearTimeout(state.timer);
     if (DEMO || document.hidden) return;
-    state.timer = setTimeout(load, REFRESH_MS);
+    state.timer = setTimeout(load, pollMs());
+  }
+
+  // Як часто опитувати: часто — лише коли йде турнір (результати, не всі тури зіграно);
+  // список учасників або завершений раунд — рідше. Повернення в апку/вкладку однаково оновлює одразу.
+  function pollMs() {
+    if (!state.payload || state.error || (HOME && HOME.live)) return REFRESH_MS;   // відкрито архів — поточний раунд стежимо як завжди
+    var calm = isListMode() || tournamentDone();
+    return calm ? Math.max(REFRESH_MS, CALM_REFRESH_MS) : REFRESH_MS;
   }
 
   // ===== src/js/40-events.js — Події: вкладки, пошук, вибір рядків, мережа =====
@@ -1000,6 +1009,7 @@
       '<button type="button" class="btn btn-primary empty-state__btn" data-act="back">На головну</button></div></div>';
   }
   function renderCard() {
+    wantShareImg();
     if (state.cardPending) { pc.body.innerHTML = cardSkeleton(); return; }
     if (state.cmpOpen) { renderCompare(); return; }
     var name = selectedPlayerName();
@@ -3924,7 +3934,9 @@
       if (b) shareFile = new File([b], 'trout-master.jpg', { type: 'image/jpeg' });
     }).catch(function () {});
   }
-  setTimeout(preloadShareImg, 2500);
+  // Файл потрібен лише системному «Поділитися» в браузері (у Telegram своє вікно) і лише на сторінці раунду
+  function wantShareImg() { if (!IN_TG && state.view !== 'home') preloadShareImg(); }
+  window.addEventListener('tm:loaded', function () { setTimeout(wantShareImg, 1500); });
   // Telegram: рідне повідомлення від бота (фото + підпис + кнопка) через WebApp.shareMessage; інакше — як раніше
   function tgShareMessage(tg, url, text, btn, fallback) {
     var done = false, to = setTimeout(function () { if (!done) { done = true; fallback(); } }, 6000);
@@ -4960,7 +4972,7 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(remeasureNavs);
   // Партнери ліги: картка на кожного (зараз FISH.ME.FISH), нижче — «Стати партнером»
   var PARTNERS = [{
-    name: 'FISH.ME.FISH', logo: 'assets/partners/fishmefish.svg?v=1', url: 'https://t.me/fishmefish_japan', handle: '@fishmefish_japan',
+    name: 'FISH.ME.FISH', logo: 'assets/partners/fishmefish.svg?v=2', url: 'https://t.me/fishmefish_japan', handle: '@fishmefish_japan',
     tag: 'Японські приманки',
     text: 'Топові японські приманки — нові й б/у, зокрема дефіцитні моделі, а також витратні матеріали й аксесуари для ловлі хижої риби.'
   }];

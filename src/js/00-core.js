@@ -110,6 +110,7 @@
   var SOURCE = DEMO ? 'demo.json' : API;
   var HEADER_ROWS = Math.max(1, parseInt(CFG.HEADER_ROWS, 10) || 2);
   var REFRESH_MS = Math.max(10, Number(CFG.REFRESH_SECONDS) || 20) * 1000;
+  var CALM_REFRESH_MS = 60000;   // список учасників / раунд завершено
   var FETCH_TIMEOUT_MS = 15000;
 
   // Коди результату туру → стиль бейджа

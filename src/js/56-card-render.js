@@ -17,6 +17,7 @@
       '<button type="button" class="btn btn-primary empty-state__btn" data-act="back">На головну</button></div></div>';
   }
   function renderCard() {
+    wantShareImg();
     if (state.cardPending) { pc.body.innerHTML = cardSkeleton(); return; }
     if (state.cmpOpen) { renderCompare(); return; }
     var name = selectedPlayerName();

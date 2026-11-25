@@ -57,8 +57,10 @@ async function page(b, opts, fixture, extra) {
     });
   }
   const posts = [];
+  let gets = 0;
   await p.route('https://script.google.com/**', (r) => {
     const q = r.request();
+    if (q.method() === 'GET') gets++;
     if (q.method() === 'POST') { posts.push(q.postData()); return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, names: extra.names || [] }) }); }
     const rn = /[?&]round=(\d+)/.exec(q.url());
     if (rn) return r.fulfill({ status: 200, contentType: 'application/json', body: FIX('arch-' + rn[1]) });
@@ -66,9 +68,10 @@ async function page(b, opts, fixture, extra) {
   });
   await p.route('https://telegram.org/**', (r) => r.fulfill({ status: 200, contentType: 'text/javascript', body: '' }));
   await p.route('https://t.me/**', (r) => r.fulfill({ status: 200, body: 'ok' }));
+  if (extra.clock) await p.clock.install();
   await p.goto('http://localhost:' + PORT + '/' + (extra.hash || (extra.tg ? '#tgWebAppVersion=8.0&tgWebAppPlatform=ios' : '')));
   await p.waitForTimeout(extra.wait || 1800);
-  return { ctx, p, errors, posts };
+  return { ctx, p, errors, posts, gets: () => gets };
 }
 
 function assert(cond, msg) { if (!cond) throw new Error(msg); }
@@ -757,6 +760,44 @@ const TESTS = {
     const u = await page(b, MOB, 'list', { tg: true, names: [], wait: 2500 });
     assert(await visible(u.p, '#nbar') && /Результати — у Telegram/.test(await u.p.locator('#nbar').innerText()), 'глядачу не той текст');
     await u.ctx.close(); return t.errors.concat(u.errors);
+  },
+
+  'perf: дані запитуються до стилів, головна не тягне зайвих картинок': async (b) => {
+    const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+    assert(html.indexOf('window.__tmEarly = fetch') < html.indexOf('<link rel="stylesheet" href="assets/style.css'), 'ранній запит даних стоїть після CSS');
+    assert(/rel="preload" href="assets\/fonts\/fixel-latin-var\.woff2"/.test(html), 'латинський шрифт (цифри) не вантажиться наперед');
+    const ctxUrls = [];
+    const t = await page(b, MOB, 'season');
+    t.p.on('request', (q) => ctxUrls.push(q.url()));
+    await t.p.waitForTimeout(2500);   // раніше og.jpg підтягувався через 2,5 с
+    const done = await t.p.evaluate(() => performance.getEntriesByType('resource').map((e) => e.name));
+    const all = done.concat(ctxUrls).join('\n');
+    assert((all.match(/fishmefish\.svg/g) || []).length <= 1, 'логотип партнера вантажиться кілька разів');
+    assert(!/og\.jpg\?v=2/.test(all), 'картинка для «Поділитися» вантажиться на головній');
+    assert(!/fish\.webp/.test(all), 'fish.webp вантажиться на головній');
+    await t.ctx.close(); return t.errors;
+  },
+
+  'perf: опитування — під час туру кожні 15 с, список і завершений раунд раз на хвилину': async (b) => {
+    // «Наживо»: tours10 без результатів 10-го туру
+    const live = JSON.parse(FIX('tours10'));
+    const ts = live.sheets.find((x) => x.name === 'Тури');
+    ts.values.slice(ts.headerRows).forEach((r) => { r[20] = ''; r[21] = ''; });
+    live.hash = 'live-9-of-10';
+    const errs = [];
+    async function polls(fx, body, sec) {
+      const t = await page(b, DESK, fx, { clock: true, body: body });
+      const g0 = t.gets();
+      await t.p.clock.fastForward(sec * 1000); await t.p.waitForTimeout(400);
+      const n = t.gets() - g0;
+      errs.push.apply(errs, t.errors); await t.ctx.close();
+      return n;
+    }
+    assert(await polls('results', JSON.stringify(live), 16) >= 1, 'під час туру немає запиту за 16 с');
+    assert(await polls('list', null, 30) === 0, 'список учасників опитується частіше, ніж раз на хвилину');
+    assert(await polls('list', null, 61) >= 1, 'список учасників не опитується взагалі');
+    assert(await polls('tours10', null, 30) === 0, 'завершений раунд опитується частіше, ніж раз на хвилину');
+    return errs;
   },
 
   'telegram: апка в TG, партнер рахує клік («Партнери»)': async (b) => {

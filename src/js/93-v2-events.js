@@ -111,7 +111,9 @@
       if (b) shareFile = new File([b], 'trout-master.jpg', { type: 'image/jpeg' });
     }).catch(function () {});
   }
-  setTimeout(preloadShareImg, 2500);
+  // Файл потрібен лише системному «Поділитися» в браузері (у Telegram своє вікно) і лише на сторінці раунду
+  function wantShareImg() { if (!IN_TG && state.view !== 'home') preloadShareImg(); }
+  window.addEventListener('tm:loaded', function () { setTimeout(wantShareImg, 1500); });
   // Telegram: рідне повідомлення від бота (фото + підпис + кнопка) через WebApp.shareMessage; інакше — як раніше
   function tgShareMessage(tg, url, text, btn, fallback) {
     var done = false, to = setTimeout(function () { if (!done) { done = true; fallback(); } }, 6000);

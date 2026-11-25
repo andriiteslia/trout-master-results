@@ -26,10 +26,11 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23101828'/%3E%3Cpath d='M15 17h34v9H37v23H27V26H15z' fill='%23fff'/%3E%3Crect x='15' y='53' width='34' height='4' rx='2' fill='%2376b11d'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://script.google.com" crossorigin>
   <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+  <link rel="preconnect" href="https://lh3.googleusercontent.com">
   <link rel="preload" href="assets/fonts/fixel-cyrillic-var.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="assets/fish.webp?v=2" as="image" type="image/webp">
-  <link rel="stylesheet" href="assets/style.css?v=20261125t">
-  <script src="config.js?v=20261125t"></script>
+  <link rel="preload" href="assets/fonts/fixel-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+  <!-- Дані запитуємо ДО стилів: скрипт після <link rel="stylesheet"> чекав би, доки завантажиться весь CSS -->
+  <script src="config.js?v=20261125u"></script>
   <script>
     // Запитуємо результати одразу, паралельно з завантаженням решти сторінки
     (function () {
@@ -41,14 +42,15 @@
       } catch (e) { window.__tmEarly = null; }
     })();
   </script>
+  <link rel="stylesheet" href="assets/style.css?v=20261125u">
   <script>
     // Посилання на картку (…/#p9, startapp=p9): з першого кадру ховаємо головну, щоб не блимав список до картки
     if (/(?:tgWebAppStartParam=|#)p\d+(?:&|$)/.test(location.hash + '&' + location.search.slice(1)) || /\/r\d+\/p\d+\/?$/.test(location.pathname)) document.documentElement.className += ' view-card deep-wait';
     // Звичайне відкриття — з першого кадру головна (скелетон карток), щоб до запуску апки не блимала сторінка раунду
     else if (!/tgWebAppStartParam=|[?&]sel=|#(?:r\d+|player|stats|register|rules)(?:&|$)/.test(location.hash + '&' + location.search)) document.documentElement.className += ' home-wait';
   </script>
-  <script src="assets/i18n.js?v=20261125t"></script>
-  <script src="assets/app.js?v=20261125t" defer></script>
+  <script src="assets/i18n.js?v=20261125u"></script>
+  <script src="assets/app.js?v=20261125u" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -90,7 +92,7 @@
         </div>
         <div class="home__acts d-only">
           <a class="partner-web" id="partnerHome" data-partner="FISH.ME.FISH" href="https://t.me/fishmefish_japan" target="_blank" rel="noopener" title="Наш партнер FISH.ME.FISH" aria-label="Наш партнер FISH.ME.FISH у Telegram">
-            <img src="assets/partners/fishmefish.svg?v=1" alt="" width="288" height="288" decoding="async">
+            <img src="assets/partners/fishmefish.svg?v=2" alt="" width="288" height="288" loading="lazy" decoding="async">
           </a>
           <a class="btn2 btn2-tg" id="chatHome" href="https://t.me/troutmasterua" target="_blank" rel="noopener" aria-label="Telegram-чат турніру">
           <svg class="tg-ic" viewBox="26 23 446 446" aria-hidden="true"><path d="M192.579 406.775C179.579 406.775 181.912 401.775 177.246 389.442L139.246 264.108L375.246 116.775L402.912 124.108L379.912 186.775L192.579 406.775Z" fill="#C8DAEA"/><path d="M192.579 406.775C202.579 406.775 206.912 402.108 212.579 396.775C221.245 388.442 332.579 280.108 332.579 280.108L264.245 263.442L200.912 303.442L192.579 403.442V406.775Z" fill="#A9C9DD"/><path d="M199.245 304.775L360.579 423.775C378.912 433.775 392.245 428.775 396.912 406.775L462.579 97.4416C469.245 70.4416 452.245 58.4416 434.579 66.4416L49.2453 215.108C22.912 225.775 23.2453 240.442 44.5787 246.775L143.579 277.775L372.579 133.442C383.245 126.775 393.245 130.442 385.245 137.775L199.245 304.775Z" fill="url(#tgPlaneH)"/><defs><linearGradient id="tgPlaneH" x1="295.882" y1="235.958" x2="379.215" y2="369.292" gradientUnits="userSpaceOnUse"><stop stop-color="#EFF7FC"/><stop offset="1" stop-color="#fff"/></linearGradient></defs></svg>
@@ -115,7 +117,7 @@
       </div>
       <div class="hero__actions" id="heroActions">
         <a class="partner-web" id="partnerWeb" data-partner="FISH.ME.FISH" href="https://t.me/fishmefish_japan" target="_blank" rel="noopener" title="Наш партнер FISH.ME.FISH" aria-label="Наш партнер FISH.ME.FISH у Telegram">
-          <img src="assets/partners/fishmefish.svg?v=1" alt="" width="288" height="288" decoding="async">
+          <img src="assets/partners/fishmefish.svg?v=2" alt="" width="288" height="288" loading="lazy" decoding="async">
         </a>
         <a class="btn2 btn2-tg" id="chatWeb" href="https://t.me/troutmasterua" target="_blank" rel="noopener" aria-label="Telegram-чат турніру">
           <svg class="tg-ic" viewBox="26 23 446 446" aria-hidden="true"><path d="M192.579 406.775C179.579 406.775 181.912 401.775 177.246 389.442L139.246 264.108L375.246 116.775L402.912 124.108L379.912 186.775L192.579 406.775Z" fill="#C8DAEA"/><path d="M192.579 406.775C202.579 406.775 206.912 402.108 212.579 396.775C221.245 388.442 332.579 280.108 332.579 280.108L264.245 263.442L200.912 303.442L192.579 403.442V406.775Z" fill="#A9C9DD"/><path d="M199.245 304.775L360.579 423.775C378.912 433.775 392.245 428.775 396.912 406.775L462.579 97.4416C469.245 70.4416 452.245 58.4416 434.579 66.4416L49.2453 215.108C22.912 225.775 23.2453 240.442 44.5787 246.775L143.579 277.775L372.579 133.442C383.245 126.775 393.245 130.442 385.245 137.775L199.245 304.775Z" fill="url(#tgPlaneA)"/><defs><linearGradient id="tgPlaneA" x1="295.882" y1="235.958" x2="379.215" y2="369.292" gradientUnits="userSpaceOnUse"><stop stop-color="#EFF7FC"/><stop offset="1" stop-color="#fff"/></linearGradient></defs></svg>
@@ -131,7 +133,7 @@
       <div class="hlinks" id="heroLinks" hidden></div>
       <div class="paybox m-only" id="payBox" hidden>
         <a class="paybtn" id="payBtn" href="#" target="_blank" rel="noopener">
-          <img src="assets/icons/paid.webp?v=2" alt="" aria-hidden="true">
+          <img src="assets/icons/paid.webp?v=2" alt="" aria-hidden="true" loading="lazy">
           <span>Оплатити участь</span>
         </a>
         <p class="paybox__fee" id="payFee" hidden></p>
@@ -286,8 +288,8 @@
       <div class="mapsheet__box" role="dialog" aria-modal="true" aria-labelledby="mapTitle">
         <p class="mapsheet__t" id="mapTitle">Відкрити в навігаторі</p>
         <p class="mapsheet__s" id="mapName"></p>
-        <a class="mapsheet__btn mapsheet__btn--google" data-map="google" href="#" target="_blank" rel="noopener"><img src="assets/icons/google-maps.svg" alt="" aria-hidden="true"><span>Google Maps</span></a>
-        <a class="mapsheet__btn mapsheet__btn--waze" data-map="waze" href="#" target="_blank" rel="noopener"><img src="assets/icons/waze.png" alt="" aria-hidden="true"><span>Waze</span></a>
+        <a class="mapsheet__btn mapsheet__btn--google" data-map="google" href="#" target="_blank" rel="noopener"><img src="assets/icons/google-maps.svg" alt="" aria-hidden="true" loading="lazy"><span>Google Maps</span></a>
+        <a class="mapsheet__btn mapsheet__btn--waze" data-map="waze" href="#" target="_blank" rel="noopener"><img src="assets/icons/waze.png" alt="" aria-hidden="true" loading="lazy"><span>Waze</span></a>
         <button type="button" class="mapsheet__btn mapsheet__btn--x" data-map="close">Скасувати</button>
       </div>
     </div>
@@ -331,7 +333,7 @@
       </nav>
       <nav class="foot__col" aria-label="Партнери">
         <h3>Партнери</h3>
-        <a data-partner="FISH.ME.FISH" href="https://t.me/fishmefish_japan" target="_blank" rel="noopener"><img class="foot__plogo" src="assets/partners/fishmefish.svg?v=1" alt="" width="288" height="288" loading="lazy"><span>FISH.ME.FISH</span></a>
+        <a data-partner="FISH.ME.FISH" href="https://t.me/fishmefish_japan" target="_blank" rel="noopener"><img class="foot__plogo" src="assets/partners/fishmefish.svg?v=2" alt="" width="288" height="288" loading="lazy"><span>FISH.ME.FISH</span></a>
       </nav>
       <div class="foot__col">
         <h3>Співпраця</h3>

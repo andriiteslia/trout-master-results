@@ -294,7 +294,7 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(remeasureNavs);
   // Партнери ліги: картка на кожного (зараз FISH.ME.FISH), нижче — «Стати партнером»
   var PARTNERS = [{
-    name: 'FISH.ME.FISH', logo: 'assets/partners/fishmefish.svg?v=1', url: 'https://t.me/fishmefish_japan', handle: '@fishmefish_japan',
+    name: 'FISH.ME.FISH', logo: 'assets/partners/fishmefish.svg?v=2', url: 'https://t.me/fishmefish_japan', handle: '@fishmefish_japan',
     tag: 'Японські приманки',
     text: 'Топові японські приманки — нові й б/у, зокрема дефіцитні моделі, а також витратні матеріали й аксесуари для ловлі хижої риби.'
   }];
